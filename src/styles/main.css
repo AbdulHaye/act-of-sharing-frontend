@@ -6,9 +6,9 @@
 
 :root {
   /* Primary colors */
-  --primary-color: #1A5F7A;
-  --primary-light: #3A7F9A;
-  --primary-dark: #0A4F6A;
+--primary-color: #5144A1;     /* Base purple */
+--primary-light: #7B6FD1;     /* Lighter version of primary */
+--primary-dark: #8347CC;  
   
   /* Secondary colors */
   --secondary-color: #F27F0C;
@@ -29,12 +29,12 @@
   --neutral-500: #6B7280;
   --neutral-600: #4B5563;
   --neutral-700: #374151;
-  --neutral-800: #1F2937;
-  --neutral-900: #111827;
+  --neutral-800: #2B3E50;
+  --neutral-900: #4D5E80;
   
   /* Typography */
-  --font-heading: 'Montserrat', sans-serif;
-  --font-body: 'Open Sans', sans-serif;
+  --font-heading: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
   --line-height-body: 1.5;
   --line-height-heading: 1.2;
   
@@ -88,8 +88,9 @@ p {
 /* Bootstrap overrides */
 .btn {
   font-family: var(--font-heading);
-  font-weight: 500;
+  font-weight: 400;
   padding: 0.5rem 1.25rem;
+  font-size: 14px;
   border-radius: var(--radius-md);
   transition: all var(--transition-normal);
 }
@@ -112,9 +113,11 @@ p {
 
 .btn-outline-primary:hover,
 .btn-outline-primary:focus {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+  background-color: transparent !important;
+  border-color: var(--primary-dark);
+  color: var(--primary-dark) !important;
 }
+
 
 .text-primary {
   color: var(--primary-color) !important;
@@ -153,7 +156,9 @@ p {
   height: 3px;
   background-color: var(--secondary-color);
 }
-
+.text-success {
+  color: var(--primary-color) !important;
+}
 .section-subtitle {
   font-size: 1.125rem;
   color: var(--neutral-600);

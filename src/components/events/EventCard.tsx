@@ -57,7 +57,7 @@ const EventCard: React.FC<EventCardProps> = ({
           </div>
           <div className="event-card-stat">
             <DollarSign size={16} />
-            <span>${raised.toLocaleString()} of ${goal.toLocaleString()}</span>
+            <span>${raised} of ${goal}</span>
           </div>
         </div>
         

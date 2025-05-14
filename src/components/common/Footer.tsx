@@ -37,10 +37,10 @@ const Footer: React.FC = () => {
           <div className="col-sm-6 col-lg-2 mb-4 mb-lg-0">
             <h5 className="footer-heading">Get Started</h5>
             <ul className="footer-links">
-              <li><Link to="/create-event">Host a Meal</Link></li>
+              {/* <li><Link to="/create-event">Host a Meal</Link></li> */}
               <li><Link to="/how-it-works">How It Works</Link></li>
-              <li><Link to="/dashboard">My Events</Link></li>
-              <li><Link to="/stories">Success Stories</Link></li>
+              {/* <li><Link to="/dashboard">My Events</Link></li> */}
+              {/* <li><Link to="/stories">Success Stories</Link></li> */}
             </ul>
           </div>
 
@@ -48,17 +48,17 @@ const Footer: React.FC = () => {
             <h5 className="footer-heading">Resources</h5>
             <ul className="footer-links">
               <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/faq">FAQs</Link></li>
+              {/* <li><Link to="/faq">FAQs</Link></li>
               <li><Link to="/host-guide">Host Guide</Link></li>
               <li><Link to="/impact">Our Impact</Link></li>
-              <li><Link to="/blog">Blog</Link></li>
+              <li><Link to="/blog">Blog</Link></li> */}
             </ul>
           </div>
 
           <div className="col-lg-3">
             <h5 className="footer-heading">Subscribe</h5>
             <p className="subscribe-text">Stay updated with our mission and events</p>
-            <div className="input-group mb-3">
+            {/* <div className="input-group mb-3">
               <input 
                 type="email" 
                 className="form-control" 
@@ -66,7 +66,7 @@ const Footer: React.FC = () => {
                 aria-label="Email address" 
               />
               <button className="btn btn-primary" type="button">Subscribe</button>
-            </div>
+            </div> */}
           </div>
         </div>
 

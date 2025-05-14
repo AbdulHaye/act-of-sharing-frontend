@@ -86,9 +86,10 @@ const HowItWorks: React.FC = () => {
           ))}
         </div>
 
-        <div className="text-center mt-4">
+        {/* <div className="text-center mt-4">
+          
           <button className="btn btn-primary btn-lg">Host Your Meal</button>
-        </div>
+        </div> */}
       </div>
     </section>
   );

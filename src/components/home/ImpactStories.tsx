@@ -32,7 +32,7 @@ const ImpactStories: React.FC = () => {
       need: "Medical expenses"
     },
     {
-      image: "https://images.pexels.com/photos/2253461/pexels-photo-2253461.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+      image: "https://images.pexels.com/photos/3771836/pexels-photo-3771836.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
       quote: "As a single mom, starting my small business seemed impossible. The meal gathering raised funds for my equipment and first month's rental space. I'm now employing two others!",
       name: "Elena Rodriguez",
       location: "Austin, TX",

@@ -1,0 +1,40 @@
+.table-custom {
+  width: 100%;
+  border-collapse: collapse; /* Ensure borders collapse for consistent lines */
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-custom thead th {
+  background-color: #5144A1;
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 12px 20px;
+  text-align: left;
+  border: none;
+}
+
+.table-custom tbody tr {
+  background-color: #F9FAFB;
+  transition: background-color 0.2s;
+}
+
+.table-custom tbody tr:hover {
+  background-color: #F3F2FB; /* Hover color as requested */
+}
+
+.table-custom tbody td {
+  padding: 12px 20px;
+  color: #1F2937;
+  border-bottom: 1px solid #E5E7EB; /* Row line after every row */
+}
+
+.table-custom tbody tr:last-child td {
+  border-bottom: none; /* Remove border from the last row */
+}
+
+.card {
+  width: 100% !important; /* Ensure card takes full width */
+}
