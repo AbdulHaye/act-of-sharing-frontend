@@ -4,6 +4,7 @@ import axiosInstance from "../../../api/axiosInstance"; // Adjust the import pat
 import { useAuth } from "../../../context/AuthContext"; // Import useAuth to get user role
 import '../../../styles/contributions-page.css'; // Adjust the import path as needed
 import { toast } from "react-toastify";
+import '../../../styles/loader.css'
 
 const ContributionsPage: React.FC = () => {
 
@@ -117,7 +118,13 @@ const ContributionsPage: React.FC = () => {
     setError(null);
   };
 
-  if (loading) return <div>Loading...</div>;
+   if (loading) {
+    return (
+      <div className="loader-container">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
   if (error) return <div>{error}</div>;
 
   return (

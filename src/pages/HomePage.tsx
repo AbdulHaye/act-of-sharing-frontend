@@ -189,7 +189,7 @@ const HomePage: React.FC = () => {
           {/* Request Assistance Button */}
           <div className="text-center mt-5">
             <button
-              className="btn-request-assistance"
+              className="btn btn-primary"
               onClick={handleFormClose}
             >
               Request Assistance

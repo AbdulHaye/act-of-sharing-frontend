@@ -4,6 +4,7 @@ import axiosInstance from "../../../api/axiosInstance"; // Adjust the import pat
 import { useAuth } from "../../../context/AuthContext"; // Import useAuth to get user role
 import '../../../styles/contributions-page.css'; // Uncommented for consistent styling
 import { toast } from "react-toastify"; // Import toast for notifications
+import '../../../styles/loader.css'
 
 const UsersPage: React.FC = () => {
   const [users, setUsers] = useState([]);
@@ -107,7 +108,13 @@ const UsersPage: React.FC = () => {
     setError(null);
   };
 
-  if (loading) return <div>Loading...</div>;
+    if (loading) {
+    return (
+      <div className="loader-container">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
   if (error) return <div>{error}</div>;
 
   return (

@@ -101,6 +101,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       return [
         ...commonItems,
         { path: "/dashboard/users", icon: <Users size={20} />, label: "Users" },
+        { path: "/dashboard/requests", icon: <Users size={20} />, label: "Requests" },
+        { path: "/dashboard/messages", icon: <Users size={20} />, label: "Messages" },
         // { path: "/dashboard/analytics", icon: <PieChart size={20} />, label: "Analytics" },
         // { path: "/dashboard/finances", icon: <DollarSign size={20} />, label: "Finances" },
         // { path: "/dashboard/settings", icon: <Settings size={20} />, label: "Settings" },

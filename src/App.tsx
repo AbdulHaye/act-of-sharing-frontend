@@ -26,7 +26,9 @@ import { Elements } from "@stripe/react-stripe-js";
 import DonationPage from "./pages/Dashboard/user/donation-page";
 import CheckoutPage from "./pages/Dashboard/user/checkout-page";
 import ContributionsPage from "./pages/Dashboard/user/Contributions-Page";
-import UsersPage from "./pages/Dashboard/user/UsersPage"; // Import UsersPage
+import UsersPage from "./pages/Dashboard/user/UsersPage";
+import RequestsPage from "./pages/Dashboard/user/RequestsPage";
+import ContactPage from "./pages/Dashboard/user/ContanctPage"; // Fixed typo: ContanctPage -> ContactPage
 
 const stripePromise = loadStripe(
   "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
@@ -77,7 +79,9 @@ function App() {
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="my-events" element={<MyEventsPage />} />
                     <Route path="contributions" element={<ContributionsPage />} />
-                    <Route path="users" element={<UsersPage />} /> {/* Add UsersPage route */}
+                    <Route path="users" element={<UsersPage />} />
+                    <Route path="requests" element={<RequestsPage />} />
+                    <Route path="messages" element={<ContactPage />} />
                   </Route>
                 </Route>
               </Routes>

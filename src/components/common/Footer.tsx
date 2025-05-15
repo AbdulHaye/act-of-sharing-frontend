@@ -1,86 +1,175 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, Facebook, Twitter, Instagram, Mail } from 'lucide-react';
-import '../../styles/footer.css';
+import type React from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Heart, Facebook, Twitter, Instagram, Mail } from "lucide-react";
+import "../../styles/footer.css";
+import { toast } from "react-toastify";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  // Handle input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (!formData.name || !formData.email || !formData.message) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    try {
+      const response = await fetch("https://commonchange-backend.onrender.com/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to send message");
+      }
+
+      const data = await response.json();
+      toast.success(data.message || "Message sent successfully!");
+      setFormData({ name: "", email: "", message: "" }); // Reset form
+    } catch (error: any) {
+      console.error("Error submitting form:", error);
+      toast.error(error.message || "Failed to send message. Please try again.");
+    }
+  };
+
   return (
     <footer className="footer">
+      <div className="footer-pattern"></div>
+      <div className="footer-glow"></div>
+
       <div className="container">
-        <div className="row">
-          <div className="col-lg-4 mb-4 mb-lg-0">
-            <div className="footer-brand d-flex align-items-center mb-3">
-              <Heart size={24} className="me-2 text-primary" />
-              <span className="h4 mb-0">COMMONCHANGE</span>
+        <div className="row footer-top">
+          <div className="col-md-4 col-lg-3 mb-4 mb-md-0">
+            <div className="footer-brand">
+              <Heart size={24} className="heart-icon" />
+              <span className="brand-text">COMMONCHANGE</span>
             </div>
             <p className="footer-tagline">
               Bringing communities together to share meals and make a difference through collective giving.
             </p>
             <div className="social-icons">
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <Facebook size={20} />
+                <Facebook size={18} />
               </a>
               <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                <Twitter size={20} />
+                <Twitter size={18} />
               </a>
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <Instagram size={20} />
+                <Instagram size={18} />
               </a>
-              <a href="mailto:contact@mealswithmission.org" aria-label="Email">
-                <Mail size={20} />
+              <a href="mailto:mealswithmission@gmail.com" aria-label="Email">
+                <Mail size={18} />
               </a>
             </div>
           </div>
 
-          <div className="col-sm-6 col-lg-2 mb-4 mb-lg-0">
-            <h5 className="footer-heading">Get Started</h5>
-            <ul className="footer-links">
-              {/* <li><Link to="/create-event">Host a Meal</Link></li> */}
-              <li><Link to="/how-it-works">How It Works</Link></li>
-              {/* <li><Link to="/dashboard">My Events</Link></li> */}
-              {/* <li><Link to="/stories">Success Stories</Link></li> */}
-            </ul>
+          <div className="col-md-3 col-lg-3 mb-4 mb-md-0">
+            <h5 className="footer-heading">Contact</h5>
+            <div className="contact-item">
+              <span className="contact-label">Email:</span>
+              <a href="mailto:mealswithmission@gmail.com" className="contact-value">
+                mealswithmission@gmail.com
+              </a>
+            </div>
+            <div className="contact-item">
+              <span className="contact-label">Phone:</span>
+              <a href="tel:4073600777" className="contact-value">
+                (407) 360-0777
+              </a>
+            </div>
           </div>
 
-          <div className="col-sm-6 col-lg-3 mb-4 mb-lg-0">
-            <h5 className="footer-heading">Resources</h5>
-            <ul className="footer-links">
-              <li><Link to="/about">About Us</Link></li>
-              {/* <li><Link to="/faq">FAQs</Link></li>
-              <li><Link to="/host-guide">Host Guide</Link></li>
-              <li><Link to="/impact">Our Impact</Link></li>
-              <li><Link to="/blog">Blog</Link></li> */}
-            </ul>
-          </div>
-
-          <div className="col-lg-3">
-            <h5 className="footer-heading">Subscribe</h5>
-            <p className="subscribe-text">Stay updated with our mission and events</p>
-            {/* <div className="input-group mb-3">
-              <input 
-                type="email" 
-                className="form-control" 
-                placeholder="Your email" 
-                aria-label="Email address" 
-              />
-              <button className="btn btn-primary" type="button">Subscribe</button>
-            </div> */}
+          <div className="col-md-5 col-lg-6">
+            <h5 className="footer-heading">Get In Touch</h5>
+            <form onSubmit={handleSubmit} className="contact-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <input
+                    type="text"
+                    className="form-control cute-input"
+                    placeholder="Name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    aria-label="Name"
+                  />
+                </div>
+                <div className="form-group">
+                  <input
+                    type="email"
+                    className="form-control cute-input"
+                    placeholder="Email Address"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    aria-label="Email Address"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <textarea
+                  className="form-control cute-input"
+                  placeholder="Message"
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  rows={3}
+                  aria-label="Message"
+                ></textarea>
+              </div>
+              <button type="submit" className="btn btn-primary">
+                Send
+              </button>
+            </form>
           </div>
         </div>
 
-        <hr className="footer-divider" />
+        <div className="footer-divider">
+          <div className="divider-glow"></div>
+        </div>
 
         <div className="row footer-bottom">
-          <div className="col-md-6 mb-3 mb-md-0">
-            <p className="mb-0">© {currentYear} COMMONCHANGE. All rights reserved.</p>
+          <div className="col-md-6 text-center text-md-start">
+            <p className="copyright">© {currentYear} COMMONCHANGE. All rights reserved.</p>
           </div>
-          <div className="col-md-6 text-md-end">
+          <div className="col-md-6 text-center text-md-end">
             <ul className="footer-legal">
-              <li><Link to="/privacy">Privacy Policy</Link></li>
-              <li><Link to="/terms">Terms of Use</Link></li>
-              <li><Link to="/contact">Contact Us</Link></li>
+              <li>
+                <Link to="/privacy">Privacy Policy</Link>
+              </li>
+              <li>
+                <Link to="/terms">Terms of Use</Link>
+              </li>
+              <li>
+                <Link to="/contact">Contact Us</Link>
+              </li>
             </ul>
           </div>
         </div>
