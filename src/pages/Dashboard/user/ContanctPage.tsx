@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import { useAuth } from "../../../context/AuthContext";
-import '../../../styles/contributions-page.css';
+import '../../../styles/Contributions-page.css';
 import { toast } from "react-toastify";
 import '../../../styles/loader.css'
 
