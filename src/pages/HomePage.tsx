@@ -222,19 +222,20 @@ const HomePage: React.FC = () => {
                             src={`${baseUrl}${event.imageUrl}`}
                             alt={event.title}
                             className="card-img-top"
-                            style={{ height: "200px", objectFit: "cover" }}
+                            style={{ height: "160px", objectFit: "cover" }}
                             onError={handleImageError}
                           />
-                        ) : null}
-                        <div
-                          className="bg-light d-flex align-items-center justify-content-center"
-                          style={{
-                            height: "160px",
-                            display: event.imageUrl ? "none" : "flex",
-                          }}
-                        >
-                          <Calendar size={32} className="text-muted" />
-                        </div>
+                        ) : (
+                          <div
+                            className="bg-light d-flex align-items-center justify-content-center"
+                            style={{
+                              height: "160px",
+                              display: event.imageUrl ? "none" : "flex",
+                            }}
+                          >
+                            <Calendar size={32} className="text-muted" />
+                          </div>
+                        )}
                       </div>
                       <div className="card-body">
                         <h5 className="card-title">{event.title}</h5>
@@ -378,9 +379,9 @@ const HomePage: React.FC = () => {
                   Need Assistance? We're Here to Help.
                 </h2>
                 <p className="form-subtitle">
-                  CommonChange is committed to supporting those in need.
-                  If you or someone you know requires food, clothing, supplies,
-                  or other assistance, please fill out the form below. Our team
+                  CommonChange is committed to supporting those in need. If you
+                  or someone you know requires food, clothing, supplies, or
+                  other assistance, please fill out the form below. Our team
                   will review your request and reach out as soon as possible.
                 </p>
                 <form onSubmit={handleFormSubmit} className="assistance-form">
