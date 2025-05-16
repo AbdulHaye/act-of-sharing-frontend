@@ -84,7 +84,7 @@ const Footer: React.FC = () => {
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                 <Instagram size={18} />
               </a>
-              <a href="mailto:mealswithmission@gmail.com" aria-label="Email">
+              <a href="mailto:commonchange@gmail.com" aria-label="Email">
                 <Mail size={18} />
               </a>
             </div>
@@ -94,8 +94,8 @@ const Footer: React.FC = () => {
             <h5 className="footer-heading">Contact</h5>
             <div className="contact-item">
               <span className="contact-label">Email:</span>
-              <a href="mailto:mealswithmission@gmail.com" className="contact-value">
-                mealswithmission@gmail.com
+              <a href="mailto:commonchange@gmail.com" className="contact-value">
+                commonchange@gmail.com
               </a>
             </div>
             <div className="contact-item">

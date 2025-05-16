@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, MapPin, Users, DollarSign, FileText, Image } from 'lucide-react';
 import { useEvent } from '../../../context/EventContext';
-import type { EventFormData } from '../modals/EventCreationForm';
 import { toast } from 'react-toastify';
 import '../../../styles/my-events.css';
+
+interface EventFormData {
+  name: string;
+  date: string;
+  time: string;
+  location: string;
+  maxGuests: string;
+  fundingGoal: string;
+  description: string;
+  eventImage: File | null;
+  recipientName: string;
+  categoryOfNeed: string;
+  recipientStory: string;
+  recipientPhoto: File | null;
+  fundsUsage: string;
+  visibility: "" | "public" | "private";
+}
 
 interface EventEditModalProps {
   show: boolean;
@@ -24,21 +40,14 @@ interface EventEditModalProps {
       photoUrl?: string | null;
       fundsUsage: string;
     };
-    hostId: {
-      _id: string;
-      firstname: string;
-      lastname: string;
-    };
-    status: string;
-    currentAmount: number;
-    createdAt: string;
-    updatedAt: string;
+    visibility: "public" | "private";
   } | null;
 }
 
 const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) => {
-  const { updateEvent } = useEvent();
+  const { updateEvent, loading } = useEvent();
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [isTermsChecked, setIsTermsChecked] = useState(false);
   const totalSteps = 3;
   const [formData, setFormData] = useState<EventFormData>({
     name: '',
@@ -54,6 +63,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     recipientStory: '',
     recipientPhoto: null,
     fundsUsage: '',
+    visibility: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -67,7 +77,6 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
   };
 
   useEffect(() => {
-    console.log('Modal event prop:', event);
     if (event) {
       const eventDate = new Date(event.date);
       setFormData({
@@ -84,6 +93,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         fundsUsage: event.recipient.fundsUsage,
         eventImage: null,
         recipientPhoto: null,
+        visibility: event.visibility,
       });
     } else {
       setFormData({
@@ -100,6 +110,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         recipientStory: '',
         recipientPhoto: null,
         fundsUsage: '',
+        visibility: '',
       });
     }
   }, [event]);
@@ -118,10 +129,11 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
       }
       if (!formData.fundingGoal) {
         errors.fundingGoal = 'Funding goal is required';
-      } else if (isNaN(Number(formData.fundingGoal)) || Number(formData.fundingGoal) < 100) {
-        errors.fundingGoal = 'Funding goal must be at least 100';
+      } else if (isNaN(Number(formData.fundingGoal)) || Number(formData.fundingGoal) < 25) {
+        errors.fundingGoal = 'Funding goal must be at least 25';
       }
       if (!formData.description) errors.description = 'Description is required';
+      if (!formData.visibility) errors.visibility = 'Event visibility is required';
     } else if (step === 2) {
       if (!formData.recipientName) errors.recipientName = 'Recipient name is required';
       if (!formData.categoryOfNeed) errors.categoryOfNeed = 'Category of need is required';
@@ -163,6 +175,15 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     setFormData((prev) => ({ ...prev, [name]: file }));
   };
 
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsTermsChecked(e.target.checked);
+    if (e.target.checked) {
+      setErrors((prev) => ({ ...prev, termsCheck: '' }));
+    } else {
+      setErrors((prev) => ({ ...prev, termsCheck: 'Please check the box' }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) {
@@ -176,15 +197,13 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
       setErrors(allErrors);
       return;
     }
-    const termsCheck = document.getElementById('termsCheck') as HTMLInputElement;
-    if (!termsCheck.checked) {
-      toast.error('Please agree to the terms');
+    if (!isTermsChecked) {
+      setErrors((prev) => ({ ...prev, termsCheck: 'Please check the box' }));
       return;
     }
 
     try {
       const updatedData: EventFormData = { ...formData };
-      console.log('Submitting updated data:', updatedData);
       await updateEvent(event._id, updatedData);
       toast.success('Event updated successfully');
       onHide();
@@ -194,24 +213,14 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'N/A';
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   if (!show) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full m-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b">
+        <div className="flex justify-between items-center p-6 border-b pt-10">
           <h3 className="text-xl font-semibold">Edit Event</h3>
-          <button onClick={onHide} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onHide} className="text-gray-500 hover:text-gray-700" disabled={loading}>
             <X size={24} />
           </button>
         </div>
@@ -236,7 +245,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
               <div className="form-step">
                 <h2 className="form-step-title">Event Details</h2>
                 <p className="form-step-description">
-                  Update the details of your meal gathering, including when and where it will be hosted.
+                  Let's set up your meal gathering. Provide details about when and where you'll host.
                 </p>
 
                 <div className="form-group">
@@ -254,6 +263,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       className="form-control"
                       placeholder="Give your event a meaningful name"
                       required
+                      disabled={loading}
                     />
                   </div>
                   {errors.name && <div className="text-danger">{errors.name}</div>}
@@ -275,6 +285,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           onChange={handleInputChange}
                           className="form-control"
                           required
+                          disabled={loading}
                         />
                       </div>
                       {errors.date && <div className="text-danger">{errors.date}</div>}
@@ -295,6 +306,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           onChange={handleInputChange}
                           className="form-control"
                           required
+                          disabled={loading}
                         />
                       </div>
                       {errors.time && <div className="text-danger">{errors.time}</div>}
@@ -317,6 +329,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       className="form-control"
                       placeholder="Address or virtual link"
                       required
+                      disabled={loading}
                     />
                   </div>
                   {errors.location && <div className="text-danger">{errors.location}</div>}
@@ -340,6 +353,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           placeholder="e.g., 12"
                           min="2"
                           required
+                          disabled={loading}
                         />
                       </div>
                       {errors.maxGuests && <div className="text-danger">{errors.maxGuests}</div>}
@@ -360,13 +374,37 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           onChange={handleInputChange}
                           className="form-control"
                           placeholder="e.g., 500"
-                          min="100"
+                          min="25"
                           required
+                          disabled={loading}
                         />
                       </div>
                       {errors.fundingGoal && <div className="text-danger">{errors.fundingGoal}</div>}
                     </div>
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="visibility">Visibility *</label>
+                  <div className="input-icon-wrapper">
+                    <span className="input-icon">
+                      <Users size={18} />
+                    </span>
+                    <select
+                      id="visibility"
+                      name="visibility"
+                      value={formData.visibility}
+                      onChange={handleInputChange}
+                      className="form-control"
+                      required
+                      disabled={loading}
+                    >
+                      <option value="" disabled>Select visibility</option>
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
+                  {errors.visibility && <div className="text-danger">{errors.visibility}</div>}
                 </div>
 
                 <div className="form-group">
@@ -380,6 +418,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     rows={4}
                     placeholder="Tell your guests what to expect at your gathering"
                     required
+                    disabled={loading}
                   ></textarea>
                   {errors.description && <div className="text-danger">{errors.description}</div>}
                 </div>
@@ -397,6 +436,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       onChange={handleFileChange}
                       className="form-control"
                       accept="image/*"
+                      disabled={loading}
                     />
                   </div>
                   <small className="text-muted">
@@ -411,7 +451,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
               <div className="form-step">
                 <h2 className="form-step-title">Recipient Information</h2>
                 <p className="form-step-description">
-                  Update the story of who will benefit from your meal gathering and why they need support.
+                  Share the story of who will benefit from your meal gathering and why they need support.
                 </p>
 
                 <div className="form-group">
@@ -425,6 +465,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     className="form-control"
                     placeholder="Individual or family name"
                     required
+                    disabled={loading}
                   />
                   {errors.recipientName && <div className="text-danger">{errors.recipientName}</div>}
                 </div>
@@ -438,6 +479,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     onChange={handleInputChange}
                     className="form-control"
                     required
+                    disabled={loading}
                   >
                     <option value="">Select a category</option>
                     <option value="medical">Medical Expenses</option>
@@ -461,6 +503,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     rows={6}
                     placeholder="Share why this person or family needs support and how the funds will help"
                     required
+                    disabled={loading}
                   ></textarea>
                   {errors.recipientStory && <div className="text-danger">{errors.recipientStory}</div>}
                 </div>
@@ -478,6 +521,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       onChange={handleFileChange}
                       className="form-control"
                       accept="image/*"
+                      disabled={loading}
                     />
                   </div>
                   <small className="text-muted">
@@ -497,6 +541,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     rows={4}
                     placeholder="Explain exactly how the money raised will help the recipient"
                     required
+                    disabled={loading}
                   ></textarea>
                   {errors.fundsUsage && <div className="text-danger">{errors.fundsUsage}</div>}
                 </div>
@@ -505,8 +550,10 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
 
             {currentStep === 3 && (
               <div className="form-step">
-                <h2 className="form-step-title">Review Your Changes</h2>
-                <p className="form-step-description">Please review all details before saving your changes.</p>
+                <h2 className="form-step-title">Review Your Event</h2>
+                <p className="form-step-description">
+                  Please review all details before creating your event.
+                </p>
 
                 <div className="review-section">
                   <h3 className="review-section-title">Event Details</h3>
@@ -516,9 +563,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                   </div>
                   <div className="review-item">
                     <span className="review-label">Date & Time:</span>
-                    <span className="review-value">
-                      {formData.date} • {formData.time}
-                    </span>
+                    <span className="review-value">{formData.date} • {formData.time}</span>
                   </div>
                   <div className="review-item">
                     <span className="review-label">Location:</span>
@@ -533,6 +578,10 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     <span className="review-value">${formData.fundingGoal}</span>
                   </div>
                   <div className="review-item">
+                    <span className="review-label">Visibility:</span>
+                    <span className="review-value">{formData.visibility.charAt(0).toUpperCase() + formData.visibility.slice(1)}</span>
+                  </div>
+                  <div className="review-item">
                     <span className="review-label">Description:</span>
                     <span className="review-value">{formData.description}</span>
                   </div>
@@ -542,28 +591,6 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       <span className="review-value">{formData.eventImage.name}</span>
                     </div>
                   )}
-                  {event?.imageUrl && !formData.eventImage && (
-                    <div className="review-item">
-                      <span className="review-label">Current Event Image:</span>
-                      <span className="review-value">{event.imageUrl}</span>
-                    </div>
-                  )}
-                  <div className="review-item">
-                    <span className="review-label">Current Amount Raised:</span>
-                    <span className="review-value">${event?.currentAmount || 0}</span>
-                  </div>
-                  <div className="review-item">
-                    <span className="review-label">Status:</span>
-                    <span className="review-value">{event?.status || 'N/A'}</span>
-                  </div>
-                  <div className="review-item">
-                    <span className="review-label">Created At:</span>
-                    <span className="review-value">{event ? formatDate(event.createdAt) : 'N/A'}</span>
-                  </div>
-                  <div className="review-item">
-                    <span className="review-label">Updated At:</span>
-                    <span className="review-value">{event ? formatDate(event.updatedAt) : 'N/A'}</span>
-                  </div>
                 </div>
 
                 <div className="review-section">
@@ -586,54 +613,48 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       <span className="review-value">{formData.recipientPhoto.name}</span>
                     </div>
                   )}
-                  {event?.recipient.photoUrl && !formData.recipientPhoto && (
-                    <div className="review-item">
-                      <span className="review-label">Current Recipient Photo:</span>
-                      <span className="review-value">{event.recipient.photoUrl}</span>
-                    </div>
-                  )}
                   <div className="review-item">
                     <span className="review-label">Funds Usage:</span>
                     <span className="review-value">{formData.fundsUsage}</span>
                   </div>
                 </div>
 
-                <div className="review-section">
-                  <h3 className="review-section-title">Host Information</h3>
-                  <div className="review-item">
-                    <span className="review-label">Host Name:</span>
-                    <span className="review-value">
-                      {event?.hostId ? `${event.hostId.firstname} ${event.hostId.lastname}` : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="review-item">
-                    <span className="review-label">Host ID:</span>
-                    <span className="review-value">{event?.hostId?._id || 'N/A'}</span>
-                  </div>
-                </div>
-
                 <div className="form-group form-check">
-                  <input type="checkbox" className="form-check-input" id="termsCheck" required />
-                  <label className="form-check-label" htmlFor="termsCheck">
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    id="termsCheck"
+                    checked={isTermsChecked}
+                    onChange={handleCheckboxChange}
+                    required
+                    disabled={loading}
+                  />
+                  <label className="form-check-label" htmlFor="termsCheck" aria-required>
                     I confirm that all information is accurate and I have permission to share the recipient's story.
                   </label>
+                  {errors.termsCheck && <div className="text-danger mt-2">{errors.termsCheck}</div>}
                 </div>
+                {errors.submit && <div className="text-danger mt-2">{errors.submit}</div>}
               </div>
             )}
 
             <div className="form-navigation">
               {currentStep > 1 && (
-                <button type="button" className="btn btn-outline-primary" onClick={prevStep}>
+                <button type="button" className="btn btn-outline-primary" onClick={prevStep} disabled={loading}>
                   Back
                 </button>
               )}
               {currentStep < totalSteps ? (
-                <button type="button" className="btn btn-primary" onClick={nextStep}>
+                <button type="button" className="btn btn-primary" onClick={nextStep} disabled={loading}>
                   Continue
                 </button>
               ) : (
-                <button type="submit" className="btn btn-primary">
-                  Save Changes
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={loading || !isTermsChecked}
+                >
+                  {loading ? 'Saving...' : 'Save Changes'}
                 </button>
               )}
             </div>

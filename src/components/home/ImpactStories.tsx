@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import '../../styles/impact-stories.css';
 
+
+
+
+
+
+
 interface StoryProps {
   image: string;
   quote: string;

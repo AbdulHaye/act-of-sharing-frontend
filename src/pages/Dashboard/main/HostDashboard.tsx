@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Calendar, Users, DollarSign, Plus, ChevronRight, Star } from "lucide-react"
@@ -11,19 +13,41 @@ const HostDashboard: React.FC = () => {
   const { user } = useAuth()
   const { events, getHostSpecificEvents } = useEvent()
   const navigate = useNavigate()
+  const [totalRaised, setTotalRaised] = useState(0)
 
-  // Fetch host-specific events when the component mounts
+  // Fetch host-specific events and total raised when the component mounts
   useEffect(() => {
     if (user?._id) {
       getHostSpecificEvents(); // Fetch only events created by this host
+      fetchTotalRaised();
     }
   }, [user, getHostSpecificEvents])
+
+  // Fetch total raised from contributions for this host's events
+  const fetchTotalRaised = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/contributions/total-funds`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": localStorage.getItem("token") || "",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch total raised");
+      }
+      const data = await response.json();
+      setTotalRaised(Number(data.totalFunds) || 0);
+    } catch (error) {
+      console.error("Error fetching total raised:", error);
+      setTotalRaised(0);
+    }
+  };
 
   // Compute stats dynamically
   const stats = React.useMemo(() => {
     const totalEvents = events.length
     const totalGuests = events.reduce((sum, event) => sum + (Number(event.guestCount) || 0), 0)
-    const totalRaised = events.reduce((sum, event) => sum + (Number(event.goalAmount) || 0), 0)
     const pastEvents = events.filter(event => new Date(event.date) < new Date())
     const avgRating = pastEvents.length > 0
       ? pastEvents.reduce((sum, event) => sum + (event.rating || 4.5), 0) / pastEvents.length
@@ -35,7 +59,7 @@ const HostDashboard: React.FC = () => {
       { id: 3, title: "Total Raised", value: `$${totalRaised.toLocaleString()}`, icon: <DollarSign size={24} />, change: `+$${events.filter(e => new Date(e.createdAt).getMonth() === new Date().getMonth()).reduce((sum, e) => sum + (Number(e.goalAmount) || 0), 0).toLocaleString()} this month` },
       { id: 4, title: "Avg. Rating", value: avgRating.toFixed(1), icon: <Star size={24} />, change: `from ${pastEvents.length} reviews` },
     ]
-  }, [events])
+  }, [events, totalRaised])
 
   // Filter and format upcoming events
   const upcomingEvents = React.useMemo(() => {
@@ -56,7 +80,7 @@ const HostDashboard: React.FC = () => {
     return events
       .filter(event => new Date(event.date) < new Date())
       .map(event => ({
-        id: event._id, // Updated to use _id
+        id: event._id,
         name: event.title || "Unnamed Event",
         date: new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         guests: Number(event.guestCount) || 0,
@@ -93,7 +117,7 @@ const HostDashboard: React.FC = () => {
           <div className="card-body p-4">
             <div className="row align-items-center">
               <div className="col-12 col-md-8">
-                <h2 className="mb-2"> {userName}!</h2>
+                <h2 className="mb-2 text-white"> {userName}!</h2>
                 <p className="mb-md-0">
                   You have <strong>{upcomingEvents.length} upcoming events</strong> scheduled. Your events have raised{" "}
                   <strong>{stats.find(stat => stat.title === "Total Raised")?.value || "$0"}</strong>{" "}
@@ -121,7 +145,7 @@ const HostDashboard: React.FC = () => {
                   </div>
                   <h3 className="stat-value">{stat.value}</h3>
                   <p className="stat-title text-muted mb-0">{stat.title}</p>
-                  <small className="text-primary">{stat.change}</small>
+                  {/* <small className="text-primary">{stat.change}</small> */}
                 </div>
               </div>
             </div>

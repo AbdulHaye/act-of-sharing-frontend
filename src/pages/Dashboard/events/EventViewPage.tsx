@@ -146,12 +146,12 @@ const EventViewPage: React.FC = () => {
                         onError={handleImageError}
                         style={{ display: "block", maxHeight: "300px", objectFit: "cover" }}
                       />
-                      <div
+                      {/* <div
                         className="bg-light d-flex align-items-center justify-content-center rounded"
                         style={{ height: "300px", display: "none" }}
                       >
                         <Calendar size={32} className="text-muted" />
-                      </div>
+                      </div> */}
                     </>
                   ) : (
                     <div
@@ -245,7 +245,7 @@ const EventViewPage: React.FC = () => {
               <p>
                 Passionate about bringing people together to create positive change in our community.
               </p>
-              <button className="btn btn-outline-primary">Contact Host</button>
+              {/* <button className="btn btn-outline-primary">Contact Host</button> */}
             </div>
           </div>
         </div>

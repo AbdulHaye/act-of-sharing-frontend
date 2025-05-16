@@ -1,17 +1,19 @@
+"use client"
+
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
-import axiosInstance from "../../../api/axiosInstance"; // Adjust the import path as needed
-import { useAuth } from "../../../context/AuthContext"; // Import useAuth to get user role
-import '../../../styles/contributions-page.css'; // Uncommented for consistent styling
-import { toast } from "react-toastify"; // Import toast for notifications
-import '../../../styles/loader.css'
+import axiosInstance from "../../../api/axiosInstance";
+import { useAuth } from "../../../context/AuthContext";
+import '../../../styles/contributions-page.css';
+import { toast } from "react-toastify";
+import '../../../styles/loader.css';
 
-const UsersPage: React.FC = () => {
+const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user } = useAuth(); // Get the current user and role
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const { user } = useAuth();
+  const [selectedUser, setSelectedUser] = useState(null);
   const [editFormData, setEditFormData] = useState({
     firstname: "",
     lastname: "",
@@ -30,7 +32,10 @@ const UsersPage: React.FC = () => {
             "x-auth-token": token,
           },
         });
-        setUsers(response.data);
+        const sortedUsers = response.data.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setUsers(sortedUsers);
         setError(null);
       } catch (err) {
         setError("Failed to fetch users: " + (err.response?.data?.message || err.message));
@@ -42,7 +47,7 @@ const UsersPage: React.FC = () => {
     fetchUsers();
   }, []);
 
-  const handleDelete = async (userId: string) => {
+  const handleDelete = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
         const token = localStorage.getItem("token");
@@ -53,7 +58,7 @@ const UsersPage: React.FC = () => {
           },
         });
         setUsers(users.filter((u) => u._id !== userId));
-        toast.success("User deleted successfully"); // Add toast notification for delete
+        toast.success("User deleted successfully");
       } catch (err) {
         setError("Failed to delete user: " + (err.response?.data?.message || err.message));
         console.error("Delete error:", err);
@@ -61,7 +66,7 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
+  const handleEdit = async (e) => {
     e.preventDefault();
     if (!selectedUser) return;
 
@@ -86,14 +91,14 @@ const UsersPage: React.FC = () => {
       ));
       setSelectedUser(null);
       setError(null);
-      toast.success("User updated successfully"); // Add toast notification for update
+      toast.success("User updated successfully");
     } catch (err) {
       setError("Failed to update user: " + (err.response?.data?.message || err.message));
       console.error("Edit error:", err);
     }
   };
 
-  const openEditModal = (user: any) => {
+  const openEditModal = (user) => {
     setSelectedUser(user);
     setEditFormData({
       firstname: user.firstname,
@@ -108,72 +113,115 @@ const UsersPage: React.FC = () => {
     setError(null);
   };
 
-    if (loading) {
+  if (loading) {
     return (
       <div className="loader-container">
         <div className="spinner"></div>
       </div>
     );
   }
+
   if (error) return <div>{error}</div>;
 
   return (
     <DashboardLayout>
-      <div className="container-fluid p-4">
-        <div className="card border-0 shadow-sm w-100">
+      <div className="container-fluid p-4 h-full">
+        <div className="card border-0 shadow-sm w-100 h-full flex flex-col">
           <div className="card-header bg-white">
             <h5 className="card-title mb-0">Users</h5>
           </div>
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table-custom mb-0">
-                <thead>
+          <div className="card-body p-0 flex-1 overflow-hidden">
+            <div style={{ position: "relative", height: "calc(100vh - 180px)" }}>
+              <table className="table-custom mb-0 users-table" style={{ tableLayout: "fixed", width: "100%" }}>
+                <thead style={{ position: "sticky", top: 0, zIndex: 10, backgroundColor: "#5144A1" }}>
                   <tr>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>ID</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>First Name</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Last Name</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Email</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Role</th>
+                    <th className="table-header" style={{ width: "10%" }}>ID</th>
+                    <th className="table-header" style={{ width: "20%" }}>First Name</th>
+                    <th className="table-header" style={{ width: "20%" }}>Last Name</th>
+                    <th className="table-header" style={{ width: "25%" }}>Email</th>
+                    <th className="table-header" style={{ width: "15%" }}>Role</th>
                     {user?.role === "admin" && (
-                      <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Actions</th>
+                      <th className="table-header" style={{ width: "15%" }}>Actions</th>
                     )}
                   </tr>
                 </thead>
-                <tbody>
-                  {users.map((userItem, index) => (
-                    <tr key={userItem._id}>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{index + 1}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{userItem.firstname}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{userItem.lastname}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{userItem.email}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{userItem.role}</td>
-                      {user?.role === "admin" && (
-                        <td style={{ padding: "12px 20px", color: "#1F2937" }}>
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => openEditModal(userItem)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-outline-primary ms-2"
-                            onClick={() => handleDelete(userItem._id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
               </table>
+              <div style={{ overflowY: "auto", overflowX: "hidden", height: "calc(100% - 60px)" }}>
+                {users.length === 0 ? (
+                  <div className="text-center py-5">
+                    <svg
+                      width="128"
+                      height="128"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mx-auto mb-3"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 8v1m0 4v3m-4-2h8"/>
+                    </svg>
+                    <h5 className="text-muted">No data here</h5>
+                  </div>
+                ) : (
+                  <table className="table-custom mb-0 users-table" style={{ tableLayout: "fixed", width: "100%" }}>
+                    <tbody>
+                      {users.map((userItem, index) => (
+                        <tr key={userItem._id}>
+                          <td className="table-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{index + 1}</td>
+                          <td className="table-cell" style={{ width: "20%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userItem.firstname}</td>
+                          <td className="table-cell" style={{ width: "20%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userItem.lastname}</td>
+                          <td className="table-cell email-cell" style={{ width: "25%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userItem.email}</td>
+                          <td className="table-cell" style={{ width: "15%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userItem.role}</td>
+                          {user?.role === "admin" && (
+                            <td className="table-cell actions-cell" style={{ width: "15%" }}>
+                              <div style={{ display: "inline-flex", gap: "1rem" }}>
+                                <button
+                                  className="btn btn-outline-primary"
+                                  onClick={() => openEditModal(userItem)}
+                                  style={{ minWidth: "80px" }}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="btn btn-outline-primary"
+                                  onClick={() => handleDelete(userItem._id)}
+                                  style={{ minWidth: "80px" }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Modal for Editing User */}
         {selectedUser && user?.role === "admin" && (
-          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div
+            className="modal"
+            tabIndex={-1}
+            style={{
+              display: "block",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1050,
+            }}
+          >
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">

@@ -17,10 +17,8 @@ const ContactPage: React.FC = () => {
     message: "",
   });
 
-  // Base URL for the backend
   const baseUrl = "https://commonchange-backend.onrender.com";
 
-  // Fetch all contacts on component mount
   useEffect(() => {
     const fetchContacts = async () => {
       setLoading(true);
@@ -38,7 +36,10 @@ const ContactPage: React.FC = () => {
         }
 
         const data = await response.json();
-        setContacts(data);
+        const sortedContacts = data.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setContacts(sortedContacts);
       } catch (err: any) {
         setError(err.message || "An error occurred while fetching contacts");
         toast.error(err.message || "Failed to fetch contacts");
@@ -50,7 +51,6 @@ const ContactPage: React.FC = () => {
     fetchContacts();
   }, []);
 
-  // Handle delete contact
   const handleDelete = async (contactId: string) => {
     if (window.confirm("Are you sure you want to delete this contact?")) {
       try {
@@ -73,12 +73,10 @@ const ContactPage: React.FC = () => {
     }
   };
 
-  // Handle edit form submission
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedContact) return;
 
-    // Email validation
     const emailRegex = /^\S+@\S+\.\S+$/;
     if (!emailRegex.test(editFormData.email)) {
       toast.error("Please enter a valid email address");
@@ -159,33 +157,62 @@ const ContactPage: React.FC = () => {
                     )}
                   </tr>
                 </thead>
-                <tbody>
-                  {contacts.map((contact, index) => (
-                    <tr key={contact._id}>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{index + 1}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{contact.name}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{contact.email}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{contact.message || "N/A"}</td>
-                      {user?.role === "admin" && (
-                        <td style={{ padding: "12px 20px", color: "#1F2937" }}>
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => openEditModal(contact)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-outline-primary ms-2"
-                            onClick={() => handleDelete(contact._id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
               </table>
+              <div style={{ overflowY: "auto", overflowX: "hidden", height: "calc(100vh - 180px)" }}>
+                {contacts.length === 0 ? (
+                  <div className="text-center py-5">
+                    <svg
+                      width="128"
+                      height="128"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mx-auto mb-3"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 8v1m0 4v3m-4-2h8"/>
+                    </svg>
+                    <h5 className="text-muted">No data here</h5>
+                  </div>
+                ) : (
+                  <table className="table-custom mb-0">
+                    <tbody>
+                      {contacts.map((contact, index) => (
+                        <tr key={contact._id}>
+                          <td className="table-cell" style={{ padding: "12px 20px", color: "#1F2937" }}>{index + 1}</td>
+                          <td className="table-cell" style={{ padding: "12px 20px", color: "#1F2937" }}>{contact.name}</td>
+                          <td className="table-cell" style={{ padding: "12px 20px", color: "#1F2937" }}>{contact.email}</td>
+                          <td className="table-cell" style={{ padding: "12px 20px", color: "#1F2937" }}>{contact.message || "N/A"}</td>
+                          {user?.role === "admin" && (
+                            <td className="table-cell" style={{ padding: "12px 20px", color: "#1F2937" }}>
+                              <div style={{ display: "inline-flex", gap: "1rem" }}>
+                                <button
+                                  className="btn btn-outline-primary"
+                                  onClick={() => openEditModal(contact)}
+                                  style={{ minWidth: "80px" }}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="btn btn-outline-primary"
+                                  onClick={() => handleDelete(contact._id)}
+                                  style={{ minWidth: "80px" }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </div>
         </div>

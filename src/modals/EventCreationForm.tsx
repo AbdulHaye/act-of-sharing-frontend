@@ -29,7 +29,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
   const { createEvent, loading, error } = useEvent();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [isTermsChecked, setIsTermsChecked] = useState(false); // New state for checkbox
+  const [isTermsChecked, setIsTermsChecked] = useState(false); // State for checkbox
   const totalSteps = 3;
   const [formData, setFormData] = useState<EventFormData>({
     name: "",
@@ -72,8 +72,8 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       }
       if (!formData.fundingGoal) {
         errors.fundingGoal = "Funding goal is required";
-      } else if (isNaN(Number(formData.fundingGoal)) || Number(formData.fundingGoal) < 100) {
-        errors.fundingGoal = "Funding goal must be at least 100";
+      } else if (isNaN(Number(formData.fundingGoal)) || Number(formData.fundingGoal) < 25) {
+        errors.fundingGoal = "Funding goal must be at least 25";
       }
       if (!formData.description) errors.description = "Description is required";
       if (!formData.visibility) errors.visibility = "Event visibility is required";
@@ -115,9 +115,8 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       setErrors(allErrors);
       return;
     }
-    // No alert for terms; validation is handled by the required attribute and button disabling
     if (!isTermsChecked) {
-      setErrors({ termsCheck: "Please agree to the terms" });
+      setErrors((prev) => ({ ...prev, termsCheck: "Please check the box" }));
       return;
     }
 
@@ -128,9 +127,10 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
 
     await createEvent(eventDataWithCreator);
     if (!error) {
-      // alert("Event created successfully!");
       toast.success("Event created successfully!");
       onClose();
+    } else {
+      setErrors((prev) => ({ ...prev, submit: error }));
     }
   };
 
@@ -150,13 +150,15 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     setIsTermsChecked(e.target.checked);
     if (e.target.checked) {
       setErrors((prev) => ({ ...prev, termsCheck: "" }));
+    } else {
+      setErrors((prev) => ({ ...prev, termsCheck: "Please check the box" }));
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full m-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b">
+        <div className="flex justify-between items-center p-6 border-b pt-10"> {/* Added pt-10 for top spacing */}
           <h3 className="text-xl font-semibold">Create New Event</h3>
           <button className="text-gray-500 hover:text-gray-700" disabled={loading} onClick={onClose}>
             <X size={24} />
@@ -299,7 +301,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                           value={formData.fundingGoal}
                           onChange={handleInputChange}
                           className="form-control"
-                          placeholder="e.g., 500"
+                          placeholder="e.g., 25-100 or more"
                           min="100"
                           required
                           disabled={loading}
@@ -547,7 +549,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                     required
                     disabled={loading}
                   />
-                  <label className="form-check-label" htmlFor="termsCheck">
+                  <label className="form-check-label" htmlFor="termsCheck" aria-required>
                     I confirm that all information is accurate and I have permission to share the recipient's story.
                   </label>
                   {errors.termsCheck && <div className="text-danger mt-2">{errors.termsCheck}</div>}

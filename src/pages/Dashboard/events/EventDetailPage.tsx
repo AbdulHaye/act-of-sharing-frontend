@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Users, DollarSign, Share2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users } from 'lucide-react';
 import { useEvent } from '../../../context/EventContext';
 import '../../../styles/event-detail.css';
 
@@ -8,7 +8,6 @@ const EventDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { getEventById, loading, error } = useEvent();
   const [event, setEvent] = useState<any>(null);
-  const [contribution, setContribution] = useState<number>(25);
   const [activeTab, setActiveTab] = useState<string>('details');
 
   // Fetch event data
@@ -17,28 +16,31 @@ const EventDetailPage: React.FC = () => {
       if (id) {
         const fetchedEvent = await getEventById(id);
         if (fetchedEvent) {
-          // Map API response to component's expected structure
           const formattedEvent = {
             id: fetchedEvent._id,
-            title: fetchedEvent.title,
-            image: fetchedEvent.imageUrl || 'https://via.placeholder.com/800x400', // Fallback image
+            title: fetchedEvent.title || 'Untitled Event',
+            image: fetchedEvent.imageUrl || 'https://via.placeholder.com/800x400',
             date: new Date(fetchedEvent.date).toLocaleDateString('en-US', {
               month: 'long',
               day: 'numeric',
               year: 'numeric',
             }),
-            time: fetchedEvent.time,
-            location: fetchedEvent.location,
-            hostName: fetchedEvent.createdBy || 'Unknown Host', // Adjust based on your API
-            hostImage: 'https://via.placeholder.com/100', // Placeholder, update if host image is available
+            time: fetchedEvent.time || 'N/A',
+            location: fetchedEvent.location || 'Not specified',
+            hostName: fetchedEvent.hostId ? `${fetchedEvent.hostId.firstname} ${fetchedEvent.hostId.lastname}` : 'Unknown Host',
+            hostImage: 'https://via.placeholder.com/100',
             attendees: fetchedEvent.guests?.length || 0,
-            maxAttendees: fetchedEvent.guestCount,
-            raised: fetchedEvent.currentAmount,
-            goal: fetchedEvent.goalAmount,
-            description: fetchedEvent.description,
-            recipientName: fetchedEvent.recipient.name,
-            recipientImage: fetchedEvent.recipient.photoUrl || 'https://via.placeholder.com/100', // Fallback image
-            recipientStory: fetchedEvent.recipient.story,
+            maxAttendees: fetchedEvent.guestCount || 0,
+            raised: fetchedEvent.currentAmount || 0,
+            goal: fetchedEvent.goalAmount || 0,
+            description: fetchedEvent.description || 'No description available',
+            recipient: {
+              name: fetchedEvent.recipient?.name || 'Unknown Recipient',
+              categoryOfNeed: fetchedEvent.recipient?.categoryOfNeed || 'Not specified',
+              story: fetchedEvent.recipient?.story || 'No story available',
+              photoUrl: fetchedEvent.recipient?.photoUrl || 'https://via.placeholder.com/100',
+              fundsUsage: fetchedEvent.recipient?.fundsUsage || 'Not specified',
+            },
             updates: [], // Add logic to fetch updates if available in API
             comments: [], // Add logic to fetch comments if available in API
           };
@@ -54,23 +56,20 @@ const EventDetailPage: React.FC = () => {
     return <div className="container mt-5">Loading...</div>;
   }
 
+    const baseUrl =
+    import.meta.env.VITE_BASE_URL ||
+    "https://commonchange-backend.onrender.com";
+
   if (error || !event) {
     return <div className="container mt-5">Error: {error || 'Event not found'}</div>;
   }
-
-  const progressPercentage = Math.min(Math.round((event.raised / event.goal) * 100), 100);
-  const remainingAmount = event.goal - event.raised;
-
-  const handleContributionChange = (amount: number) => {
-    setContribution(amount);
-  };
 
   return (
     <div className="event-detail-page mt-5">
       <div className="event-header">
         <div className="container">
           <div className="event-breadcrumb mb-3">
-            <Link to="/">Home</Link> &gt; <Link to="/events">Events</Link> &gt; <span>Current Event</span>
+            <Link to="/">Home</Link> &gt; <Link to="/">Events</Link> &gt; <span>Current Event</span>
           </div>
           <h1 className="event-title">{event.title}</h1>
         </div>
@@ -80,7 +79,7 @@ const EventDetailPage: React.FC = () => {
         <div className="row">
           <div className="col-lg-12 mb-4 mb-lg-0">
             <div className="event-content-card">
-              <img src={event.image} alt={event.title} className="event-main-image" />
+              <img src={`${baseUrl}${event.image}`} alt={event.title} className="event-main-image" />
 
               <div className="event-tabs">
                 <button
@@ -95,12 +94,12 @@ const EventDetailPage: React.FC = () => {
                 >
                   Recipient Story
                 </button>
-                <button
+                {/* <button
                   className={`event-tab ${activeTab === 'updates' ? 'active' : ''}`}
                   onClick={() => setActiveTab('updates')}
                 >
                   Updates & Comments
-                </button>
+                </button> */}
               </div>
 
               <div className="event-tab-content p-4">
@@ -136,22 +135,22 @@ const EventDetailPage: React.FC = () => {
                       <div className="event-detail-item">
                         <Users size={20} />
                         <div>
-                          <h4>Attendees</h4>
-                          <p>{event.attendees} of {event.maxAttendees} spots filled</p>
+                          <h4>Guests</h4>
+                          <p>{event.maxAttendees}</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="event-host mt-5">
-                      <h3 className="mb-4">Your Host</h3>
+                      <h3 className="mb-4">Event Host</h3>
                       <div className="host-card">
-                        <img src={event.hostImage} alt={event.hostName} className="host-image" />
+                        <img src={`${baseUrl}${event.recipient.photoUrl}`} alt={event.hostName} className="host-image" />
                         <div className="host-info">
                           <h4>{event.hostName}</h4>
                           <p className="host-bio">
                             Passionate about bringing people together to create positive change in our community.
                           </p>
-                          <button className="btn btn-outline-primary btn-sm">Contact Host</button>
+                          {/* <button className="btn btn-outline-primary btn-sm">Contact Host</button> */}
                         </div>
                       </div>
                     </div>
@@ -161,22 +160,21 @@ const EventDetailPage: React.FC = () => {
                 {activeTab === 'recipient' && (
                   <div className="recipient-story">
                     <div className="recipient-header mb-4">
-                      <img src={event.recipientImage} alt={event.recipientName} className="recipient-image" />
+                      <img src={`${baseUrl}${event.recipient.photoUrl}`} alt={event.recipient.name} className="recipient-image" />
                       <div className="recipient-info">
-                        <h3>Meet {event.recipientName}</h3>
+                        <h3>Meet {event.recipient.name}</h3>
                         <span className="recipient-need-category">{event.recipient.categoryOfNeed}</span>
                       </div>
                     </div>
 
                     <div className="recipient-content">
                       <h4>Their Story</h4>
-                      {event.recipientStory.split('\n\n').map((paragraph: string, index: number) => (
+                      {event.recipient.story.split('\n\n').map((paragraph: string, index: number) => (
                         <p key={index}>{paragraph}</p>
                       ))}
 
                       <h4 className="mt-4">How Funds Will Help</h4>
                       <div className="funds-usage">
-                        {/* Parse fundsUsage if it's a string, or adjust based on API */}
                         <div className="fund-item">
                           <div className="fund-amount">TBD</div>
                           <div className="fund-purpose">{event.recipient.fundsUsage}</div>

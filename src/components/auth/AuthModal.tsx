@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { X, Eye, EyeOff, Heart } from "lucide-react"
 import "../../styles/auth-modal.css"
 import { useAuth } from "../../context/AuthContext"
+import { toast } from "react-toastify";
 
 interface AuthModalProps {
   mode: "login" | "signup"
@@ -15,7 +16,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
   const [lastname, setlastname] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState("guest")
+  const [role, setRole] = useState("host")
   const [showPassword, setShowPassword] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [message, setMessage] = useState<{ text: string, type: "error" | "success" } | null>(null)
@@ -51,6 +52,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
         }
         await register({ firstname, lastname, email, password, role })
         setMessage({ text: "User registered successfully", type: "success" })
+              toast.success("registered succcessfully");
       } else {
         await login(email, password)
       }
@@ -158,7 +160,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
             <div className="auth-form-group">
               <label htmlFor="role">Role</label>
               <select id="role" value={role} onChange={(e) => setRole(e.target.value)} className="auth-input">
-                <option value="guest">Guest</option>
+                {/* <option value="guest">Guest</option> */}
                 <option value="host">Host</option>
                 {/* <option value="admin">Admin</option> */}
               </select>

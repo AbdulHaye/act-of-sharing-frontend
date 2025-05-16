@@ -125,7 +125,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscripti
       // Step 2: Send the paymentMethodId to the backend to create a payment intent
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/contributions/donate`, {
         eventId,
-        amount: Number.parseFloat(amount) * 100, // Convert to cents for Stripe
+        amount: Number.parseFloat(amount), // Convert to cents for Stripe
         subscriptionType,
         paymentMethodId: paymentMethod!.id,
         ...formData,

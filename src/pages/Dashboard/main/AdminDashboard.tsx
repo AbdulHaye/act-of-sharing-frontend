@@ -9,8 +9,9 @@ import { useAuth } from "../../../context/AuthContext"
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { events, getEvents} = useEvent();
+  const { events, getEvents } = useEvent();
   const [users, setUsers] = React.useState<any[]>([]);
+  const [totalRaised, setTotalRaised] = React.useState(0);
 
   // Fetch users from the API
   const fetchUsers = async () => {
@@ -19,11 +20,9 @@ const AdminDashboard: React.FC = () => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "x-auth-token": localStorage.getItem("token") || "", // Assuming token is stored in localStorage
+          "x-auth-token": localStorage.getItem("token") || "",
         },
       });
-      console.error("Response:", response); // Log the response for debugging
-      
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
@@ -31,16 +30,36 @@ const AdminDashboard: React.FC = () => {
       setUsers(data);
     } catch (error) {
       console.error("Error fetching users:", error);
-      setUsers([]); // Fallback to empty array on error
+      setUsers([]);
+    }
+  };
+
+  // Fetch total raised from contributions
+  const fetchTotalRaised = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/contributions/total-funds`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": localStorage.getItem("token") || "",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch total raised");
+      }
+      const data = await response.json();
+      setTotalRaised(Number(data.totalFunds) || 0);
+    } catch (error) {
+      console.error("Error fetching total raised:", error);
+      setTotalRaised(0);
     }
   };
 
   // Fetch data when the component mounts
   useEffect(() => {
-    console.log("User:", user); // Log the user for debugging
     if (user) {
-      // fetchEvents(); // Fetch all events (admin sees all, not filtered by user)
-      fetchUsers(); // Fetch all users
+      fetchUsers();
+      fetchTotalRaised();
     }
   }, [user, getEvents]);
 
@@ -48,9 +67,6 @@ const AdminDashboard: React.FC = () => {
   const stats = React.useMemo(() => {
     const totalUsers = users.length;
     const totalEvents = events.length;
-    const totalRaised = events.reduce((sum, event) => sum + (Number(event.goalAmount) || 0), 0);
-
-    // Calculate growth rate (e.g., new users this month vs. last month)
     const thisMonth = new Date().getMonth();
     const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
     const thisMonthUsers = users.filter(u => new Date(u.createdAt).getMonth() === thisMonth).length;
@@ -63,40 +79,31 @@ const AdminDashboard: React.FC = () => {
         title: "Total Users",
         value: totalUsers.toString(),
         icon: <Users size={24} />,
-        change: `+${users.filter(u => new Date(u.createdAt).getMonth() === thisMonth).length} this month`,
-        isPositive: true,
       },
       {
         id: 2,
         title: "Total Events",
         value: totalEvents.toString(),
         icon: <Calendar size={24} />,
-        change: `+${events.filter(e => new Date(e.createdAt).getMonth() === thisMonth).length} this month`,
-        isPositive: true,
       },
       {
         id: 3,
         title: "Total Raised",
         value: `$${totalRaised.toLocaleString()}`,
         icon: <DollarSign size={24} />,
-        change: `+$${events.filter(e => new Date(e.createdAt).getMonth() === thisMonth).reduce((sum, e) => sum + (Number(e.goalAmount) || 0), 0).toLocaleString()} this month`,
-        isPositive: true,
       },
       {
         id: 4,
         title: "Growth Rate",
         value: `${growthRate.toFixed(1)}%`,
         icon: <TrendingUp size={24} />,
-        change: `${growthRate >= 0 ? "+" : ""}${growthRate.toFixed(1)}%`,
-        isPositive: growthRate >= 0,
       },
     ];
-  }, [events, users]);
+  }, [events, users, totalRaised]);
 
   // Recent events (sorted by date, most recent first)
   const recentEvents = React.useMemo(() => {
     return events
-      // .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .map(event => ({
         id: event.id,
         name: event.title || "Unnamed Event",
@@ -105,8 +112,7 @@ const AdminDashboard: React.FC = () => {
         goalAmount: event.goalAmount,
         guests: Number(event.guestCount) || 0,
         status: event.status,
-      }))
-      // .slice(0, 4);
+      }));
   }, [events]);
 
   // Recent users (sorted by join date, most recent first)
@@ -124,110 +130,116 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <DashboardLayout userRole="admin" userName={user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "Admin User"}>
-      <div className="container-fluid p-4">
-        {/* Stats Row */}
-        <div className="row g-4 mb-4">
-          {stats.map((stat) => (
-            <div key={stat.id} className="col-12 col-md-6 col-xl-3">
-              <div className="card h-100 border-0 shadow-sm">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div className="stat-icon">{stat.icon}</div>
-                    <div className={`stat-change ${stat.isPositive ? "text-success" : "text-danger"}`}>
-                      {stat.isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                      <span>{stat.change}</span>
+      <div className="dashboard-static-container">
+        <div className="container-fluid p-4">
+          {/* Stats Row */}
+          <div className="row g-4 mb-4">
+            {stats.map((stat) => (
+              <div key={stat.id} className="col-12 col-md-6 col-xl-3">
+                <div className="card h-100 border-0 shadow-sm">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <div className="stat-icon">{stat.icon}</div>
+                    </div>
+                    <h3 className="stat-value">{stat.value}</h3>
+                    <p className="stat-title text-muted mb-0">{stat.title}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tables Row */}
+          <div className="row g-4">
+            <div className="col-12 col-lg-6">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-white d-flex justify-content-between align-items-center">
+                  <h5 className="card-title mb-0">Recent Events</h5>
+                </div>
+                <div className="card-body p-0">
+                  <div style={{ position: "relative", height: "calc(100vh - 300px)" }}>
+                    <table className="table-custom mb-0 events-table">
+                      <thead style={{ position: "sticky", top: 0, zIndex: 10, backgroundColor: "#5144A1" }}>
+                        <tr>
+                          <th className="table-header">Event Name</th>
+                          <th className="table-header">Location</th>
+                          <th className="table-header">Date</th>
+                          <th className="table-header">Amount</th>
+                          <th className="table-header">Guests</th>
+                          <th className="table-header">Status</th>
+                        </tr>
+                      </thead>
+                    </table>
+                    <div style={{ overflowY: "auto", overflowX: "hidden", height: "calc(100% - 60px)" }}>
+                      <table className="table-custom mb-0 events-table">
+                        <tbody>
+                          {recentEvents.map((event) => (
+                            <tr key={event.id}>
+                              <td className="table-cell">{event.name}</td>
+                              <td className="table-cell">{event.location}</td>
+                              <td className="table-cell">{event.date}</td>
+                              <td className="table-cell text-success fw-semibold">{event.goalAmount}</td>
+                              <td className="table-cell text-success fw-semibold">{event.guests}</td>
+                              <td className="table-cell">{event.status}</td>
+                            </tr>
+                          ))}
+                          {recentEvents.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="text-center text-muted">
+                                No events found
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-                  <h3 className="stat-value">{stat.value}</h3>
-                  <p className="stat-title text-muted mb-0">{stat.title}</p>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Tables Row */}
-        <div className="row g-4">
-          <div className="col-12 col-lg-6">
-            <div className="card border-0 shadow-sm">
-              <div className="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 className="card-title mb-0">Recent Events</h5>
-                {/* <Link to="/dashboard/events" className="btn btn-sm btn-link text-primary">
-                  View All <ChevronRight size={16} />
-                </Link> */}
-              </div>
-              <div className="card-body p-0">
-                <div className="table-responsive">
-                  <table className="table table-hover mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Event Name</th>
-                        <th>Location</th>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Guests</th>
-                        <th>status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentEvents.map((event) => (
-                        <tr key={event.id}>
-                          <td>{event.name}</td>
-                          <td>{event.location}</td>
-                          <td>{event.date}</td>
-
-                          <td className="text-success fw-semibold">{event.goalAmount}</td>
-                          <td className="text-success fw-semibold">{event.guests}</td>
-                          <td>{event.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <div className="col-12 col-lg-6">
+              <div className="card border-0 shadow-sm">
+                <div className="card-header bg-white d-flex justify-content-between align-items-center">
+                  <h5 className="card-title mb-0">All Users</h5>
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-12 col-lg-6">
-            <div className="card border-0 shadow-sm">
-              <div className="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 className="card-title mb-0">All Users</h5>
-                {/* <Link to="/dashboard/users" className="btn btn-sm btn-link text-primary">
-                  View Details <ChevronRight size={16} />
-                </Link> */}
-              </div>
-              <div className="card-body p-0">
-                <div className="table-responsive">
-                  <table className="table table-hover mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Joined</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentUsers.map((user) => (
-                        <tr key={user._id}>
-                          <td>{user.name}</td>
-                          <td>{user.email}</td>
-                          <td>
-                            <span className={`badge ${user.role === "Host" ? "bg-primary" : "bg-primary"}`}>
-                              {user.role}
-                            </span>
-                          </td>
-                          <td>{user.joined}</td>
-                        </tr>
-                      ))}
-                      {recentUsers.length === 0 && (
+                <div className="card-body p-0">
+                  <div style={{ position: "relative", height: "calc(100vh - 300px)" }}>
+                    <table className="table-custom mb-0 users-table">
+                      <thead style={{ position: "sticky", top: 0, zIndex: 10, backgroundColor: "#5144A1" }}>
                         <tr>
-                          <td colSpan={4} className="text-center text-muted">
-                            No users found
-                          </td>
+                          <th className="table-header">Name</th>
+                          <th className="table-header">Email</th>
+                          <th className="table-header">Role</th>
+                          <th className="table-header">Joined</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                    </table>
+                    <div style={{ overflowY: "auto", overflowX: "hidden", height: "calc(100% - 60px)" }}>
+                      <table className="table-custom mb-0 users-table">
+                        <tbody>
+                          {recentUsers.map((user) => (
+                            <tr key={user.id}>
+                              <td className="table-cell">{user.name}</td>
+                              <td className="table-cell">{user.email}</td>
+                              <td className="table-cell">
+                                <span className={`badge ${user.role === "Host" ? "bg-primary" : "bg-primary"}`}>
+                                  {user.role}
+                                </span>
+                              </td>
+                              <td className="table-cell">{user.joined}</td>
+                            </tr>
+                          ))}
+                          {recentUsers.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="text-center text-muted">
+                                No users found
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

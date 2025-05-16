@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";
 import HomePage from "./pages/HomePage";
@@ -28,7 +28,7 @@ import CheckoutPage from "./pages/Dashboard/user/checkout-page";
 import ContributionsPage from "./pages/Dashboard/user/Contributions-Page";
 import UsersPage from "./pages/Dashboard/user/UsersPage";
 import RequestsPage from "./pages/Dashboard/user/RequestsPage";
-import ContactPage from "./pages/Dashboard/user/ContanctPage"; // Fixed typo: ContanctPage -> ContactPage
+import ContactPage from "./pages/Dashboard/user/ContanctPage"; // Typo corrected here
 
 const stripePromise = loadStripe(
   "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
@@ -45,26 +45,26 @@ const DashboardRedirect: React.FC = () => {
 };
 
 function App() {
+  const location = useLocation();
+  const hideNavbarAndFooter = location.pathname.startsWith("/payment/") || location.pathname.startsWith("/dashboard");
+
   return (
     <Elements stripe={stripePromise}>
       <AuthProvider>
         <EventProvider>
           <div className="app-container d-flex flex-column min-vh-100">
-            <Routes>
-              <Route path="/dashboard/*" element={null} />
-              <Route path="/payment/:eventId" element={<DonationPage />} />
-              <Route path="/checkout/:eventId" element={<CheckoutPage />} />
-
-              <Route path="*" element={<Navbar />} />
-            </Routes>
-
+            
+            {!hideNavbarAndFooter && <Navbar />}
+            
             <main className="flex-grow-1">
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
                 <Route path="/events/:id" element={<EventDetailPage />} />
-
+                <Route path="/checkout/:eventId" element={<CheckoutPage />} />
+                <Route path="/payment/:eventId" element={<DonationPage />} />
+                
                 <Route element={<ProtectedRoute allowedRoles={["admin", "host"]} />}>
                   <Route path="/create-event" element={<CreateEventPage />} />
                   <Route path="/dashboard/invite" element={<InvitePage />} />
@@ -81,16 +81,14 @@ function App() {
                     <Route path="contributions" element={<ContributionsPage />} />
                     <Route path="users" element={<UsersPage />} />
                     <Route path="requests" element={<RequestsPage />} />
-                    <Route path="messages" element={<ContactPage />} />
+                    <Route path="contactus" element={<ContactPage />} />
                   </Route>
                 </Route>
               </Routes>
             </main>
 
-            <Routes>
-              <Route path="/dashboard/*" element={null} />
-              <Route path="*" element={<Footer />} />
-            </Routes>
+            {!hideNavbarAndFooter && <Footer />}
+
             <ToastContainer
               position="top-center"
               autoClose={1000}
@@ -109,5 +107,6 @@ function App() {
     </Elements>
   );
 }
+
 
 export default App;

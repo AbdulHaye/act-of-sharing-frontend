@@ -40,6 +40,11 @@ const MyEventsPage: React.FC = () => {
     }
   }, [user, getEvents]);
 
+  // Sort events by createdAt in descending order (latest first) after fetching
+  const sortedEvents = [...events].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
   const handleEditEvent = (event: Event) => {
     console.log("Editing event:", event);
     setSelectedEvent(event);
@@ -92,7 +97,7 @@ const MyEventsPage: React.FC = () => {
     return null; // DashboardPage handles redirection
   }
 
-  const userEvents = events;
+  const userEvents = sortedEvents; // Use sorted events
   console.log("User Events:", userEvents);
 
   const filteredEvents = userEvents.filter((event) => {
@@ -174,6 +179,25 @@ const MyEventsPage: React.FC = () => {
                 </div>
                 <p className="mt-3 text-muted">Loading your events...</p>
               </div>
+            ) : filteredEvents.length === 0 ? (
+              <div className="text-center py-5">
+                <svg
+                  width="128"
+                  height="128"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mx-auto mb-3"
+                >
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 8v1m0 4v3m-4-2h8"/>
+                </svg>
+                <h5 className="text-muted">No records found</h5>
+              </div>
             ) : (
               <div className="row g-4">
                 {filteredEvents.map((event) => (
@@ -192,13 +216,15 @@ const MyEventsPage: React.FC = () => {
                             style={{ height: "160px", objectFit: "cover" }}
                             onError={handleImageError}
                           />
-                        ) : null}
-                        {/* <div
-                          className="bg-light d-flex align-items-center justify-content-center"
-                          style={{ height: "160px", display: event.imageUrl ? "none" : "flex" }}
-                        >
-                          <Calendar size={32} className="text-muted" />
-                        </div> */}
+                        ) : (
+                          <div
+                            className="bg-light d-flex align-items-center justify-content-center"
+                            style={{ height: "160px", display: event.imageUrl ? "none" : "flex" }}
+                          >
+                            <Calendar size={32} className="text-muted" />
+                          </div>
+                        )}
+
                         {!isUpcoming(event.date) && (
                           <div className="position-absolute top-0 end-0 m-2 badge bg-dark">
                             Past Event
@@ -290,17 +316,17 @@ const MyEventsPage: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
 
-      <EventEditModal
-        show={showEditModal}
-        onHide={() => {
-          console.log("Closing modal");
-          setShowEditModal(false);
-          setSelectedEvent(null);
-        }}
-        event={selectedEvent}
-      />
+        <EventEditModal
+          show={showEditModal}
+          onHide={() => {
+            console.log("Closing modal");
+            setShowEditModal(false);
+            setSelectedEvent(null);
+          }}
+          event={selectedEvent}
+        />
+      </div>
     </DashboardLayout>
   );
 };

@@ -4,11 +4,9 @@ import axiosInstance from "../../../api/axiosInstance"; // Adjust the import pat
 import { useAuth } from "../../../context/AuthContext"; // Import useAuth to get user role
 import '../../../styles/contributions-page.css'; // Adjust the import path as needed
 import { toast } from "react-toastify";
-import '../../../styles/loader.css'
+import '../../../styles/loader.css';
 
 const ContributionsPage: React.FC = () => {
-
-
   const [contributions, setContributions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,7 +30,11 @@ const ContributionsPage: React.FC = () => {
             "x-auth-token": token,
           },
         });
-        setContributions(response.data);
+        // Sort contributions by createdAt in descending order (latest first)
+        const sortedContributions = response.data.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setContributions(sortedContributions);
         setError(null);
       } catch (err) {
         setError("Failed to fetch contributions: " + (err.response?.data?.message || err.message));
@@ -92,7 +94,7 @@ const ContributionsPage: React.FC = () => {
       ));
       setSelectedContribution(null);
       setError(null);
-       toast.info("Contribution updatd successfully");
+      toast.info("Contribution updated successfully");
     } catch (err) {
       setError("Failed to update contribution: " + (err.response?.data?.message || err.message));
       console.error("Edit error:", err);
@@ -102,14 +104,14 @@ const ContributionsPage: React.FC = () => {
   const openEditModal = (contribution: any) => {
     setSelectedContribution(contribution);
     setEditFormData({
-      eventId: { title: contribution.eventId.title },
+      eventId: { title: contribution.eventId?.title || "" },
       userId: {
-        firstname: contribution.userId.firstname,
-        lastname: contribution.userId.lastname,
-        email: contribution.userId.email,
+        firstname: contribution.userId?.firstname || "",
+        lastname: contribution.userId?.lastname || "",
+        email: contribution.userId?.email || "",
       },
-      amount: contribution.amount.toString(),
-      status: contribution.status,
+      amount: contribution.amount?.toString() || "",
+      status: contribution.status || "",
     });
   };
 
@@ -118,7 +120,7 @@ const ContributionsPage: React.FC = () => {
     setError(null);
   };
 
-   if (loading) {
+  if (loading) {
     return (
       <div className="loader-container">
         <div className="spinner"></div>
@@ -129,58 +131,87 @@ const ContributionsPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="container-fluid p-4">
-        <div className="card border-0 shadow-sm w-100">
+      <div className="container-fluid p-4 h-full">
+        <div className="card border-0 shadow-sm w-100 h-full flex flex-col">
           <div className="card-header bg-white">
             <h5 className="card-title mb-0">Donations</h5>
           </div>
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table-custom mb-0">
-                <thead>
+          <div className="card-body p-0 flex-1 overflow-hidden">
+            <div style={{ position: "relative", height: "calc(100vh - 180px)" }}>
+              <table className="table-custom mb-0 contributions-table">
+                <thead style={{ position: "sticky", top: 0, zIndex: 10, backgroundColor: "#5144A1" }}>
                   <tr>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>ID</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Event Title</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>User Name</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Email</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Amount</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Status</th>
+                    <th className="table-header">ID</th>
+                    <th className="table-header">Event Title</th>
+                    <th className="table-header">User Name</th>
+                    <th className="table-header">Email</th>
+                    <th className="table-header">Amount</th>
+                    <th className="table-header">Status</th>
                     {user?.role === "admin" && (
-                      <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Actions</th>
+                      <th className="table-header">Actions</th>
                     )}
                   </tr>
                 </thead>
-                <tbody>
-                  {contributions.map((contribution, index) => (
-                    <tr key={contribution._id}>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{index + 1}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{contribution.eventId.title}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>
-                        {contribution.userId.firstname} {contribution.userId.lastname}
-                      </td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{contribution.userId.email}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>${contribution.amount}.00</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{contribution.status}</td>
-                      {user?.role === "admin" && (
-                        <td style={{ padding: "12px 20px", color: "#1F2937" }}>
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => openEditModal(contribution)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-outline-primary ms-2"
-                            onClick={() => handleDelete(contribution._id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
               </table>
+              <div style={{ overflowY: "auto", overflowX: "hidden", height: "calc(100% - 60px)" }}>
+                {contributions.length === 0 ? (
+                  <div className="text-center py-5">
+                    <svg
+                      width="128"
+                      height="128"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mx-auto mb-3"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 8v1m0 4v3m-4-2h8"/>
+                    </svg>
+                    <h5 className="text-muted">No records found</h5>
+                  </div>
+                ) : (
+                  <table className="table-custom mb-0 contributions-table">
+                    <tbody>
+                      {contributions.map((contribution, index) => (
+                        <tr key={contribution._id}>
+                          <td className="table-cell">{index + 1}</td>
+                          <td className="table-cell">{contribution.eventId?.title || "N/A"}</td>
+                          <td className="table-cell">
+                            {contribution.userId
+                              ? `${contribution.userId.firstname || ""} ${contribution.userId.lastname || ""}`.trim() || "N/A"
+                              : "N/A"}
+                          </td>
+                          <td className="table-cell email-cell">{contribution.userId?.email || "N/A"}</td>
+                          <td className="table-cell">${contribution.amount?.toFixed(2) || "0.00"}</td>
+                          <td className="table-cell">{contribution.status || "N/A"}</td>
+                          {user?.role === "admin" && (
+                            <td className="table-cell" style={{ whiteSpace: "nowrap" }}>
+                              <button
+                                className="btn btn-outline-primary me-2"
+                                onClick={() => openEditModal(contribution)}
+                                style={{ minWidth: "60px" }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-outline-primary"
+                                onClick={() => handleDelete(contribution._id)}
+                                style={{ minWidth: "60px" }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -102,7 +102,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         ...commonItems,
         { path: "/dashboard/users", icon: <Users size={20} />, label: "Users" },
         { path: "/dashboard/requests", icon: <Users size={20} />, label: "Requests" },
-        { path: "/dashboard/messages", icon: <Users size={20} />, label: "Messages" },
+        { path: "/dashboard/contactus", icon: <Users size={20} />, label: "Contact Us" },
         // { path: "/dashboard/analytics", icon: <PieChart size={20} />, label: "Analytics" },
         // { path: "/dashboard/finances", icon: <DollarSign size={20} />, label: "Finances" },
         // { path: "/dashboard/settings", icon: <Settings size={20} />, label: "Settings" },
@@ -203,7 +203,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
 
           <div className="header-right">
-            <div className="dropdown" ref={notificationsDropdownRef}>
+            {/* <div className="dropdown" ref={notificationsDropdownRef}>
               <button
                 className="btn btn-icon position-relative"
                 onClick={() => {
@@ -253,7 +253,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   </a>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             <div className="dropdown user-dropdown mr-3 mb-3" ref={userDropdownRef}>
               <button
@@ -287,7 +287,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 </Link>
                 <div className="dropdown-divider"></div>
                 <Link
-                  to="/logout"
+                  to="/"
                   className="dropdown-item text-danger"
                   onClick={logout}
                 >

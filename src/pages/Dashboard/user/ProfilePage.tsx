@@ -251,7 +251,7 @@ const ProfilePage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
+{/* 
                 <div className="mb-4">
                   <h4 className="mb-3">Change Password</h4>
                   <p className="text-muted small mb-3">Leave blank if you don't want to change your password</p>
@@ -300,7 +300,7 @@ const ProfilePage: React.FC = () => {
                       />
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="d-flex justify-content-end gap-2">
                   <button type="button" className="btn btn-outline-secondary" onClick={toggleEdit} disabled={loading}>

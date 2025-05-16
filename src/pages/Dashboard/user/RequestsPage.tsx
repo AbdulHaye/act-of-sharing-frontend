@@ -1,17 +1,27 @@
+"use client"
+
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
-import axiosInstance from "../../../api/axiosInstance"; // Adjust the import path as needed
-import { useAuth } from "../../../context/AuthContext"; // Import useAuth to get user role
-import '../../../styles/contributions-page.css'; // Reuse existing styling
-import { toast } from "react-toastify"; // Import toast for notifications
-import '../../../styles/loader.css'
+import axiosInstance from "../../../api/axiosInstance";
+import { useAuth } from "../../../context/AuthContext";
+import '../../../styles/contributions-page.css';
+import { toast } from "react-toastify";
+import '../../../styles/loader.css';
 
+// Helper function to truncate text after 15 words
+const truncateText = (text: string, wordLimit: number = 15) => {
+  if (!text) return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= wordLimit) return text;
+  return words.slice(0, wordLimit).join(" ") + "...";
+};
 
 const RequestsPage: React.FC = () => {
   const [requests, setRequests] = useState([]);
+  const [sortedRequests, setSortedRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user } = useAuth(); // Get the current user and role
+  const { user } = useAuth();
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
   const [editFormData, setEditFormData] = useState({
     fullName: "",
@@ -35,10 +45,12 @@ const RequestsPage: React.FC = () => {
             "x-auth-token": token,
           },
         });
+        console.log("Fetched requests data:", response.data);
         setRequests(response.data);
         setError(null);
       } catch (err) {
         setError("Failed to fetch requests: " + (err.response?.data?.message || err.message));
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -46,6 +58,18 @@ const RequestsPage: React.FC = () => {
 
     fetchRequests();
   }, []);
+
+  useEffect(() => {
+    if (requests.length > 0) {
+      const sorted = [...requests].sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.created_at || '1970-01-01');
+        const dateB = new Date(b.createdAt || b.created_at || '1970-01-01');
+        return dateB.getTime() - dateA.getTime();
+      });
+      console.log("Sorted requests:", sorted);
+      setSortedRequests(sorted);
+    }
+  }, [requests]);
 
   const handleDelete = async (requestId: string) => {
     if (window.confirm("Are you sure you want to delete this request?")) {
@@ -109,7 +133,7 @@ const RequestsPage: React.FC = () => {
       phone: request.phone,
       email: request.email,
       personName: request.personName,
-      relationshipToRequester: request.relationshipToRequester || "Self", // Default to "Self" if undefined
+      relationshipToRequester: request.relationshipToRequester || "Self",
       immediateNeed: request.immediateNeed,
       preferredDate: request.preferredDate ? new Date(request.preferredDate).toISOString().split('T')[0] : "",
       additionalInfo: request.additionalInfo,
@@ -121,7 +145,7 @@ const RequestsPage: React.FC = () => {
     setError(null);
   };
 
-   if (loading) {
+  if (loading) {
     return (
       <div className="loader-container">
         <div className="spinner"></div>
@@ -132,65 +156,91 @@ const RequestsPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="container-fluid p-4">
-        <div className="card border-0 shadow-sm w-100">
+      <div className="container-fluid p-4 h-full">
+        <div className="card border-0 shadow-sm w-100 h-full flex flex-col">
           <div className="card-header bg-white">
             <h5 className="card-title mb-0">Requests</h5>
           </div>
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table-custom mb-0">
-                <thead>
+          <div className="card-body p-0 flex-1 overflow-hidden">
+            <div style={{ position: "relative", height: "calc(100vh - 180px)" }}>
+              <table className="table-custom mb-0 requests-table" style={{ tableLayout: "fixed", width: "100%" }}>
+                <thead style={{ position: "sticky", top: 0, zIndex: 10, backgroundColor: "#5144A1" }}>
                   <tr>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>ID</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Full Name</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Phone</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Email</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Person Name</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Relationship</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Immediate Need</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Date</th>
-                    <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Additional Info</th>
+                    <th className="table-header" style={{ width: "5%" }}>ID</th>
+                    <th className="table-header" style={{ width: "10%" }}>Full Name</th>
+                    <th className="table-header" style={{ width: "10%" }}>Phone</th>
+                    <th className="table-header" style={{ width: "15%" }}>Email</th>
+                    <th className="table-header" style={{ width: "10%" }}>Person Name</th>
+                    <th className="table-header" style={{ width: "10%" }}>Relationship</th>
+                    <th className="table-header" style={{ width: "10%" }}>Immediate Need</th>
+                    <th className="table-header" style={{ width: "10%" }}>Date</th>
+                    <th className="table-header" style={{ width: "10%" }}>Additional Info</th>
                     {user?.role === "admin" && (
-                      <th style={{ backgroundColor: "#5144A1", color: "#FFFFFF", padding: "12px 20px" }}>Actions</th>
+                      <th className="table-header" style={{ width: "15%" }}>Actions</th>
                     )}
                   </tr>
                 </thead>
-                <tbody>
-                  {requests.map((request, index) => (
-                    <tr key={request._id}>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{index + 1}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{request.fullName}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{request.phone}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{request.email}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{request.personName}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{request.relationshipToRequester || "Self"}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{request.immediateNeed}</td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>
-                        {request.preferredDate ? new Date(request.preferredDate).toLocaleDateString() : ""}
-                      </td>
-                      <td style={{ padding: "12px 20px", color: "#1F2937" }}>{request.additionalInfo}</td>
-                      {user?.role === "admin" && (
-                        <td style={{ padding: "12px 20px", color: "#1F2937", whiteSpace: "nowrap" }}>
-                          <button
-                            className="btn btn-outline-primary"
-                            style={{ marginRight: "0.5rem" }}
-                            onClick={() => openEditModal(request)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => handleDelete(request._id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
               </table>
+              <div style={{ overflowY: "auto", overflowX: "hidden", height: "calc(100% - 60px)" }}>
+                {sortedRequests.length === 0 ? (
+                  <div className="text-center py-5">
+                    <svg
+                      width="128"
+                      height="128"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mx-auto mb-3"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 8v1m0 4v3m-4-2h8"/>
+                    </svg>
+                    <h5 className="text-muted">No data here</h5>
+                  </div>
+                ) : (
+                  <table className="table-custom mb-0 requests-table" style={{ tableLayout: "fixed", width: "100%" }}>
+                    <tbody>
+                      {sortedRequests.map((request, index) => (
+                        <tr key={request._id}>
+                          <td className="table-cell" style={{ width: "5%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{index + 1}</td>
+                          <td className="table-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{request.fullName}</td>
+                          <td className="table-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{request.phone}</td>
+                          <td className="table-cell email-cell" style={{ width: "15%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{request.email}</td>
+                          <td className="table-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{request.personName}</td>
+                          <td className="table-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{request.relationshipToRequester || "Self"}</td>
+                          <td className="table-cell need-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{request.immediateNeed}</td>
+                          <td className="table-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{request.preferredDate ? new Date(request.preferredDate).toLocaleDateString() : ""}</td>
+                          <td className="table-cell info-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{truncateText(request.additionalInfo || "")}</td>
+                          {user?.role === "admin" && (
+                            <td className="table-cell actions-cell" style={{ width: "15%" }}>
+                              <div style={{ display: "inline-flex", gap: "1rem" }}>
+                                <button
+                                  className="btn btn-outline-primary"
+                                  onClick={() => openEditModal(request)}
+                                  style={{ minWidth: "80px" }}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="btn btn-outline-primary"
+                                  onClick={() => handleDelete(request._id)}
+                                  style={{ minWidth: "80px" }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </div>
         </div>
