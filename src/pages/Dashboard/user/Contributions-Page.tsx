@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import axiosInstance from "../../../api/axiosInstance"; // Adjust the import path as needed
 import { useAuth } from "../../../context/AuthContext"; // Import useAuth to get user role
-// import '../../../styles/Contributions-page.css'; // Adjust the import path as needed
+import '../../../styles/contributions-page.css'; // Adjust the import path as needed
 import { toast } from "react-toastify";
 import '../../../styles/loader.css';
 
