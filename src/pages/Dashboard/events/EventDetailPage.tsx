@@ -57,8 +57,7 @@ const EventDetailPage: React.FC = () => {
   }
 
     const baseUrl =
-    import.meta.env.VITE_BASE_URL ||
-    "https://commonchange-backend.onrender.com";
+    import.meta.env.VITE_BASE_URL;
 
   if (error || !event) {
     return <div className="container mt-5">Error: {error || 'Event not found'}</div>;

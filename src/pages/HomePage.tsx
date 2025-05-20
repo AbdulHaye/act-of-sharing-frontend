@@ -50,8 +50,7 @@ const HomePage: React.FC = () => {
   };
 
   const baseUrl =
-    import.meta.env.VITE_BASE_URL ||
-    "https://commonchange-backend.onrender.com";
+    import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     getPublicEvents();

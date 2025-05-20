@@ -10,8 +10,7 @@ const EventViewPage: React.FC = () => {
 
   // Base URL for the backend (temporary workaround until Cloudinary is implemented)
   const baseUrl =
-    import.meta.env.VITE_BASE_URL ||
-    "https://commonchange-backend.onrender.com";
+    import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     if (id) {
