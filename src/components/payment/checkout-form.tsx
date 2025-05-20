@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, CreditCard, Home } from "lucide-react";
 import axios from "axios";
 
 interface CheckoutFormProps {
@@ -11,6 +13,7 @@ interface CheckoutFormProps {
 const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscriptionType }) => {
   const stripe = useStripe();
   const elements = useElements();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -183,6 +186,16 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscripti
     }
   };
 
+  // Handle back button click to navigate to the previous page
+  const handleBack = () => {
+    navigate(-1);
+  };
+
+  // Handle home button click to navigate to the home page
+  const handleHome = () => {
+    navigate('/');
+  };
+
   // Handle click to make another donation
   const handleMakeAnotherDonation = () => {
     setIsPaymentSuccessful(false);
@@ -197,10 +210,20 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscripti
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-5" style={{ maxWidth: "600px", margin: "0 auto" }}>
+    <div className="bg-white rounded-lg shadow-lg p-5 relative" style={{ maxWidth: "600px", margin: "0 auto" }}>
       {isPaymentSuccessful ? (
         // Thank You Card
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-xl p-6 text-center transform transition-all duration-300 hover:scale-105">
+          {/* Return to Home Button */}
+          <button
+            type="button"
+            onClick={handleHome}
+            className="absolute top-4 left-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            aria-label="Return to Home"
+          >
+            <Home className="text-gray-600" size={20} />
+          </button>
+
           <div className="flex justify-center mb-4">
             <svg
               className="w-16 h-16 text-yellow-300 animate-pulse"
@@ -240,6 +263,16 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscripti
       ) : (
         // Checkout Form
         <>
+          {/* Back Button */}
+          <button
+            type="button"
+            onClick={handleBack}
+            className="absolute top-4 left-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            aria-label="Back"
+          >
+            <ArrowLeft className="text-gray-600" size={20} />
+          </button>
+
           <h2 className="text-center mb-4 fw-semibold" style={{ color: "var(--text-color)", fontSize: "1.75rem" }}>
             Checkout
           </h2>
@@ -354,9 +387,14 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscripti
             By clicking Donate, you authorize this donation and agree it is non-refundable and made voluntarily without
             exchange of goods or services.
           </p>
-          <p className="text-muted text-center" style={{ fontSize: "0.75rem" }}>
-            Secure payment by Stripe
-          </p>
+          <div className="text-center mt-6 pt-4 border-t border-gray-100">
+            <div className="flex justify-center items-center mb-2">
+              <div className="bg-gray-100 p-2 rounded-md">
+                <CreditCard size={16} className="text-gray-500" />
+              </div>
+            </div>
+            <p className="text-gray-500 text-xs">Secure payment by Stripe</p>
+          </div>
         </>
       )}
     </div>

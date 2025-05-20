@@ -1,12 +1,11 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import axiosInstance from "../../../api/axiosInstance";
 import { useAuth } from "../../../context/AuthContext";
-import '../../../styles/user-pages.css';
 import { toast } from "react-toastify";
-import '../../../styles/loader.css';
+import { Edit, Trash2 } from "lucide-react";
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -20,32 +19,47 @@ const UsersPage = () => {
     email: "",
     role: "",
   });
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0,
+    limit: 10,
+  });
+
+  const fetchUsers = async (page: number = 1) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axiosInstance.get(`/users?page=${page}&limit=${pagination.limit}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
+      });
+
+      console.log("Fetched users:", response.data);
+      const sortedUsers = response.data.users.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setUsers(sortedUsers);
+      setPagination({
+        currentPage: response.data.pagination.currentPage,
+        totalPages: response.data.pagination.totalPages,
+        totalUsers: response.data.pagination.totalUsers,
+        limit: response.data.pagination.limit,
+      });
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch users: " + (err.response?.data?.message || err.message));
+      console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axiosInstance.get("/users", {
-          headers: {
-            "Content-Type": "application/json",
-            "x-auth-token": token,
-          },
-        });
-        const sortedUsers = response.data.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setUsers(sortedUsers);
-        setError(null);
-      } catch (err) {
-        setError("Failed to fetch users: " + (err.response?.data?.message || err.message));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, []);
+    fetchUsers(pagination.currentPage);
+  }, [pagination.currentPage]);
 
   const handleDelete = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
@@ -57,8 +71,8 @@ const UsersPage = () => {
             "x-auth-token": token,
           },
         });
-        setUsers(users.filter((u) => u._id !== userId));
         toast.success("User deleted successfully");
+        fetchUsers(pagination.currentPage);
       } catch (err) {
         setError("Failed to delete user: " + (err.response?.data?.message || err.message));
         console.error("Delete error:", err);
@@ -92,6 +106,7 @@ const UsersPage = () => {
       setSelectedUser(null);
       setError(null);
       toast.success("User updated successfully");
+      fetchUsers(pagination.currentPage);
     } catch (err) {
       setError("Failed to update user: " + (err.response?.data?.message || err.message));
       console.error("Edit error:", err);
@@ -113,114 +128,138 @@ const UsersPage = () => {
     setError(null);
   };
 
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      setPagination((prev) => ({ ...prev, currentPage: page }));
+    }
+  };
+
   if (loading) {
     return (
-      <div className="loader-container">
-        <div className="spinner"></div>
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
 
-  if (error) return <div>{error}</div>;
+  if (error) return <div className="alert alert-danger">{error}</div>;
 
   return (
     <DashboardLayout>
-      <div className="container-fluid p-4 h-full">
-        <div className="card border-0 shadow-sm w-100 h-full flex flex-col">
+      <div className="container-fluid p-4">
+        <div className="card border-0 shadow-sm bg-white">
           <div className="card-header bg-white">
-            <h5 className="card-title mb-0">Users</h5>
+            <h5 className="card-title mb-0 text-lg font-semibold">Users</h5>
           </div>
-          <div className="card-body p-0 flex-1 overflow-hidden">
-            <div style={{ position: "relative", height: "calc(100vh - 180px)" }}>
-              <table className="table-custom mb-0 users-table" style={{ tableLayout: "fixed", width: "100%" }}>
-                <thead style={{ position: "sticky", top: 0, zIndex: 10, backgroundColor: "#5144A1" }}>
+          <div className="card-body p-0">
+            <div className="table-responsive" style={{ maxHeight: "calc(100vh - 250px)" }}>
+              <table className="table-custom w-full text-sm">
+                <thead className="sticky top-0 bg-primary text-white">
                   <tr>
-                    <th className="table-header" style={{ width: "10%" }}>ID</th>
-                    <th className="table-header" style={{ width: "20%" }}>First Name</th>
-                    <th className="table-header" style={{ width: "20%" }}>Last Name</th>
-                    <th className="table-header" style={{ width: "25%" }}>Email</th>
-                    <th className="table-header" style={{ width: "15%" }}>Role</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>ID</th>
+                    <th className="table-header px-4 py-2" style={{ width: "20%" }}>First Name</th>
+                    <th className="table-header px-4 py-2" style={{ width: "20%" }}>Last Name</th>
+                    <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "25%" }}>Email</th>
+                    <th className="table-header px-4 py-2" style={{ width: "15%" }}>Role</th>
                     {user?.role === "admin" && (
-                      <th className="table-header" style={{ width: "15%" }}>Actions</th>
+                      <th className="table-header px-4 py-2" style={{ width: "10%" }}>Actions</th>
                     )}
                   </tr>
                 </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan={user?.role === "admin" ? 6 : 5} className="text-center py-5">
+                        <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
+                          <circle cx="12" cy="12" r="3"/>
+                          <path d="M12 8v1m0 4v3m-4-2h8"/>
+                        </svg>
+                        <h5 className="text-muted">No data here</h5>
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((userItem, index) => (
+                      <tr key={userItem._id} className="hover:bg-gray-50">
+                        <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
+                          {(pagination.currentPage - 1) * pagination.limit + index + 1}
+                        </td>
+                        <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>
+                          {userItem.firstname}
+                        </td>
+                        <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>
+                          {userItem.lastname}
+                        </td>
+                        <td className="table-cell px-4 py-2 truncate d-none d-md-table-cell" style={{ width: "25%" }}>
+                          {userItem.email}
+                        </td>
+                        <td className="table-cell px-4 py-2" style={{ width: "15%" }}>
+                          {userItem.role}
+                        </td>
+                        {user?.role === "admin" && (
+                          <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
+                            <div className="btn-group" role="group">
+                              <button
+                                className="btn btn-outline-primary btn-sm me-2"
+                                onClick={() => openEditModal(userItem)}
+                              >
+                                <Edit size={16} /> Edit
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => handleDelete(userItem._id)}
+                              >
+                                <Trash2 size={16} /> Delete
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
               </table>
-              <div style={{ overflowY: "auto", overflowX: "hidden", height: "calc(100% - 60px)" }}>
-                {users.length === 0 ? (
-                  <div className="text-center py-5">
-                    <svg
-                      width="128"
-                      height="128"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mx-auto mb-3"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
-                      <circle cx="12" cy="12" r="3"/>
-                      <path d="M12 8v1m0 4v3m-4-2h8"/>
-                    </svg>
-                    <h5 className="text-muted">No data here</h5>
-                  </div>
-                ) : (
-                  <table className="table-custom mb-0 users-table" style={{ tableLayout: "fixed", width: "100%" }}>
-                    <tbody>
-                      {users.map((userItem, index) => (
-                        <tr key={userItem._id}>
-                          <td className="table-cell" style={{ width: "10%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{index + 1}</td>
-                          <td className="table-cell" style={{ width: "20%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userItem.firstname}</td>
-                          <td className="table-cell" style={{ width: "20%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userItem.lastname}</td>
-                          <td className="table-cell email-cell" style={{ width: "25%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userItem.email}</td>
-                          <td className="table-cell" style={{ width: "15%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userItem.role}</td>
-                          {user?.role === "admin" && (
-                            <td className="table-cell actions-cell" style={{ width: "15%" }}>
-                              <div style={{ display: "inline-flex", gap: "1rem" }}>
-                                <button
-                                  className="btn btn-outline-primary"
-                                  onClick={() => openEditModal(userItem)}
-                                  style={{ minWidth: "80px" }}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className="btn btn-outline-primary"
-                                  onClick={() => handleDelete(userItem._id)}
-                                  style={{ minWidth: "80px" }}
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+            </div>
+            <div className="card-footer bg-white py-3 border-t border-gray-200">
+              <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center">
+                <div className="mb-2 mb-sm-0 text-sm">
+                  Showing {(pagination.currentPage - 1) * pagination.limit + 1} to{" "}
+                  {Math.min(pagination.currentPage * pagination.limit, pagination.totalUsers)} of{" "}
+                  {pagination.totalUsers} users
+                </div>
+                <nav aria-label="Page navigation">
+                  <ul className="pagination mb-0 flex space-x-2">
+                    <li className={`page-item ${pagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}>
+                      <button className="page-link px-3 py-1 border rounded" onClick={() => handlePageChange(pagination.currentPage - 1)}>
+                        Previous
+                      </button>
+                    </li>
+                    {[...Array(pagination.totalPages)].map((_, i) => (
+                      <li key={i} className={`page-item ${pagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
+                        <button className="page-link px-3 py-1" onClick={() => handlePageChange(i + 1)}>
+                          {i + 1}
+                        </button>
+                      </li>
+                    ))}
+                    <li className={`page-item ${pagination.currentPage === pagination.totalPages ? "opacity-50 cursor-not-allowed" : ""}`}>
+                      <button className="page-link px-3 py-1 border rounded" onClick={() => handlePageChange(pagination.currentPage + 1)}>
+                        Next
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Modal for Editing User */}
         {selectedUser && user?.role === "admin" && (
           <div
             className="modal"
             tabIndex={-1}
-            style={{
-              display: "block",
-              backgroundColor: "rgba(0,0,0,0.5)",
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 1050,
-            }}
+            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}
           >
             <div className="modal-dialog">
               <div className="modal-content">
@@ -289,6 +328,51 @@ const UsersPage = () => {
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        .table-custom {
+          border-collapse: collapse;
+        }
+        .table-header {
+          font-weight: 600;
+        }
+        .table-cell {
+          border-bottom: 1px solid #dee2e6;
+        }
+        .text-primary {
+          color: #5144A1;
+        }
+        .bg-primary {
+          background-color: #5144A1;
+        }
+        .text-muted {
+          color: #6c757d;
+        }
+        @media (max-width: 640px) {
+          .table-custom {
+            font-size: 0.75rem;
+          }
+          .table-header, .table-cell {
+            padding: 0.5rem;
+          }
+          .pagination {
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+          .page-link {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+          }
+        }
+        @media (min-width: 641px) and (max-width: 1024px) {
+          .table-custom {
+            font-size: 0.875rem;
+          }
+          .table-header, .table-cell {
+            padding: 0.75rem;
+          }
+        }
+      `}</style>
     </DashboardLayout>
   );
 };

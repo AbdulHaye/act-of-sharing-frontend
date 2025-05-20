@@ -1,5 +1,6 @@
-import type React from "react";
-import { useEffect, useState } from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Calendar,
@@ -8,16 +9,31 @@ import {
   DollarSign,
   Edit,
   Trash2,
-  Eye,
-  Plus,
   Info,
 } from "lucide-react";
 import { useEvent } from "../../../context/EventContext";
 import { useAuth } from "../../../context/AuthContext";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import EventEditModal from "../modals/EventEditModal";
-import "../../../styles/my-events.css";
 import { toast } from "react-toastify";
+
+interface Event {
+  _id: string;
+  title: string;
+  location: string;
+  date: string;
+  goalAmount: number;
+  currentAmount: number;
+  guestCount: number;
+  imageUrl?: string;
+  createdAt: string;
+  recipient: {
+    name: string;
+    categoryOfNeed: string;
+  };
+  status?: string;
+  host?: string;
+}
 
 const MyEventsPage: React.FC = () => {
   const { events, loading, error, getEvents, deleteEvent } = useEvent();
@@ -27,8 +43,13 @@ const MyEventsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    limit: 6,
+  });
 
-  // Base URL from .env
   const baseUrl =
     import.meta.env.VITE_BASE_URL ||
     "https://commonchange-backend.onrender.com";
@@ -40,10 +61,11 @@ const MyEventsPage: React.FC = () => {
     }
   }, [user, getEvents]);
 
-  // Sort events by createdAt in descending order (latest first) after fetching
-  const sortedEvents = [...events].sort((a, b) => 
+  const sortedEvents = [...events].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const userEvents = user?.role === "admin" ? sortedEvents : sortedEvents.filter(event => event.host === user?._id);
 
   const handleEditEvent = (event: Event) => {
     console.log("Editing event:", event);
@@ -86,25 +108,16 @@ const MyEventsPage: React.FC = () => {
     return eventDate > now;
   };
 
-  // Handle image load error
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.error("Failed to load image:", e.currentTarget.src);
-    e.currentTarget.style.display = "none"; // Hide broken image
-    e.currentTarget.nextElementSibling.style.display = "flex"; // Show fallback
+    e.currentTarget.style.display = "none";
+    e.currentTarget.nextElementSibling.style.display = "flex";
   };
-
-  if (!user) {
-    return null; // DashboardPage handles redirection
-  }
-
-  const userEvents = sortedEvents; // Use sorted events
-  console.log("User Events:", userEvents);
 
   const filteredEvents = userEvents.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.recipient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.recipient.categoryOfNeed
         .toLowerCase()
@@ -119,9 +132,34 @@ const MyEventsPage: React.FC = () => {
     return matchesSearch;
   });
 
+  useEffect(() => {
+    const totalItems = filteredEvents.length;
+    const totalPages = Math.ceil(totalItems / pagination.limit);
+    setPagination((prev) => ({
+      ...prev,
+      totalItems,
+      totalPages,
+      currentPage: Math.min(prev.currentPage, totalPages) || 1,
+    }));
+  }, [filteredEvents, pagination.limit]);
+
+  const paginatedEvents = filteredEvents.slice(
+    (pagination.currentPage - 1) * pagination.limit,
+    pagination.currentPage * pagination.limit
+  );
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      setPagination((prev) => ({ ...prev, currentPage: page }));
+    }
+  };
+
+  if (!user) {
+    return null;
+  }
+
   const userName = `${user.firstname || "User"} ${user.lastname || ""}`;
   const userRole = user.role || "host";
-  console.log("User Role:", userRole);
 
   return (
     <DashboardLayout
@@ -200,12 +238,12 @@ const MyEventsPage: React.FC = () => {
               </div>
             ) : (
               <div className="row g-4">
-                {filteredEvents.map((event) => (
+                {paginatedEvents.map((event) => (
                   <div key={event._id} className="col-12 col-md-6 col-xl-4">
                     <div
                       className={`card h-100 ${
                         !isUpcoming(event.date) ? "border-light" : "border"
-                      }`}
+                      } shadow-sm`}
                     >
                       <div className="position-relative">
                         {event.imageUrl ? (
@@ -226,9 +264,9 @@ const MyEventsPage: React.FC = () => {
                         )}
 
                         {!isUpcoming(event.date) && (
-                          <div className="position-absolute top-0 end-0 m-2 badge bg-dark">
+                          <span className="position-absolute top-0 end-0 m-2 badge bg-dark">
                             Past Event
-                          </div>
+                          </span>
                         )}
                       </div>
                       <div className="card-body">
@@ -278,7 +316,7 @@ const MyEventsPage: React.FC = () => {
                                 width: `${
                                   (event.currentAmount / event.goalAmount) * 100
                                 }%`,
-                                backgroundColor: "#5144A1", // Custom color
+                                backgroundColor: "#5144A1",
                               }}
                             ></div>
                           </div>
@@ -289,17 +327,17 @@ const MyEventsPage: React.FC = () => {
                               className="btn btn-sm btn-outline-secondary"
                               onClick={() => handleEditEvent(event)}
                             >
-                              <Edit size={16} className="btn-outline-primary" />
+                              <Edit size={16} className="me-1" />
                               <span>Edit</span>
                             </button>
                           )}
                           {user.role !== "guest" && (
                             <button
-                              className="btn btn-sm btn-outline-primary ms-auto"
+                              className="btn btn-sm btn-outline-danger ms-auto"
                               onClick={() => handleDeleteEvent(event._id)}
                               disabled={isDeleting === event._id}
                             >
-                              <Trash2 size={16} className="btn-outline-primary-1" />
+                              <Trash2 size={16} className="me-1" />
                               <span>
                                 {isDeleting === event._id
                                   ? "Deleting..."
@@ -312,6 +350,48 @@ const MyEventsPage: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            {!loading && filteredEvents.length > 0 && (
+              <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center p-3 border-top">
+                <div className="mb-2 mb-sm-0">
+                  Showing {(pagination.currentPage - 1) * pagination.limit + 1} to{" "}
+                  {Math.min(pagination.currentPage * pagination.limit, pagination.totalItems)} of{" "}
+                  {pagination.totalItems} events
+                </div>
+                <nav aria-label="Page navigation">
+                  <ul className="pagination mb-0">
+                    <li className={`page-item ${pagination.currentPage === 1 ? "disabled" : ""}`}>
+                      <button
+                        className="page-link"
+                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                      >
+                        Previous
+                      </button>
+                    </li>
+                    {[...Array(pagination.totalPages)].map((_, i) => (
+                      <li
+                        key={i}
+                        className={`page-item ${pagination.currentPage === i + 1 ? "active" : ""}`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => handlePageChange(i + 1)}
+                        >
+                          {i + 1}
+                        </button>
+                      </li>
+                    ))}
+                    <li className={`page-item ${pagination.currentPage === pagination.totalPages ? "disabled" : ""}`}>
+                      <button
+                        className="page-link"
+                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                      >
+                        Next
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
               </div>
             )}
           </div>
@@ -327,6 +407,61 @@ const MyEventsPage: React.FC = () => {
           event={selectedEvent}
         />
       </div>
+
+      <style jsx>{`
+        .text-primary {
+          color: #5144A1 !important;
+        }
+        .bg-primary {
+          background-color: #5144A1 !important;
+        }
+        .btn-primary {
+          background-color: #5144A1;
+          border-color: #5144A1;
+        }
+        .btn-primary:hover {
+          background-color: #453b8c;
+          border-color: #453b8c;
+        }
+        .btn-outline-primary {
+          color: #5144A1;
+          border-color: #5144A1;
+        }
+        .btn-outline-primary:hover {
+          background-color: #5144A1;
+          color: white;
+        }
+        .text-muted {
+          color: #6c757d !important;
+        }
+        .card {
+          transition: transform 0.2s;
+        }
+        .card:hover {
+          transform: translateY(-5px);
+        }
+        @media (max-width: 576px) {
+          .btn-group {
+            flex-direction: column;
+            width: 100%;
+          }
+          .btn-group .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+          }
+          .card-body {
+            padding: 0.75rem;
+          }
+          .pagination {
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+          .page-link {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+          }
+        }
+      `}</style>
     </DashboardLayout>
   );
 };

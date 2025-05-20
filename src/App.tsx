@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";
@@ -28,7 +29,8 @@ import CheckoutPage from "./pages/Dashboard/user/checkout-page";
 import ContributionsPage from "./pages/Dashboard/user/Contributions-Page";
 import UsersPage from "./pages/Dashboard/user/UsersPage";
 import RequestsPage from "./pages/Dashboard/user/RequestsPage";
-import ContactPage from "./pages/Dashboard/user/ContanctPage"; // Typo corrected here
+import ContactPage from "./pages/Dashboard/user/ContanctPage"; // Corrected typo
+import ResetPasswordPage from "./pages/Dashboard/user/ResetPasswordPage"; // Added import
 
 const stripePromise = loadStripe(
   "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
@@ -53,9 +55,7 @@ function App() {
       <AuthProvider>
         <EventProvider>
           <div className="app-container d-flex flex-column min-vh-100">
-            
             {!hideNavbarAndFooter && <Navbar />}
-            
             <main className="flex-grow-1">
               <Routes>
                 <Route path="/" element={<HomePage />} />
@@ -64,6 +64,7 @@ function App() {
                 <Route path="/events/:id" element={<EventDetailPage />} />
                 <Route path="/checkout/:eventId" element={<CheckoutPage />} />
                 <Route path="/payment/:eventId" element={<DonationPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* Updated route */}
                 
                 <Route element={<ProtectedRoute allowedRoles={["admin", "host"]} />}>
                   <Route path="/create-event" element={<CreateEventPage />} />
@@ -80,7 +81,7 @@ function App() {
                     <Route path="my-events" element={<MyEventsPage />} />
                     <Route path="contributions" element={<ContributionsPage />} />
                     <Route path="users" element={<UsersPage />} />
-                    <Route path="requests" element={<RequestsPage />} />
+                    <Route path="request-assistance" element={<RequestsPage />} />
                     <Route path="contactus" element={<ContactPage />} />
                   </Route>
                 </Route>
@@ -107,6 +108,5 @@ function App() {
     </Elements>
   );
 }
-
 
 export default App;

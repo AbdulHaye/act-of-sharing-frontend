@@ -1,16 +1,17 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
-import axiosInstance from "../../../api/axiosInstance"; // Adjust the import path as needed
-import { useAuth } from "../../../context/AuthContext"; // Import useAuth to get user role
-import '../../../styles/user-pages.css'; // Adjust the import path as needed
+import axiosInstance from "../../../api/axiosInstance";
+import { useAuth } from "../../../context/AuthContext";
 import { toast } from "react-toastify";
-import '../../../styles/loader.css';
+import { Edit, Trash2 } from "lucide-react";
 
 const ContributionsPage: React.FC = () => {
   const [contributions, setContributions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user } = useAuth(); // Get the current user and role
+  const { user } = useAuth();
   const [selectedContribution, setSelectedContribution] = useState<any | null>(null);
   const [editFormData, setEditFormData] = useState({
     eventId: { title: "" },
@@ -18,33 +19,46 @@ const ContributionsPage: React.FC = () => {
     amount: "",
     status: "",
   });
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalContributions: 0,
+    limit: 10,
+  });
+
+  const fetchContributions = async (page: number = 1) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axiosInstance.get(`/contributions?page=${page}&limit=${pagination.limit}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
+      });
+      console.log("Fetched contributions data:", response.data);
+      const sortedContributions = response.data.contributions.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setContributions(sortedContributions);
+      setPagination({
+        currentPage: response.data.pagination.currentPage,
+        totalPages: response.data.pagination.totalPages,
+        totalContributions: response.data.pagination.totalContributions,
+        limit: response.data.pagination.limit,
+      });
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch contributions: " + (err.response?.data?.message || err.message));
+      console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchContributions = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axiosInstance.get("/contributions", {
-          headers: {
-            "Content-Type": "application/json",
-            "x-auth-token": token,
-          },
-        });
-        // Sort contributions by createdAt in descending order (latest first)
-        const sortedContributions = response.data.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setContributions(sortedContributions);
-        setError(null);
-      } catch (err) {
-        setError("Failed to fetch contributions: " + (err.response?.data?.message || err.message));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchContributions();
-  }, []);
+    fetchContributions(pagination.currentPage);
+  }, [pagination.currentPage]);
 
   const handleDelete = async (contributionId: string) => {
     if (window.confirm("Are you sure you want to delete this contribution?")) {
@@ -56,8 +70,8 @@ const ContributionsPage: React.FC = () => {
             "x-auth-token": token,
           },
         });
-        setContributions(contributions.filter((c) => c._id !== contributionId));
         toast.info("Contribution deleted successfully");
+        fetchContributions(pagination.currentPage);
       } catch (err) {
         setError("Failed to delete contribution: " + (err.response?.data?.message || err.message));
         console.error("Delete error:", err);
@@ -95,6 +109,7 @@ const ContributionsPage: React.FC = () => {
       setSelectedContribution(null);
       setError(null);
       toast.info("Contribution updated successfully");
+      fetchContributions(pagination.currentPage);
     } catch (err) {
       setError("Failed to update contribution: " + (err.response?.data?.message || err.message));
       console.error("Edit error:", err);
@@ -120,103 +135,138 @@ const ContributionsPage: React.FC = () => {
     setError(null);
   };
 
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      setPagination((prev) => ({ ...prev, currentPage: page }));
+    }
+  };
+
   if (loading) {
     return (
-      <div className="loader-container">
-        <div className="spinner"></div>
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
-  if (error) return <div>{error}</div>;
+  if (error) return <div className="alert alert-danger">{error}</div>;
 
   return (
     <DashboardLayout>
-      <div className="container-fluid p-4 h-full">
-        <div className="card border-0 shadow-sm w-100 h-full flex flex-col">
+      <div className="container-fluid p-4">
+        <div className="card border-0 shadow-sm bg-white">
           <div className="card-header bg-white">
-            <h5 className="card-title mb-0">Donations</h5>
+            <h5 className="card-title mb-0 text-lg font-semibold">Donations</h5>
           </div>
-          <div className="card-body p-0 flex-1 overflow-hidden">
-            <div style={{ position: "relative", height: "calc(100vh - 180px)" }}>
-              <table className="table-custom mb-0 contributions-table">
-                <thead style={{ position: "sticky", top: 0, zIndex: 10, backgroundColor: "#5144A1" }}>
+          <div className="card-body p-0">
+            <div className="table-responsive" style={{ maxHeight: "calc(100vh - 250px)" }}>
+              <table className="table-custom w-full text-sm">
+                <thead className="sticky top-0 bg-primary text-white">
                   <tr>
-                    <th className="table-header">ID</th>
-                    <th className="table-header">Event Title</th>
-                    <th className="table-header">User Name</th>
-                    <th className="table-header">Email</th>
-                    <th className="table-header">Amount</th>
-                    <th className="table-header">Status</th>
+                    <th className="table-header px-4 py-2" style={{ width: "5%" }}>ID</th>
+                    <th className="table-header px-4 py-2" style={{ width: "20%" }}>Event Title</th>
+                    <th className="table-header px-4 py-2" style={{ width: "15%" }}>User Name</th>
+                    <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "20%" }}>Email</th>
+                    <th className="table-header px-4 py-2" style={{ width: "15%" }}>Amount</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Status</th>
                     {user?.role === "admin" && (
-                      <th className="table-header">Actions</th>
+                      <th className="table-header px-4 py-2" style={{ width: "15%" }}>Actions</th>
                     )}
                   </tr>
                 </thead>
-              </table>
-              <div style={{ overflowY: "auto", overflowX: "hidden", height: "calc(100% - 60px)" }}>
-                {contributions.length === 0 ? (
-                  <div className="text-center py-5">
-                    <svg
-                      width="128"
-                      height="128"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mx-auto mb-3"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
-                      <circle cx="12" cy="12" r="3"/>
-                      <path d="M12 8v1m0 4v3m-4-2h8"/>
-                    </svg>
-                    <h5 className="text-muted">No records found</h5>
-                  </div>
-                ) : (
-                  <table className="table-custom mb-0 contributions-table">
-                    <tbody>
-                      {contributions.map((contribution, index) => (
-                        <tr key={contribution._id}>
-                          <td className="table-cell">{index + 1}</td>
-                          <td className="table-cell">{contribution.eventId?.title || "N/A"}</td>
-                          <td className="table-cell">
-                            {contribution.userId
-                              ? `${contribution.userId.firstname || ""} ${contribution.userId.lastname || ""}`.trim() || "N/A"
-                              : "N/A"}
-                          </td>
-                          <td className="table-cell email-cell">{contribution.userId?.email || "N/A"}</td>
-                          <td className="table-cell">${contribution.amount?.toFixed(2) || "0.00"}</td>
-                          <td className="table-cell">{contribution.status || "N/A"}</td>
-                          {user?.role === "admin" && (
-                            <td className="table-cell" style={{ whiteSpace: "nowrap" }}>
+                <tbody>
+                  {contributions.length === 0 ? (
+                    <tr>
+                      <td colSpan={user?.role === "admin" ? 7 : 6} className="text-center py-5">
+                        <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
+                          <circle cx="12" cy="12" r="3"/>
+                          <path d="M12 8v1m0 4v3m-4-2h8"/>
+                        </svg>
+                        <h5 className="text-muted">No records found</h5>
+                      </td>
+                    </tr>
+                  ) : (
+                    contributions.map((contribution, index) => (
+                      <tr key={contribution._id} className="hover:bg-gray-50">
+                        <td className="table-cell px-4 py-2" style={{ width: "5%" }}>
+                          {(pagination.currentPage - 1) * pagination.limit + index + 1}
+                        </td>
+                        <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>
+                          {contribution.eventId?.title || "N/A"}
+                        </td>
+                        <td className="table-cell px-4 py-2 truncate" style={{ width: "15%" }}>
+                          {contribution.userId
+                            ? `${contribution.userId.firstname || ""} ${contribution.userId.lastname || ""}`.trim() || "N/A"
+                            : "N/A"}
+                        </td>
+                        <td className="table-cell px-4 py-2 truncate d-none d-md-table-cell" style={{ width: "20%" }}>
+                          {contribution.userId?.email || "N/A"}
+                        </td>
+                        <td className="table-cell px-4 py-2 text-success font-semibold" style={{ width: "15%" }}>
+                          ${contribution.amount?.toFixed(2) || "0.00"}
+                        </td>
+                        <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
+                          {contribution.status || "N/A"}
+                        </td>
+                        {user?.role === "admin" && (
+                          <td className="table-cell px-4 py-2" style={{ width: "15%" }}>
+                            <div className="btn-group" role="group">
                               <button
-                                className="btn btn-outline-primary me-2"
+                                className="btn btn-outline-primary btn-sm me-2"
                                 onClick={() => openEditModal(contribution)}
-                                style={{ minWidth: "60px" }}
                               >
-                                Edit
+                                <Edit size={16} /> Edit
                               </button>
                               <button
-                                className="btn btn-outline-primary"
+                                className="btn btn-outline-danger btn-sm"
                                 onClick={() => handleDelete(contribution._id)}
-                                style={{ minWidth: "60px" }}
                               >
-                                Delete
+                                <Trash2 size={16} /> Delete
                               </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="card-footer bg-white py-3 border-t border-gray-200">
+              <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center">
+                <div className="mb-2 mb-sm-0 text-sm">
+                  Showing {(pagination.currentPage - 1) * pagination.limit + 1} to{" "}
+                  {Math.min(pagination.currentPage * pagination.limit, pagination.totalContributions)} of{" "}
+                  {pagination.totalContributions} contributions
+                </div>
+                <nav aria-label="Page navigation">
+                  <ul className="pagination mb-0 flex space-x-2">
+                    <li className={`page-item ${pagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}>
+                      <button className="page-link px-3 py-1 border rounded" onClick={() => handlePageChange(pagination.currentPage - 1)}>
+                        Previous
+                      </button>
+                    </li>
+                    {[...Array(pagination.totalPages)].map((_, i) => (
+                      <li key={i} className={`page-item ${pagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
+                        <button className="page-link px-3 py-1" onClick={() => handlePageChange(i + 1)}>
+                          {i + 1}
+                        </button>
+                      </li>
+                    ))}
+                    <li className={`page-item ${pagination.currentPage === pagination.totalPages ? "opacity-50 cursor-not-allowed" : ""}`}>
+                      <button className="page-link px-3 py-1 border rounded" onClick={() => handlePageChange(pagination.currentPage + 1)}>
+                        Next
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Modal for Editing Contribution */}
         {selectedContribution && user?.role === "admin" && (
           <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
             <div className="modal-dialog">
@@ -306,6 +356,54 @@ const ContributionsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        .table-custom {
+          border-collapse: collapse;
+        }
+        .table-header {
+          font-weight: 600;
+        }
+        .table-cell {
+          border-bottom: 1px solid #dee2e6;
+        }
+        .text-primary {
+          color: #5144A1;
+        }
+        .bg-primary {
+          background-color: #5144A1;
+        }
+        .text-success {
+          color: #28a745;
+        }
+        .text-muted {
+          color: #6c757d;
+        }
+        @media (max-width: 640px) {
+          .table-custom {
+            font-size: 0.75rem;
+          }
+          .table-header, .table-cell {
+            padding: 0.5rem;
+          }
+          .pagination {
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+          .page-link {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+          }
+        }
+        @media (min-width: 641px) and (max-width: 1024px) {
+          .table-custom {
+            font-size: 0.875rem;
+          }
+          .table-header, .table-cell {
+            padding: 0.75rem;
+          }
+        }
+      `}</style>
     </DashboardLayout>
   );
 };

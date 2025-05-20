@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { CreditCard, Heart } from "lucide-react"
+import { CreditCard, Heart, ArrowLeft } from "lucide-react"
 
 interface DonationFormProps {
   eventId: string
@@ -17,32 +17,29 @@ const DonationForm: React.FC<DonationFormProps> = ({ eventId, organizationName =
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const navigate = useNavigate()
 
-const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const raw = e.target.value;
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
 
-  // Allow only numbers and a single decimal point, up to 2 decimal places
-  if (!/^\d*\.?\d{0,2}$/.test(raw) && raw !== "") return;
+    // Allow only numbers and a single decimal point, up to 2 decimal places
+    if (!/^\d*\.?\d{0,2}$/.test(raw) && raw !== "") return
 
-  setAmount(raw);
+    setAmount(raw)
 
-  const num = parseFloat(raw);
-  if (!isNaN(num) && (num < 1 || num > 5000)) {
-    setErrorMessage("Enter an amount between $1.00 and $5,000.00");
-  } else {
-    setErrorMessage(null);
+    const num = parseFloat(raw)
+    if (!isNaN(num) && (num < 1 || num > 5000)) {
+      setErrorMessage("Enter an amount between $1.00 and $5,000.00")
+    } else {
+      setErrorMessage(null)
+    }
   }
-};
 
+  const handleAmountBlur = () => {
+    const num = parseFloat(amount)
 
-const handleAmountBlur = () => {
-  const num = parseFloat(amount);
-
-  if (!isNaN(num)) {
-    setAmount(num.toFixed(2)); // Ensures 2 decimal places
+    if (!isNaN(num)) {
+      setAmount(num.toFixed(2)) // Ensures 2 decimal places
+    }
   }
-};
-
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,10 +56,25 @@ const handleAmountBlur = () => {
     }, 500)
   }
 
+  // Handle back button click to navigate to the previous page
+  const handleBack = () => {
+    navigate(-1)
+  }
+
   const presetAmounts = [25, 50, 100, 250]
 
   return (
-    <div className="bg-white rounded-xl shadow-2xl p-6 donation-card max-w-md mx-auto border border-gray-100">
+    <div className="bg-white rounded-xl shadow-2xl p-6 donation-card max-w-md mx-auto border border-gray-100 relative">
+      {/* Back Button */}
+      <button
+        type="button"
+        onClick={handleBack}
+        className="absolute top-4 left-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+        aria-label="Back"
+      >
+        <ArrowLeft className="text-gray-600" size={20} />
+      </button>
+
       <div className="flex justify-center mb-4">
         <div className="bg-blue-50 p-3 rounded-full">
           <Heart className="text-[#5144A1]" size={24} />
@@ -130,40 +142,9 @@ const handleAmountBlur = () => {
         </div>
 
         <div className="pt-2">
-          {/* <div className="flex justify-center mb-4">
-            <div className="bg-gray-50 rounded-lg p-1 inline-flex w-full">
-              <button
-                type="button"
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                  subscriptionType === "one-time"
-                    ? "bg-white text-blue-700 shadow-sm"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-                onClick={() => setSubscriptionType("one-time")}
-              >
-                One-time
-              </button>
-              <button
-                type="button"
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                  subscriptionType === "monthly"
-                    ? "bg-white text-blue-700 shadow-sm"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-                onClick={() => setSubscriptionType("monthly")}
-              >
-                Monthly
-              </button>
-            </div>
-          </div> */}
-
           <button
             type="submit"
             className="w-full py-4 btn-primary text-white font-medium text-base rounded-lg transition-all transform hover:translate-y-[-2px]"
-            // style={{
-            //   backgroundColor: "#0D6EFD",
-            //   boxShadow: "0 4px 14px rgba(13, 110, 253, 0.25)",
-            // }}
             disabled={isProcessing || Number.parseFloat(amount) <= 0}
           >
             {isProcessing ? (

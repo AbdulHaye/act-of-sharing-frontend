@@ -24,10 +24,10 @@ const EventViewPage: React.FC = () => {
   // Handle image load error
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.error("Failed to load image:", e.currentTarget.src);
-    e.currentTarget.style.display = "none";
+    e.currentTarget.style.display = "none"; // Hide broken image
     const fallbackElement = e.currentTarget.nextElementSibling as HTMLElement;
     if (fallbackElement) {
-      fallbackElement.style.display = "flex";
+      fallbackElement.style.display = "flex"; // Show fallback
     }
   };
 
@@ -140,23 +140,23 @@ const EventViewPage: React.FC = () => {
                   {event.imageUrl ? (
                     <>
                       <img
-                        src={`${baseUrl}${event.imageUrl}`} // Temporary workaround until Cloudinary is implemented
+                        src={`${baseUrl}${event.imageUrl}`}
                         alt={event.title}
                         className="img-fluid rounded"
+                        style={{ maxHeight: "300px", objectFit: "cover", display: "block" }}
                         onError={handleImageError}
-                        style={{ display: "block", maxHeight: "300px", objectFit: "cover" }}
                       />
-                      {/* <div
+                      <div
                         className="bg-light d-flex align-items-center justify-content-center rounded"
                         style={{ height: "300px", display: "none" }}
                       >
                         <Calendar size={32} className="text-muted" />
-                      </div> */}
+                      </div>
                     </>
                   ) : (
                     <div
                       className="bg-light d-flex align-items-center justify-content-center rounded"
-                      style={{ height: "300px" }}
+                      style={{ height: "300px", display: "flex" }}
                     >
                       <Calendar size={32} className="text-muted" />
                     </div>

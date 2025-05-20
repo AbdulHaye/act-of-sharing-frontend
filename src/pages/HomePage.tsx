@@ -1,7 +1,9 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, MapPin, Users, DollarSign } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion"; // Added Framer Motion imports
+import { motion, AnimatePresence } from "framer-motion";
 import Hero from "../components/home/Hero";
 import HowItWorks from "../components/home/HowItWorks";
 import ImpactStories from "../components/home/ImpactStories";
@@ -17,8 +19,7 @@ const HomePage: React.FC = () => {
   };
 
   const { isAuthenticated } = useAuth();
-
-  const { events, loading, error, getPublicEvents } = useEvent();
+  const { events = [], loading: isLoading, error, getPublicEvents } = useEvent(); // Default events to [], rename loading to isLoading
   const [showForm, setShowForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const eventsPerPage = 3; // Display 3 events per page
@@ -28,7 +29,7 @@ const HomePage: React.FC = () => {
     phone: "",
     email: "",
     personName: "",
-    relationship: "", // Removed default "Self"
+    relationship: "",
     immediateNeed: "",
     preferredDate: "",
     additionalInfo: "",
@@ -59,7 +60,7 @@ const HomePage: React.FC = () => {
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.error("Failed to load image:", e.currentTarget.src);
     e.currentTarget.style.display = "none";
-    e.currentTarget.nextElementSibling.style.display = "flex";
+    e.currentTarget.nextElementSibling!.style.display = "flex";
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -91,12 +92,12 @@ const HomePage: React.FC = () => {
         phone: "",
         email: "",
         personName: "",
-        relationship: "", // Reset to empty
+        relationship: "",
         immediateNeed: "",
         preferredDate: "",
         additionalInfo: "",
       });
-    } catch (err) {
+    } catch (err: any) {
       toast.error(
         "Failed to submit request: " +
           (err.response?.data?.message || err.message)
@@ -124,11 +125,12 @@ const HomePage: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(events.length / eventsPerPage);
-  const indexOfLastEvent = currentPage * eventsPerPage;
-  const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
-  const currentEvents = events.slice(indexOfFirstEvent, indexOfLastEvent);
+// Pagination logic
+const safeEvents = Array.isArray(events) ? events : [];
+const totalPages = Math.ceil(safeEvents.length / eventsPerPage);
+const indexOfLastEvent = currentPage * eventsPerPage;
+const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
+const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
 
   const paginate = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -182,7 +184,7 @@ const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {loading && (
+          {isLoading && (
             <div className="text-center">
               <p>Loading events...</p>
             </div>
@@ -194,20 +196,22 @@ const HomePage: React.FC = () => {
             </div>
           )}
 
-          {!loading && !error && events.length === 0 && (
+          {!isLoading && !error && events.length === 0 && (
             <div className="text-center">
               <p>No upcoming events found.</p>
             </div>
           )}
 
-          {!loading && !error && events.length > 0 && (
+          {!isLoading && !error && events.length > 0 && (
             <>
               <div className="row">
                 {currentEvents.map((event) => (
                   <div key={event._id} className="col-md-6 col-lg-4 mb-4">
                     <div className="card h-100 border-0 shadow-sm">
                       <div className="position-relative">
-                        {/* {event.imageUrl ? (
+                        {/* Preserved commented-out code */}
+                        {/*
+                          event.imageUrl ? (
                           <img
                             src={`${baseUrl}${event.imageUrl}`}
                             alt={event.title}
@@ -215,7 +219,8 @@ const HomePage: React.FC = () => {
                             style={{ height: "200px", objectFit: "cover" }}
                             onError={handleImageError}
                           />
-                        ) : null} */}
+                        ) : null
+                        */}
 
                         {event.imageUrl ? (
                           <img

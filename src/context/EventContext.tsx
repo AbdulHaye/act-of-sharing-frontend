@@ -45,9 +45,9 @@ interface EventContextType {
   loading: boolean;
   error: string | null;
   createEvent: (formData: EventFormData) => Promise<void>;
-  getEvents: () => Promise<void>;
+  getEvents: (page?: number, limit?: number) => Promise<{ events: Event[], pagination: { currentPage: number, totalPages: number, totalEvents: number, limit: number } }>;
   getPublicEvents: () => Promise<void>;
-  getHostSpecificEvents: () => Promise<void>;
+  getHostSpecificEvents: (page?: number, limit?: number) => Promise<{ events: Event[], pagination: { currentPage: number, totalPages: number, totalEvents: number, limit: number } }>;
   updateEvent: (id: string, formData: Partial<EventFormData>) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
   sendInvitation: (toEmail: string, eventId: string) => Promise<void>;
@@ -63,20 +63,36 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [error, setError] = useState<string | null>(null);
 
   // Fetch all events (for admin/guest)
-  const getEvents = useCallback(async () => {
-    console.log('getEvents called (all events)');
+  const getEvents = useCallback(async (page: number = 1, limit: number = 10) => {
+    console.log('getEvents called (all events)', { page, limit });
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/events', { headers: { 'X-Skip-Redirect': 'true' } });
-      setEvents(response.data);
+      const token = localStorage.getItem('token') || (await refreshToken());
+      const response = await axiosInstance.get(`/events?page=${page}&limit=${limit}`, {
+        headers: { 'x-auth-token': token, 'X-Skip-Redirect': 'true' },
+      });
+      const eventsData = Array.isArray(response.data.events) ? response.data.events : [];
+      setEvents(eventsData);
       setError(null);
       console.log('Fetched all events:', response.data);
+      return {
+        events: eventsData,
+        pagination: {
+          currentPage: response.data.pagination.currentPage,
+          totalPages: response.data.pagination.totalPages,
+          totalEvents: response.data.pagination.totalEvents,
+          limit: response.data.pagination.limit,
+        },
+      };
     } catch (err: any) {
-      setError(`Failed to fetch events: ${err.response?.data?.message || err.message}`);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch events';
+      setError(errorMessage);
+      setEvents([]);
+      return { events: [], pagination: { currentPage: 1, totalPages: 1, totalEvents: 0, limit } };
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshToken]);
 
   // Fetch public events (no auth required)
   const getPublicEvents = useCallback(async () => {
@@ -86,34 +102,51 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const response = await axiosInstance.get('/events/public', {
         headers: { 'X-Skip-Redirect': 'true' },
       });
-      setEvents(response.data);
+      const eventsData = Array.isArray(response.data.events)
+        ? response.data.events
+        : [];
+      setEvents(eventsData);
       setError(null);
-      console.log('Fetched public events:', response.data);
+      console.log('Fetched public events:', eventsData);
     } catch (err: any) {
       setError(`Failed to fetch public events: ${err.response?.data?.message || err.message}`);
+      setEvents([]); // Fallback to empty array on error
     } finally {
       setLoading(false);
     }
   }, []);
 
   // Fetch host-specific events (for host dashboard)
-  const getHostSpecificEvents = useCallback(async () => {
-    console.log('getHostSpecificEvents called');
+  const getHostSpecificEvents = useCallback(async (page: number = 1, limit: number = 10) => {
+    console.log('getHostSpecificEvents called', { page, limit });
     if (!user || !isAuthenticated) {
       setError('User must be authenticated to fetch host-specific events');
-      return;
+      return { events: [], pagination: { currentPage: 1, totalPages: 1, totalEvents: 0, limit } };
     }
     setLoading(true);
     try {
       const token = localStorage.getItem('token') || (await refreshToken());
-      const response = await axiosInstance.get('/events/my-events', {
+      const response = await axiosInstance.get(`/events/my-events?page=${page}&limit=${limit}`, {
         headers: { 'x-auth-token': token, 'X-Skip-Redirect': 'true' },
       });
-      setEvents(response.data);
+      const eventsData = Array.isArray(response.data.events) ? response.data.events : [];
+      setEvents(eventsData);
       setError(null);
       console.log('Fetched host-specific events:', response.data);
+      return {
+        events: eventsData,
+        pagination: {
+          currentPage: response.data.pagination.currentPage,
+          totalPages: response.data.pagination.totalPages,
+          totalEvents: response.data.pagination.totalEvents,
+          limit: response.data.pagination.limit,
+        },
+      };
     } catch (err: any) {
-      setError(`Failed to fetch host-specific events: ${err.response?.data?.message || err.message}`);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch host-specific events';
+      setError(errorMessage);
+      setEvents([]);
+      return { events: [], pagination: { currentPage: 1, totalPages: 1, totalEvents: 0, limit } };
     } finally {
       setLoading(false);
     }
@@ -170,7 +203,10 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           headers: { 'Content-Type': 'multipart/form-data', 'x-auth-token': token, 'X-Skip-Redirect': 'true' },
         });
 
-        setEvents((prev) => [...prev, response.data]);
+        setEvents((prev) => {
+          const prevArray = Array.isArray(prev) ? prev : [];
+          return [...prevArray, response.data];
+        });
         setError(null);
         if (user.role === 'host') {
           await getHostSpecificEvents();
