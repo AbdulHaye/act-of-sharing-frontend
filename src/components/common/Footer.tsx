@@ -101,7 +101,7 @@ const Footer: React.FC = () => {
             <div className="contact-item">
               <span className="contact-label">Phone:</span>
               <a href="tel:4073600777" className="contact-value">
-                (407) 360-0777
+                (407) 360-0778
               </a>
             </div>
           </div>
