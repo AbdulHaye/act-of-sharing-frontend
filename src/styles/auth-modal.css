@@ -219,4 +219,23 @@
       font-size: 1.3rem;
     }
   }
-  
+  .auth-link-button {
+  background: none;
+  border: none;
+  color: #6c5ce7; /* Matches the purple theme */
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.auth-link-button:hover {
+  color: #5b4dcd; /* Slightly darker on hover */
+}
+
+.auth-form-group.text-right {
+  text-align: right;
+  margin-bottom: 1rem;
+}

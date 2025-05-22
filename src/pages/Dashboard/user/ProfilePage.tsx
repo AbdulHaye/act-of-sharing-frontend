@@ -163,13 +163,13 @@ const ProfilePage: React.FC = () => {
             <p className="text-muted">View and manage your account information</p>
           </div>
           <div className="d-flex flex-column flex-sm-row gap-2">
-            <button
+            {/* <button
               className="btn btn-outline-primary mb-2 mb-sm-0"
               onClick={() => navigate("/reset-password")}
             >
               <Key size={16} className="me-2" />
               Update Password
-            </button>
+            </button> */}
             <button className={`btn ${isEditing ? "btn-outline-secondary" : "btn-primary"}`} onClick={toggleEdit}>
               {isEditing ? (
                 <>

@@ -19,10 +19,11 @@ const HomePage: React.FC = () => {
   };
 
   const { isAuthenticated } = useAuth();
-  const { events = [], loading: isLoading, error, getPublicEvents } = useEvent(); // Default events to [], rename loading to isLoading
+  const { events = [], loading: isLoading, error, getPublicEvents } = useEvent();
   const [showForm, setShowForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const eventsPerPage = 3; // Display 3 events per page
+  const eventsPerPage = 3; // Default limit from API
+  const [totalPages, setTotalPages] = useState(1);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -50,12 +51,21 @@ const HomePage: React.FC = () => {
   };
 
   const baseUrl =
-    import.meta.env.VITE_BASE_URL ||
-    "https://commonchange-backend.onrender.com";
+    import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
-    getPublicEvents();
-  }, [getPublicEvents]);
+    const fetchEvents = async () => {
+      try {
+        const response = await getPublicEvents({ page: currentPage, limit: eventsPerPage });
+        if (response && response.pagination) {
+          setTotalPages(response.pagination.totalPages || 1);
+        }
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      }
+    };
+    fetchEvents();
+  }, [getPublicEvents, currentPage]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.error("Failed to load image:", e.currentTarget.src);
@@ -65,12 +75,10 @@ const HomePage: React.FC = () => {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Email validation
     if (!formData.email.includes("@")) {
       toast.error("Please enter a correct email");
       return;
     }
-    // Phone validation (9 to 20 digits)
     const phoneRegex = /^\d{9,20}$/;
     if (!phoneRegex.test(formData.phone)) {
       toast.error("Phone must be between 9 and 20 digits");
@@ -99,8 +107,7 @@ const HomePage: React.FC = () => {
       });
     } catch (err: any) {
       toast.error(
-        "Failed to submit request: " +
-          (err.response?.data?.message || err.message)
+        "Failed to submit request: " + (err.response?.data?.message || err.message)
       );
       console.error("Submit error:", err);
     }
@@ -125,18 +132,10 @@ const HomePage: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-// Pagination logic
-const safeEvents = Array.isArray(events) ? events : [];
-const totalPages = Math.ceil(safeEvents.length / eventsPerPage);
-const indexOfLastEvent = currentPage * eventsPerPage;
-const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
-const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
-
   const paginate = (pageNumber: number) => {
     setCurrentPage(pageNumber);
   };
 
-  // Handle keyboard navigation for pagination
   const handleKeyDown = (e: React.KeyboardEvent, pageNumber: number) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -144,28 +143,10 @@ const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
     }
   };
 
-  // Framer Motion variants for form animation
   const formVariants = {
-    hidden: {
-      opacity: 0,
-      y: 50,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: 50,
-      transition: {
-        duration: 0.3,
-        ease: "easeIn",
-      },
-    },
+    hidden: { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+    exit: { opacity: 0, y: 50, transition: { duration: 0.3, ease: "easeIn" } },
   };
 
   return (
@@ -205,23 +186,10 @@ const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
           {!isLoading && !error && events.length > 0 && (
             <>
               <div className="row">
-                {currentEvents.map((event) => (
+                {events.map((event) => (
                   <div key={event._id} className="col-md-6 col-lg-4 mb-4">
                     <div className="card h-100 border-0 shadow-sm">
                       <div className="position-relative">
-                        {/* Preserved commented-out code */}
-                        {/*
-                          event.imageUrl ? (
-                          <img
-                            src={`${baseUrl}${event.imageUrl}`}
-                            alt={event.title}
-                            className="card-img-top"
-                            style={{ height: "200px", objectFit: "cover" }}
-                            onError={handleImageError}
-                          />
-                        ) : null
-                        */}
-
                         {event.imageUrl ? (
                           <img
                             src={`${baseUrl}${event.imageUrl}`}
@@ -248,14 +216,11 @@ const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
                           <div className="d-flex align-items-center mb-2">
                             <Calendar size={16} className="text-primary me-2" />
                             <small>
-                              {new Date(event.date).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                }
-                              )}
+                              {new Date(event.date).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
                             </small>
                           </div>
                           <div className="d-flex align-items-center mb-2">
@@ -267,19 +232,14 @@ const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
                             <small>{event.guestCount} Attendees</small>
                           </div>
                           <div className="d-flex align-items-center mb-2">
-                            <DollarSign
-                              size={16}
-                              className="text-primary me-2"
-                            />
+                            <DollarSign size={16} className="text-primary me-2" />
                             <small>
-                              Raised: ${event.currentAmount} of $
-                              {event.goalAmount}
+                              Raised: ${event.currentAmount} of ${event.goalAmount}
                             </small>
                           </div>
                           <div className="d-flex align-items-center mb-2">
                             <small>
-                              Hosted by:{" "}
-                              {event.recipient?.name || "Unknown Host"}
+                              Hosted by: {event.recipient?.name || "Unknown Host"}
                             </small>
                           </div>
                         </div>
@@ -306,9 +266,7 @@ const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
                 <nav aria-label="Events pagination" className="mt-4">
                   <ul className="pagination justify-content-center">
                     <li
-                      className={`page-item ${
-                        currentPage === 1 ? "disabled" : ""
-                      }`}
+                      className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
                     >
                       <button
                         className="page-link"
@@ -322,17 +280,13 @@ const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
                     {Array.from({ length: totalPages }, (_, index) => (
                       <li
                         key={index + 1}
-                        className={`page-item ${
-                          currentPage === index + 1 ? "active" : ""
-                        }`}
+                        className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
                       >
                         <button
                           className="page-link"
                           onClick={() => paginate(index + 1)}
                           onKeyDown={(e) => handleKeyDown(e, index + 1)}
-                          aria-current={
-                            currentPage === index + 1 ? "page" : undefined
-                          }
+                          aria-current={currentPage === index + 1 ? "page" : undefined}
                           aria-label={`Page ${index + 1}`}
                         >
                           {index + 1}
@@ -340,9 +294,7 @@ const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
                       </li>
                     ))}
                     <li
-                      className={`page-item ${
-                        currentPage === totalPages ? "disabled" : ""
-                      }`}
+                      className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}
                     >
                       <button
                         className="page-link"
@@ -368,13 +320,10 @@ const currentEvents = safeEvents.slice(indexOfFirstEvent, indexOfLastEvent);
             </button>
           </div>
 
-          {/* Animated Form Section */}
           <AnimatePresence>
             {showForm && (
               <motion.div
-                className={`assistance-form-section ${
-                  showForm ? "form-visible" : ""
-                }`}
+                className={`assistance-form-section ${showForm ? "form-visible" : ""}`}
                 variants={formVariants}
                 initial="hidden"
                 animate="visible"

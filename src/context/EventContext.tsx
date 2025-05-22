@@ -46,12 +46,17 @@ interface EventContextType {
   error: string | null;
   createEvent: (formData: EventFormData) => Promise<void>;
   getEvents: (page?: number, limit?: number) => Promise<{ events: Event[], pagination: { currentPage: number, totalPages: number, totalEvents: number, limit: number } }>;
-  getPublicEvents: () => Promise<void>;
+  getPublicEvents: (params?: GetPublicEventsParams) => Promise<{ events: Event[], pagination: { currentPage: number, totalPages: number, totalEvents: number, limit: number } }>;
   getHostSpecificEvents: (page?: number, limit?: number) => Promise<{ events: Event[], pagination: { currentPage: number, totalPages: number, totalEvents: number, limit: number } }>;
   updateEvent: (id: string, formData: Partial<EventFormData>) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
   sendInvitation: (toEmail: string, eventId: string) => Promise<void>;
   getEventById: (id: string) => Promise<Event | null>;
+}
+
+interface GetPublicEventsParams {
+  page?: number;
+  limit?: number;
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -95,22 +100,30 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [refreshToken]);
 
   // Fetch public events (no auth required)
-  const getPublicEvents = useCallback(async () => {
-    console.log('getPublicEvents called');
+  const getPublicEvents = useCallback(async ({ page = 1, limit = 3 }: GetPublicEventsParams = {}) => {
+    console.log('getPublicEvents called', { page, limit });
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/events/public', {
+      const response = await axiosInstance.get(`/events/public?page=${page}&limit=${limit}`, {
         headers: { 'X-Skip-Redirect': 'true' },
       });
-      const eventsData = Array.isArray(response.data.events)
-        ? response.data.events
-        : [];
+      const eventsData = Array.isArray(response.data.events) ? response.data.events : [];
       setEvents(eventsData);
       setError(null);
-      console.log('Fetched public events:', eventsData);
+      console.log('Fetched public events:', response.data);
+      return {
+        events: eventsData,
+        pagination: {
+          currentPage: response.data.pagination.currentPage,
+          totalPages: response.data.pagination.totalPages,
+          totalEvents: response.data.pagination.totalEvents,
+          limit: response.data.pagination.limit,
+        },
+      };
     } catch (err: any) {
       setError(`Failed to fetch public events: ${err.response?.data?.message || err.message}`);
-      setEvents([]); // Fallback to empty array on error
+      setEvents([]);
+      return { events: [], pagination: { currentPage: 1, totalPages: 1, totalEvents: 0, limit } };
     } finally {
       setLoading(false);
     }

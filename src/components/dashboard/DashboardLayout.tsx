@@ -29,16 +29,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const { getHostSpecificEvents } = useEvent(); // Only import getHostSpecificEvents
+  const { getHostSpecificEvents } = useEvent();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [notificationsOpen, setNotificationsOpen] = React.useState(false);
 
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notificationsDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Remove the useEffect that fetches events here, as it should be handled by child components
-  // Child components like InvitePage will fetch events as needed
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
@@ -62,7 +59,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Get user details from AuthContext
   const userName =
     user?.firstname && user?.lastname
       ? `${user.firstname} ${user.lastname}`
@@ -103,35 +99,29 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         { path: "/dashboard/users", icon: <Users size={20} />, label: "Users" },
         { path: "/dashboard/request-assistance", icon: <Users size={20} />, label: "Request Assistance" },
         { path: "/dashboard/contactus", icon: <Users size={20} />, label: "Contact Us" },
-        // { path: "/dashboard/analytics", icon: <PieChart size={20} />, label: "Analytics" },
-        // { path: "/dashboard/finances", icon: <DollarSign size={20} />, label: "Finances" },
-        // { path: "/dashboard/settings", icon: <Settings size={20} />, label: "Settings" },
+        { path: "/dashboard/stories", icon: <Users size={20} />, label: "Stories" }, // Added Stories tab for admins
       ];
     } else if (userRole === "host") {
       return [
         ...commonItems,
         { path: "/dashboard/invite", icon: <Users size={20} />, label: "Invite" },
-        // { path: "/dashboard/earnings", icon: <DollarSign size={20} />, label: "Earnings" },
       ];
     } else {
       return [
         ...commonItems,
-        // { path: "/dashboard/find-events", icon: <Calendar size={20} />, label: "Find Events" },
-        // { path: "/dashboard/donations", icon: <DollarSign size={20} />, label: "My Donations" },
       ];
     }
   };
 
   const navItems = getNavItems();
 
-  // Generate notifications based on real events (using a mock approach since events aren't fetched here)
   const notifications = [
     {
       id: 1,
       text: "No upcoming events",
       time: new Date().toLocaleTimeString(),
     },
-  ]; // Use a default notification since events aren't fetched here
+  ];
 
   return (
     <div className="dashboard-container">
@@ -203,58 +193,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
 
           <div className="header-right">
-            {/* <div className="dropdown" ref={notificationsDropdownRef}>
-              <button
-                className="btn btn-icon position-relative"
-                onClick={() => {
-                  setNotificationsOpen(!notificationsOpen);
-                  setDropdownOpen(false);
-                }}
-              >
-                <Bell size={20} />
-                <span className="notification-badge">
-                  {notifications.length}
-                </span>
-              </button>
-
-              <div
-                className={`dropdown-menu dropdown-menu-end notification-dropdown ${
-                  notificationsOpen ? "show" : ""
-                }`}
-              >
-                <div className="dropdown-header d-flex justify-content-between align-items-center">
-                  <span>Notifications</span>
-                  <a href="#" className="text-primary small">
-                    Mark all as read
-                  </a>
-                </div>
-                <div className="notification-list">
-                  {notifications.map((notification) => (
-                    <a
-                      key={notification.id}
-                      href="#"
-                      className="dropdown-item notification-item"
-                    >
-                      <div className="notification-icon">
-                        <Bell size={16} />
-                      </div>
-                      <div className="notification-content">
-                        <p className="mb-0">{notification.text}</p>
-                        <span className="notification-time">
-                          {notification.time}
-                        </span>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-                <div className="dropdown-footer">
-                  <a href="#" className="text-center d-block">
-                    View all notifications
-                  </a>
-                </div>
-              </div>
-            </div> */}
-
             <div className="dropdown user-dropdown mr-3 mb-3" ref={userDropdownRef}>
               <button
                 className="btn btn-icon user-dropdown-toggle"
@@ -266,10 +204,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <div className="user-avatar-sm">
                   {userName.charAt(0).toUpperCase()}
                 </div>
-                {/* <span className="d-none d-md-inline ms-2 user-name">
-                  {userName}
-                </span> */}
-                {/* <ChevronDown size={14} className="ms-2" /> */}
               </button>
 
               <div

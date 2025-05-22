@@ -75,7 +75,7 @@ const Footer: React.FC = () => {
               Bringing communities together to share meals and make a difference through collective giving.
             </p>
             <div className="social-icons">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <a href="https://www.facebook.com/CommonChange/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                 <Facebook size={18} />
               </a>
               <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
@@ -84,7 +84,7 @@ const Footer: React.FC = () => {
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                 <Instagram size={18} />
               </a>
-              <a href="mailto:commonchange@gmail.com" aria-label="Email">
+              <a href="mailto:Support@CommonChange.com" aria-label="Email">
                 <Mail size={18} />
               </a>
             </div>
@@ -94,16 +94,16 @@ const Footer: React.FC = () => {
             <h5 className="footer-heading">Contact</h5>
             <div className="contact-item">
               <span className="contact-label">Email:</span>
-              <a href="mailto:commonchange@gmail.com" className="contact-value">
-                commonchange@gmail.com
+              <a href="mailto:Support@CommonChange.com" className="contact-value">
+                Support@CommonChange.com
               </a>
             </div>
-            <div className="contact-item">
+            {/* <div className="contact-item">
               <span className="contact-label">Phone:</span>
               <a href="tel:4073600777" className="contact-value">
                 (407) 360-0777
               </a>
-            </div>
+            </div> */}
           </div>
 
           <div className="col-md-5 col-lg-6">

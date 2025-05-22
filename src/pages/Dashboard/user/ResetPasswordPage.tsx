@@ -86,7 +86,7 @@ const ResetPasswordPage: React.FC = () => {
       setResetStage("email");
       setResetFormData({ newPassword: "", confirmPassword: "" });
       setResetToken("");
-      navigate("/profile"); // Redirect to profile after successful reset
+      navigate("/"); // Redirect to profile after successful reset
     } catch (err: any) {
       console.error("Reset password error:", err.response?.data || err.message || err);
       setError(err.response?.data?.message || "Failed to reset password");
@@ -104,7 +104,7 @@ const ResetPasswordPage: React.FC = () => {
           setShowModal(false);
           setResetStage("email");
           setError(null);
-          navigate("/profile"); // Redirect to profile if modal is closed
+          navigate("/"); // Redirect to profile if modal is closed
         }}
         centered
       >

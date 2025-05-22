@@ -1,9 +1,10 @@
 import type React from "react"
 import { useState, useEffect } from "react"
-import { X, Eye, EyeOff, Heart } from "lucide-react"
+import { X, Eye, EyeOff, Heart, Key } from "lucide-react"
 import "../../styles/auth-modal.css"
 import { useAuth } from "../../context/AuthContext"
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom"
 
 interface AuthModalProps {
   mode: "login" | "signup"
@@ -34,6 +35,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
       document.body.style.overflow = "auto"
     }
   }, [onClose])
+  const navigate = useNavigate();
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -133,28 +137,42 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
             />
           </div>
 
-          <div className="auth-form-group">
-            <label htmlFor="password">Password</label>
-            <div className="password-input-container">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="auth-input"
-                placeholder="Enter your password"
-              />
-              <button
-                type="button"
-                className="password-toggle-button"
-                onClick={togglePasswordVisibility}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
+<div className="auth-form-group">
+  <label htmlFor="password">Password</label>
+  <div className="password-input-container">
+    <input
+      id="password"
+      type={showPassword ? "text" : "password"}
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      required
+      className="auth-input"
+      placeholder="Enter your password"
+    />
+    <button
+      type="button"
+      className="password-toggle-button"
+      onClick={togglePasswordVisibility}
+      aria-label={showPassword ? "Hide password" : "Show password"}
+    >
+      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  </div>
+</div>
+
+<div className="auth-form-group text-right">
+  <button
+    type="button"
+    className="auth-link-button"
+   onClick={() => {
+      onClose();
+      navigate("/reset-password");
+    }}
+  >
+    <Key size={16} className="me-2" />
+    Forgot Password?
+  </button>
+</div>
 
           {mode === "signup" && (
             <div className="auth-form-group">
