@@ -306,7 +306,7 @@ const ProfilePage: React.FC = () => {
                         <p className="mb-0 fw-medium">{user.email || "N/A"}</p>
                       </div>
                     </div>
-                    <div className="col-12 col-md-6">
+                    {/* <div className="col-12 col-md-6">
                       <div className="mb-3">
                         <div className="d-flex align-items-center mb-1">
                           <Key size={18} className="text-primary me-2" />
@@ -314,7 +314,7 @@ const ProfilePage: React.FC = () => {
                         </div>
                         <p className="mb-0 fw-medium">••••••••</p>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 

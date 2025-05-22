@@ -23,6 +23,15 @@ interface Event {
   hostId?: { _id: string; firstname: string; lastname: string };
 }
 
+interface Contribution {
+  _id: string;
+  eventId: { _id: string; title: string };
+  userId: { firstname: string; lastname: string; email: string };
+  amount: number;
+  status: string;
+  createdAt: string;
+}
+
 interface Pagination {
   currentPage: number;
   totalPages: number;
@@ -87,19 +96,20 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-  // Fetch total raised
-  const fetchTotalRaised = async (): Promise<void> => {
+  // Fetch host-specific total raised from external contributions
+  const fetchHostTotalRaised = async (): Promise<void> => {
+    console.log("Fetching host external total raised...");
     try {
       const token: string = localStorage.getItem("token") || "";
-      const response = await axiosInstance.get("/contributions/total-funds", {
+      const response = await axiosInstance.get(`/contributions/total-funds`, {
         headers: { "Content-Type": "application/json", "x-auth-token": token },
       });
-      console.log("Fetched total raised response:", response.data);
-      const totalFunds = Number(response.data?.totalFunds) || 0;
+      console.log("Fetched host external total raised response:", response.data);
+      const totalFunds = Number(response.data.totalFunds) || 0;
       setTotalRaised(totalFunds);
     } catch (error: any) {
-      console.error("Error fetching total raised:", error);
-      toast.error(error.response?.data?.message || "Failed to fetch total raised");
+      console.error("Error fetching host external total raised:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch external contributions");
       setTotalRaised(0);
     }
   };
@@ -117,19 +127,19 @@ const HostDashboard: React.FC = () => {
       setTotalGoalAmount(totalGoal);
     } catch (error: any) {
       console.error("Error fetching total goal amount:", error);
-      toast.error(error.response?.data?.message || "Failed to fetch total goal amount");
-      setTotalGoalAmount(0); // Fallback to 0 if fetch fails
+      // toast.error(error.response?.data?.message || "Failed to fetch total goal amount");
+      setTotalGoalAmount(0);
     }
   };
 
   // Fetch data on mount or pagination change
   useEffect(() => {
-    if (user?._id) {
+    if (user) {
+      fetchHostTotalRaised();
       fetchEvents(pagination.currentPage);
-      fetchTotalRaised();
       fetchTotalGoalAmount();
     }
-  }, [user?._id, pagination.currentPage]);
+  }, [user, pagination.currentPage]);
 
   // Handle page change
   const handlePageChange = (page: number): void => {
@@ -243,7 +253,7 @@ const HostDashboard: React.FC = () => {
                 <h2 className="mb-2 text-white text-lg font-semibold">Welcome, {userName}!</h2>
                 <p>
                   You have <strong>{upcomingEvents.length}</strong> upcoming events. Your events have raised{" "}
-                  <strong>${totalRaised.toLocaleString()}</strong> for charitable causes.
+                  <strong>${totalRaised.toLocaleString()}</strong> from external contributions for charitable causes.
                 </p>
               </div>
               <div className="text-md-end">
