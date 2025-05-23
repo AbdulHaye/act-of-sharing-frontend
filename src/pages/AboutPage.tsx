@@ -14,7 +14,7 @@ const AboutPage: React.FC = () => {
                 Bringing communities together to share meals and make a collective impact
               </p>
               <p className="about-text">
-                Meals With Mission was founded on a simple idea: when people gather around a table to share a meal, something magical happens. Conversations flow, connections deepen, and communities grow stronger.
+                commonchange was founded on a simple idea: when people gather around a table to share a meal, something magical happens. Conversations flow, connections deepen, and communities grow stronger.
               </p>
               <p className="about-text">
                 We've harnessed this power of shared meals to create a platform where friends can come together not just to enjoy each other's company, but to collectively support individuals and families facing challenges in their communities.
@@ -89,7 +89,7 @@ const AboutPage: React.FC = () => {
             <div className="col-lg-6 order-lg-2 mb-5 mb-lg-0">
               <h2 className="section-title text-start">Our Story</h2>
               <p className="about-text">
-                Meals With Mission began in 2019 when our founder, Sarah Chen, hosted a dinner for eight friends to raise funds for a neighbor facing unexpected medical bills. What started as a one-time gathering quickly evolved as Sarah and her friends realized the powerful combination of shared meals and collective giving.
+                commonchange began in 2019 when our founder, Sarah Chen, hosted a dinner for eight friends to raise funds for a neighbor facing unexpected medical bills. What started as a one-time gathering quickly evolved as Sarah and her friends realized the powerful combination of shared meals and collective giving.
               </p>
               <p className="about-text">
                 Since then, we've grown from a small group of friends in Portland to a nationwide movement of meal hosts who are changing lives in their communities, one gathering at a time.
@@ -136,9 +136,7 @@ const AboutPage: React.FC = () => {
                   Ready to make a difference in your community? Host a meal, gather friends, and create meaningful impact together.
                 </p>
                 <div className="mt-4">
-                  <Link to="/create-event" className="btn btn-primary btn-lg me-3">
-                    Host a Meal
-                  </Link>
+                 
                   <Link to="/how-it-works" className="btn btn-outline-light btn-lg">
                     Learn More
                   </Link>

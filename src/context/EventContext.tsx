@@ -68,7 +68,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [error, setError] = useState<string | null>(null);
 
   // Fetch all events (for admin/guest)
-  const getEvents = useCallback(async (page: number = 1, limit: number = 10) => {
+  const getEvents = useCallback(async (page: number = 1, limit: number = 100) => {
     console.log('getEvents called (all events)', { page, limit });
     setLoading(true);
     try {
@@ -130,7 +130,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   // Fetch host-specific events (for host dashboard)
-  const getHostSpecificEvents = useCallback(async (page: number = 1, limit: number = 10) => {
+  const getHostSpecificEvents = useCallback(async (page: number = 1, limit: number = 100) => {
     console.log('getHostSpecificEvents called', { page, limit });
     if (!user || !isAuthenticated) {
       setError('User must be authenticated to fetch host-specific events');
@@ -236,47 +236,63 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 
   // Update an existing event
-  const updateEvent = useCallback(
-    async (id: string, formData: Partial<EventFormData>) => {
-      setLoading(true);
-      try {
-        const data = new FormData();
-        if (formData.name) data.append('title', formData.name);
-        if (formData.description) data.append('description', formData.description);
-        if (formData.date && formData.time) {
-          const eventDateTime = `${formData.date}T${formData.time}:00Z`;
-          data.append('date', eventDateTime);
-        }
-        if (formData.location) data.append('location', formData.location);
-        if (formData.maxGuests) data.append('guestCount', formData.maxGuests.toString());
-        if (formData.fundingGoal) data.append('goalAmount', formData.fundingGoal.toString());
-        if (formData.recipientName) data.append('recipientName', formData.recipientName);
-        if (formData.categoryOfNeed) data.append('categoryOfNeed', formData.categoryOfNeed);
-        if (formData.recipientStory) data.append('recipientStory', formData.recipientStory);
-        if (formData.fundsUsage) data.append('fundsUsage', formData.fundsUsage);
-        if (formData.eventImage) data.append('eventImage', formData.eventImage as File);
-        if (formData.recipientPhoto) data.append('recipientPhoto', formData.recipientPhoto as File);
-
-        const token = localStorage.getItem('token') || (await refreshToken());
-        const response = await axiosInstance.put(`/events/${id}`, data, {
-          headers: { 'Content-Type': 'multipart/form-data', 'x-auth-token': token, 'X-Skip-Redirect': 'true' },
-        });
-
-        setEvents((prev) => prev.map((evt) => (evt._id === id ? response.data : evt)));
-        setError(null);
-        if (user?.role === 'host') {
-          await getHostSpecificEvents();
-        } else {
-          await getEvents();
-        }
-      } catch (err: any) {
-        setError(`Failed to update event: ${err.response?.data?.message || err.message}`);
-      } finally {
-        setLoading(false);
+// Update an existing event
+const updateEvent = useCallback(
+  async (id: string, formData: Partial<EventFormData>) => {
+    setLoading(true);
+    try {
+      const data = new FormData();
+      
+      // Append top-level fields
+      if (formData.name) data.append('title', formData.name);
+      if (formData.description) data.append('description', formData.description);
+      if (formData.date && formData.time) {
+        const eventDateTime = `${formData.date}T${formData.time}:00Z`;
+        data.append('date', eventDateTime);
       }
-    },
-    [user, getEvents, getHostSpecificEvents, refreshToken]
-  );
+      if (formData.location) data.append('location', formData.location);
+      if (formData.maxGuests) data.append('guestCount', formData.maxGuests);
+      if (formData.fundingGoal) data.append('goalAmount', formData.fundingGoal);
+      if (formData.isPublic !== undefined) data.append('isPublic', formData.isPublic.toString());
+      if (formData.visibility) data.append('visibility', formData.visibility);
+
+      // Append recipient fields
+      if (formData.recipient) {
+        data.append('recipient[name]', formData.recipient.name);
+        data.append('recipient[categoryOfNeed]', formData.recipient.categoryOfNeed);
+        data.append('recipient[story]', formData.recipient.story);
+        data.append('recipient[fundsUsage]', formData.recipient.fundsUsage);
+      }
+
+      // Append files if they exist
+      if (formData.eventImage) data.append('eventImage', formData.eventImage as File);
+      if (formData.recipient?.photo) data.append('recipientPhoto', formData.recipient.photo as File);
+
+      const token = localStorage.getItem('token') || (await refreshToken());
+      const response = await axiosInstance.put(`/events/${id}`, data, {
+        headers: { 
+          'x-auth-token': token, 
+          'X-Skip-Redirect': 'true' 
+        }, // Removed explicit Content-Type
+      });
+
+      // Update state and handle success
+      setEvents((prev) => prev.map((evt) => (evt._id === id ? response.data : evt)));
+      setError(null);
+      if (user?.role === 'host') {
+        await getHostSpecificEvents();
+      } else {
+        await getEvents();
+      }
+    } catch (err: any) {
+      setError(`Failed to update event: ${err.response?.data?.message || err.message}`);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  },
+  [user, getEvents, getHostSpecificEvents, refreshToken]
+);
 
   // Delete an event
   const deleteEvent = useCallback(

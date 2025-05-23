@@ -7,6 +7,7 @@
   --text-muted: #6b7280;
   --background-light: #f9fafb;
   --border-color: #e5e7eb;
+  --yellow: #facc15;
 }
 
 body {
@@ -63,6 +64,16 @@ body {
 .donation-amount-input:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Animation for bouncing dots */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.bg-yellow {
+  background-color: var(--yellow);
 }
 
 @media (max-width: 768px) {

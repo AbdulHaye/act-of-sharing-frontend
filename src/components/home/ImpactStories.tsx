@@ -83,7 +83,7 @@ const ImpactStories: React.FC = () => {
           <div className="col-lg-8 mx-auto">
             <h2 className="section-title">Real Impact Stories</h2>
             <p className="section-subtitle">
-              See how meals with purpose have changed lives in our communities
+              See how commonchange purpose have changed lives in our communities
             </p>
           </div>
         </div>

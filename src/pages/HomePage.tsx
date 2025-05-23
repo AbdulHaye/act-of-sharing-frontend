@@ -22,7 +22,7 @@ const HomePage: React.FC = () => {
   const { events = [], loading: isLoading, error, getPublicEvents } = useEvent();
   const [showForm, setShowForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const eventsPerPage = 3; // Default limit from API
+  const eventsPerPage = 6; // Default limit from API
   const [totalPages, setTotalPages] = useState(1);
 
   const [formData, setFormData] = useState({

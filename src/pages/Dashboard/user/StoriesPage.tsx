@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -108,7 +109,7 @@ const StoriesPage: React.FC = () => {
     if (!data.location || data.location.trim() === "") return "Location is required";
     if (!data.category || data.category.trim() === "") return "Category is required";
     if (!data.amount || isNaN(parseInt(data.amount)) || parseInt(data.amount) <= 0) return "Amount must be a valid positive number";
-    if (isAdd && !addFile) return "Image is required"; // Enforce image for adding story
+    if (isAdd && !addFile) return "Image is required";
     return null;
   };
 
@@ -248,6 +249,12 @@ const StoriesPage: React.FC = () => {
     }
   };
 
+  // Function to truncate text to a specified length
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -261,7 +268,7 @@ const StoriesPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="container-fluid p-4">
+         <div className="container-fluid p-4" style={{ width: "100%", overflowX: "auto" }}>
         <div className="card border-0 shadow-sm bg-white">
           <div className="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 className="card-title mb-0 text-lg font-semibold">Stories</h5>
@@ -307,7 +314,7 @@ const StoriesPage: React.FC = () => {
                           {(pagination.currentPage - 1) * pagination.limit + index + 1}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "25%" }}>
-                          {story.quote}
+                          {truncateText(story.quote, 30)}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "15%" }}>
                           {story.name}
@@ -561,6 +568,7 @@ const StoriesPage: React.FC = () => {
       <style jsx>{`
         .table-custom {
           border-collapse: collapse;
+          width: 100%;
         }
         .table-header {
           font-weight: 600;

@@ -1,131 +1,112 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { CreditCard, Heart, ArrowLeft } from "lucide-react"
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { CreditCard, Heart, ArrowLeft } from "lucide-react";
 
 interface DonationFormProps {
-  eventId: string
-  organizationName?: string
+  eventId: string;
+  organizationName?: string;
 }
 
 const DonationForm: React.FC<DonationFormProps> = ({ eventId, organizationName = "Meals With A Mission" }) => {
-  const [amount, setAmount] = useState<string>("0.00")
-  const [subscriptionType, setSubscriptionType] = useState<"one-time" | "monthly">("one-time")
-  const [isProcessing, setIsProcessing] = useState<boolean>(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const navigate = useNavigate()
+  const [amount, setAmount] = useState<string>("0.00");
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value
+    const raw = e.target.value;
 
     // Allow only numbers and a single decimal point, up to 2 decimal places
-    if (!/^\d*\.?\d{0,2}$/.test(raw) && raw !== "") return
+    if (!/^\d*\.?\d{0,2}$/.test(raw) && raw !== "") return;
 
-    setAmount(raw)
+    setAmount(raw);
 
-    const num = parseFloat(raw)
+    const num = parseFloat(raw);
     if (!isNaN(num) && (num < 1 || num > 5000)) {
-      setErrorMessage("Enter an amount between $1.00 and $5,000.00")
+      setErrorMessage("Enter an amount between $1.00 and $5,000.00");
     } else {
-      setErrorMessage(null)
+      setErrorMessage(null);
     }
-  }
+  };
 
   const handleAmountBlur = () => {
-    const num = parseFloat(amount)
+    const num = parseFloat(amount);
 
     if (!isNaN(num)) {
-      setAmount(num.toFixed(2)) // Ensures 2 decimal places
+      setAmount(num.toFixed(2)); // Ensures 2 decimal places
     }
-  }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const numAmount = Number.parseFloat(amount)
+    e.preventDefault();
+    const numAmount = Number.parseFloat(amount);
     if (numAmount < 1 || numAmount > 5000) {
-      setErrorMessage("Enter an amount between $1.00 and $5,000.00")
-      return
+      setErrorMessage("Enter an amount between $1.00 and $5,000.00");
+      return;
     }
-    setIsProcessing(true)
-    setErrorMessage(null)
+    setIsProcessing(true);
+    setErrorMessage(null);
     setTimeout(() => {
-      navigate(`/checkout/${eventId}?amount=${amount}&subscription=${subscriptionType}`)
-      setIsProcessing(false)
-    }, 500)
-  }
+      navigate(`/checkout/${eventId}?amount=${amount}`);
+      setIsProcessing(false);
+    }, 500);
+  };
 
-  // Handle back button click to navigate to the previous page
   const handleBack = () => {
-    navigate(-1)
-  }
+    navigate(-1);
+  };
 
-  const presetAmounts = [25, 50, 100, 250]
+  const presetAmounts = [25, 50, 100, 250];
 
   return (
-    <div className="bg-white rounded-xl shadow-2xl p-6 donation-card max-w-md mx-auto border border-gray-100 relative">
+    <div className="card shadow-sm p-4 mx-auto mt-5" style={{ maxWidth: "600px", border: "1px solid #e5e7eb" }}>
       {/* Back Button */}
       <button
         type="button"
         onClick={handleBack}
-        className="absolute top-4 left-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+        className="btn btn-light btn-sm position-absolute top-3 start-3 rounded-circle"
         aria-label="Back"
       >
-        <ArrowLeft className="text-gray-600" size={20} />
+        <ArrowLeft size={20} />
       </button>
 
-      <div className="flex justify-center mb-4">
-        <div className="bg-blue-50 p-3 rounded-full">
-          <Heart className="text-[#5144A1]" size={24} />
+      <div className="text-center mb-4">
+        <div className="bg-light p-3 rounded-circle d-inline-block">
+          <Heart className="text-primary" size={24} />
         </div>
       </div>
 
-      <h2 className="text-center text-2xl font-bold mb-6 text-[#4D5E80]">Tax Deductible Donation</h2>
+      <h2 className="text-center fw-bold mb-4" style={{ color: "#4D5E80" }}>Tax Deductible Donation</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="text-center">
-          <p className="uppercase text-xs font-bold mb-3 tracking-wider text-[#2B3E50]">ENTER DONATION AMOUNT</p>
+          <p className="text-uppercase text-muted small fw-bold mb-3">ENTER DONATION AMOUNT</p>
 
-          <div className="relative mb-2">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden transition-all hover:border-blue-300 focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-400">
-              <div className="flex items-center h-14 relative">
-                <div className="absolute left-0 pl-4 text-gray-500 text-lg font-medium">$</div>
-                <input
-                  type="text"
-                  id="donationAmount"
-                  value={amount}
-                  onChange={handleAmountChange}
-                  onBlur={handleAmountBlur}
-                  className="border-0 bg-transparent w-full h-full py-3"
-                  style={{
-                    paddingLeft: "1.75rem",
-                    paddingRight: subscriptionType === "monthly" ? "5rem" : "1rem",
-                    outline: "none",
-                    fontSize: "1.5rem",
-                    fontWeight: "600",
-                    color: "#333",
-                  }}
-                  required
-                />
-                {subscriptionType === "monthly" && (
-                  <div className="absolute right-0 pr-4 text-gray-500 text-sm">/ month</div>
-                )}
-              </div>
+          <div className="position-relative mb-2">
+            <div className="input-group">
+              <span className="input-group-text bg-light border-end-0" style={{ fontSize: "1.5rem", fontWeight: "600", color: "#333" }}>$</span>
+              <input
+                type="text"
+                id="donationAmount"
+                value={amount}
+                onChange={handleAmountChange}
+                onBlur={handleAmountBlur}
+                className="form-control border-start-0 bg-light text-center"
+                style={{ fontSize: "1.5rem", fontWeight: "600", color: "#333", paddingLeft: "0.5rem" }}
+                required
+              />
             </div>
-            {errorMessage && <p className="text-red-500 text-xs text-center mt-1 font-medium">{errorMessage}</p>}
+            {errorMessage && <p className="text-danger text-center mt-1">{errorMessage}</p>}
           </div>
 
-          <div className="grid grid-cols-4 gap-2 mt-3 mb-4">
+          <div className="d-flex justify-content-center gap-2 mb-4">
             {presetAmounts.map((presetAmount) => (
               <button
                 key={presetAmount}
                 type="button"
-                className={`py-2 px-1 rounded-md text-sm font-medium transition-all ${
-                  Number(amount) === presetAmount
-                    ? "bg-blue-100 text-blue-700 border border-blue-200"
-                    : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
-                }`}
+                className={`btn btn-outline-secondary btn-sm ${Number(amount) === presetAmount ? "btn-primary" : ""}`}
                 onClick={() => setAmount(presetAmount.toFixed(2))}
               >
                 ${presetAmount}
@@ -134,53 +115,34 @@ const DonationForm: React.FC<DonationFormProps> = ({ eventId, organizationName =
           </div>
         </div>
 
-        <div className="text-center bg-blue-50 p-4 rounded-lg">
-          <p className="text-gray-700 text-sm leading-relaxed">
-            Help <span className="font-semibold">{organizationName}</span> bless others in our local community through a
-            one-time or recurring donation.
+        <div className="text-center bg-light p-3 rounded">
+          <p className="text-muted small">
+            Help <span className="fw-semibold">{organizationName}</span> bless others in our local community through a one-time donation.
           </p>
         </div>
 
-        <div className="pt-2">
-          <button
-            type="submit"
-            className="w-full py-4 btn-primary text-white font-medium text-base rounded-lg transition-all transform hover:translate-y-[-2px]"
-            disabled={isProcessing || Number.parseFloat(amount) <= 0}
-          >
-            {isProcessing ? (
-              <div className="flex items-center justify-center">
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Processing...
-              </div>
-            ) : (
-              "Checkout"
-            )}
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="btn btn-primary w-100 py-3 fw-medium"
+          disabled={isProcessing || Number.parseFloat(amount) <= 0}
+        >
+          {isProcessing ? (
+            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          ) : null}
+          {isProcessing ? "Processing..." : "Checkout"}
+        </button>
       </form>
 
-      <div className="text-center mt-6 pt-4 border-t border-gray-100">
-        <div className="flex justify-center items-center mb-2">
-          <div className="bg-gray-100 p-2 rounded-md">
-            <CreditCard size={16} className="text-gray-500" />
+      <div className="text-center mt-4 pt-3 border-top border-light">
+        <div className="d-flex justify-content-center mb-2">
+          <div className="bg-light p-2 rounded">
+            <CreditCard size={16} className="text-muted" />
           </div>
         </div>
-        <p className="text-gray-500 text-xs">Secure payment by Stripe</p>
+        <p className="text-muted small">Secure payment by Stripe</p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DonationForm
+export default DonationForm;

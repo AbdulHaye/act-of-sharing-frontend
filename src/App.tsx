@@ -48,7 +48,7 @@ const DashboardRedirect: React.FC = () => {
 
 function App() {
   const location = useLocation();
-  const hideNavbarAndFooter = location.pathname.startsWith("/payment/") || location.pathname.startsWith("/dashboard");
+  const hideNavbarAndFooter = location.pathname.startsWith("/payment/") || location.pathname.startsWith("/dashboard") || location.pathname.startsWith("/checkout");
 
   return (
     <Elements stripe={stripePromise}>

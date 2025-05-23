@@ -13,11 +13,13 @@ interface EventFormData {
   fundingGoal: string;
   description: string;
   eventImage: File | null;
-  recipientName: string;
-  categoryOfNeed: string;
-  recipientStory: string;
-  recipientPhoto: File | null;
-  fundsUsage: string;
+  recipient: {
+    name: string;
+    categoryOfNeed: string;
+    story: string;
+    photo: File | null;
+    fundsUsage: string;
+  };
   visibility: "" | "public" | "private";
 }
 
@@ -58,11 +60,13 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     fundingGoal: '',
     description: '',
     eventImage: null,
-    recipientName: '',
-    categoryOfNeed: '',
-    recipientStory: '',
-    recipientPhoto: null,
-    fundsUsage: '',
+    recipient: {
+      name: '',
+      categoryOfNeed: '',
+      story: '',
+      photo: null,
+      fundsUsage: '',
+    },
     visibility: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -80,19 +84,21 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     if (event) {
       const eventDate = new Date(event.date);
       setFormData({
-        name: event.title,
-        description: event.description,
-        date: eventDate.toISOString().split('T')[0],
-        time: eventDate.toTimeString().slice(0, 5),
-        location: event.location,
-        maxGuests: event.guestCount.toString(),
-        fundingGoal: event.goalAmount.toString(),
-        recipientName: event.recipient.name,
-        categoryOfNeed: event.recipient.categoryOfNeed,
-        recipientStory: event.recipient.story,
-        fundsUsage: event.recipient.fundsUsage,
+        name: event.title || '',
+        description: event.description || '',
+        date: eventDate.toISOString().split('T')[0] || '',
+        time: eventDate.toTimeString().slice(0, 5) || '',
+        location: event.location || '',
+        maxGuests: event.guestCount?.toString() || '',
+        fundingGoal: event.goalAmount?.toString() || '',
         eventImage: null,
-        recipientPhoto: null,
+        recipient: {
+          name: event.recipient?.name || '',
+          categoryOfNeed: event.recipient?.categoryOfNeed || '',
+          story: event.recipient?.story || '',
+          photo: null,
+          fundsUsage: event.recipient?.fundsUsage || '',
+        },
         visibility: event.isPublic ? 'public' : 'private',
       });
     } else {
@@ -105,11 +111,13 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         fundingGoal: '',
         description: '',
         eventImage: null,
-        recipientName: '',
-        categoryOfNeed: '',
-        recipientStory: '',
-        recipientPhoto: null,
-        fundsUsage: '',
+        recipient: {
+          name: '',
+          categoryOfNeed: '',
+          story: '',
+          photo: null,
+          fundsUsage: '',
+        },
         visibility: '',
       });
     }
@@ -135,10 +143,10 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
       if (!formData.description) errors.description = 'Description is required';
       if (!formData.visibility) errors.visibility = 'Event visibility is required';
     } else if (step === 2) {
-      if (!formData.recipientName) errors.recipientName = 'Recipient name is required';
-      if (!formData.categoryOfNeed) errors.categoryOfNeed = 'Category of need is required';
-      if (!formData.recipientStory) errors.recipientStory = 'Recipient story is required';
-      if (!formData.fundsUsage) errors.fundsUsage = 'Funds usage is required';
+      if (!formData.recipient.name) errors.recipientName = 'Recipient name is required';
+      if (!formData.recipient.categoryOfNeed) errors.categoryOfNeed = 'Category of need is required';
+      if (!formData.recipient.story) errors.recipientStory = 'Recipient story is required';
+      if (!formData.recipient.fundsUsage) errors.fundsUsage = 'Funds usage is required';
     }
     return errors;
   };
@@ -165,14 +173,39 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const handleRecipientInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      recipient: {
+        ...prev.recipient,
+        [name]: value,
+      },
+    }));
+    setErrors((prev) => ({ ...prev, [`recipient${name.charAt(0).toUpperCase() + name.slice(1)}`]: '' }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name } = e.target;
     const file = e.target.files ? e.target.files[0] : null;
-    setFormData((prev) => ({ ...prev, [name]: file }));
+    if (name === 'eventImage') {
+      setFormData((prev) => ({ ...prev, eventImage: file }));
+    } else if (name === 'recipientPhoto') {
+      setFormData((prev) => ({
+        ...prev,
+        recipient: {
+          ...prev.recipient,
+          photo: file,
+        },
+      }));
+    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,6 +223,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
       toast.error('No event selected');
       return;
     }
+
     const step1Errors = validateStep(1);
     const step2Errors = validateStep(2);
     const allErrors = { ...step1Errors, ...step2Errors };
@@ -204,13 +238,29 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
 
     try {
       const updatedData: Partial<EventFormData> = {
-        ...formData,
-        visibility: formData.visibility === 'public' ? 'true' : 'false',
+        name: formData.name,
+        description: formData.description,
+        date: formData.date,
+        time: formData.time,
+        location: formData.location,
+        maxGuests: formData.maxGuests,
+        fundingGoal: formData.fundingGoal,
+        eventImage: formData.eventImage,
+        visibility: formData.visibility,
+        isPublic: formData.visibility === 'public',
+        recipient: {
+          name: formData.recipient.name,
+          categoryOfNeed: formData.recipient.categoryOfNeed,
+          story: formData.recipient.story,
+          fundsUsage: formData.recipient.fundsUsage,
+          photo: formData.recipient.photo,
+        },
       };
+
       await updateEvent(event._id, updatedData);
       toast.success('Event updated successfully');
       onHide();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating event:', err);
       toast.error('Failed to update event');
     }
@@ -489,13 +539,13 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     </p>
 
                     <div className="mb-3">
-                      <label htmlFor="recipientName" className="form-label">Recipient Name *</label>
+                      <label htmlFor="name" className="form-label">Recipient Name *</label>
                       <input
                         type="text"
-                        id="recipientName"
-                        name="recipientName"
-                        value={formData.recipientName}
-                        onChange={handleInputChange}
+                        id="name"
+                        name="name"
+                        value={formData.recipient.name}
+                        onChange={handleRecipientInputChange}
                         className="form-control"
                         placeholder="Individual or family name"
                         required
@@ -509,8 +559,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       <select
                         id="categoryOfNeed"
                         name="categoryOfNeed"
-                        value={formData.categoryOfNeed}
-                        onChange={handleInputChange}
+                        value={formData.recipient.categoryOfNeed}
+                        onChange={handleRecipientInputChange}
                         className="form-control"
                         required
                         disabled={loading}
@@ -527,12 +577,12 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="recipientStory" className="form-label">Their Story *</label>
+                      <label htmlFor="story" className="form-label">Their Story *</label>
                       <textarea
-                        id="recipientStory"
-                        name="recipientStory"
-                        value={formData.recipientStory}
-                        onChange={handleInputChange}
+                        id="story"
+                        name="story"
+                        value={formData.recipient.story}
+                        onChange={handleRecipientInputChange}
                         className="form-control"
                         rows={6}
                         placeholder="Share why this person or family needs support and how the funds will help"
@@ -569,8 +619,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       <textarea
                         id="fundsUsage"
                         name="fundsUsage"
-                        value={formData.fundsUsage}
-                        onChange={handleInputChange}
+                        value={formData.recipient.fundsUsage}
+                        onChange={handleRecipientInputChange}
                         className="form-control"
                         rows={4}
                         placeholder="Explain exactly how the money raised will help the recipient"
@@ -631,25 +681,25 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       <h3 className="h5 mb-3">Recipient Information</h3>
                       <div className="mb-2">
                         <span className="fw-bold">Name:</span>
-                        <span className="ms-2">{formData.recipientName}</span>
+                        <span className="ms-2">{formData.recipient.name}</span>
                       </div>
                       <div className="mb-2">
                         <span className="fw-bold">Category:</span>
-                        <span className="ms-2">{categoryLabels[formData.categoryOfNeed] || formData.categoryOfNeed}</span>
+                        <span className="ms-2">{categoryLabels[formData.recipient.categoryOfNeed] || formData.recipient.categoryOfNeed}</span>
                       </div>
                       <div className="mb-2">
                         <span className="fw-bold">Story:</span>
-                        <span className="ms-2">{formData.recipientStory}</span>
+                        <span className="ms-2">{formData.recipient.story}</span>
                       </div>
-                      {formData.recipientPhoto && (
+                      {formData.recipient.photo && (
                         <div className="mb-2">
                           <span className="fw-bold">Recipient Photo:</span>
-                          <span className="ms-2">{formData.recipientPhoto.name}</span>
+                          <span className="ms-2">{formData.recipient.photo.name}</span>
                         </div>
                       )}
                       <div className="mb-2">
                         <span className="fw-bold">Funds Usage:</span>
-                        <span className="ms-2">{formData.fundsUsage}</span>
+                        <span className="ms-2">{formData.recipient.fundsUsage}</span>
                       </div>
                     </div>
 
