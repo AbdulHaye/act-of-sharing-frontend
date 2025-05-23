@@ -175,19 +175,18 @@ const AdminDashboard: React.FC = () => {
         value: totalEvents,
         icon: <Calendar size={24} />,
       },
-       {
-        id: 4,
+      {
+        id: 3,
         title: "Total Goal Amount",
         value: `$${totalGoalAmount.toLocaleString()}`,
         icon: <DollarSign size={24} />,
       },
       {
-        id: 3,
+        id: 4,
         title: "Total Donations",
         value: `$${totalRaised.toLocaleString()}`,
         icon: <DollarSign size={24} />,
       },
-     
     ];
   }, [eventsPagination.totalEvents, usersPagination.totalUsers, totalRaised, totalGoalAmount, users]);
 
@@ -219,180 +218,185 @@ const AdminDashboard: React.FC = () => {
       }));
   }, [users]);
 
+  const renderTableRows = (data: any[], loading: boolean, type: string) => {
+    if (loading) {
+      return (
+        <tr>
+          <td colSpan={type === "events" ? 6 : 4} className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+    if (data.length === 0) {
+      return (
+        <tr>
+          <td colSpan={type === "events" ? 6 : 4} className="text-center py-5">
+            <h5 className="text-muted">No {type} found</h5>
+          </td>
+        </tr>
+      );
+    }
+    return data.map((item) =>
+      type === "events" ? (
+        <tr key={item.id} className="hover:bg-gray-50">
+          <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{item.name}</td>
+          <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{item.location}</td>
+          <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{item.date}</td>
+          <td className="table-cell px-4 py-2" style={{ width: "15%" }}>${item.goalAmount.toLocaleString()}</td>
+          <td className="table-cell px-4 py-2" style={{ width: "15%" }}>{item.guests}</td>
+          <td className="table-cell px-4 py-2" style={{ width: "10%" }}>{item.status}</td>
+        </tr>
+      ) : (
+        <tr key={item.id} className="hover:bg-gray-50">
+          <td className="table-cell px-4 py-2 truncate" style={{ width: "25%" }}>{item.name}</td>
+          <td className="table-cell px-4 py-2 truncate" style={{ width: "25%" }}>{item.email}</td>
+          <td className="table-cell px-4 py-2" style={{ width: "25%" }}>
+            <span className={`badge ${item.role === "Host" ? "bg-primary" : "bg-primary"} px-2 py-1 rounded`}>
+              {item.role}
+            </span>
+          </td>
+          <td className="table-cell px-4 py-2 truncate" style={{ width: "25%" }}>{item.joined}</td>
+        </tr>
+      )
+    );
+  };
+
   return (
     <DashboardLayout userRole="admin" userName={user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "Admin User"}>
-      <div className="dashboard-static-container min-h-screen bg-gray-100">
-        <div className="container-fluid p-4 sm:p-6">
-          {/* Stats Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {stats.map((stat) => (
-              <div key={stat.id} className="card h-full border-0 shadow-sm bg-white">
-                <div className="card-body flex items-center p-4">
-                  <div className="stat-icon text-primary mr-3">{stat.icon}</div>
-                  <div>
-                    <h3 className="stat-value text-2xl font-bold">{stat.value}</h3>
-                    <p className="stat-title text-muted mb-0 text-sm">{stat.title}</p>
-                  </div>
-                </div>
+      <div className="container-fluid p-4" style={{ width: '100%', overflowX: 'auto' }}>
+        <div className="card border-0 bg-primary text-white mb-4 shadow-sm">
+          <div className="card-body p-4">
+            <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
+              <div className="mb-3 mb-md-0">
+                <h2 className="mb-2 text-white text-lg font-semibold">Welcome, {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "Admin User"}!</h2>
+                <p>Your dashboard provides an overview of all users and events.</p>
               </div>
-            ))}
+            </div>
           </div>
+        </div>
 
-          {/* Tables Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="card border-0 shadow-sm bg-white">
-              <div className="card-header bg-white flex justify-between items-center p-4">
-                <h5 className="card-title mb-0 text-lg font-semibold">Recent Events</h5>
-              </div>
-              <div className="card-body p-0">
-                <div className="relative overflow-x-auto" style={{ maxHeight: 'calc(100vh - 400px)' }}>
-                  <table className="table-custom w-full text-sm">
-                    <thead className="sticky top-0 bg-primary text-white">
-                      <tr>
-                        <th className="table-header px-4 py-2">Event Name</th>
-                        <th className="table-header px-4 py-2 hidden sm:table-cell">Location</th>
-                        <th className="table-header px-4 py-2 hidden md:table-cell">Date</th>
-                        <th className="table-header px-4 py-2">Amount</th>
-                        <th className="table-header px-4 py-2 hidden lg:table-cell">Guests</th>
-                        <th className="table-header px-4 py-2 hidden lg:table-cell">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {eventsLoading ? (
-                        <tr>
-                          <td colSpan={6} className="text-center py-5">
-                            <div className="spinner-border text-primary" role="status">
-                              <span className="visually-hidden">Loading...</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : recentEvents.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="text-center py-5">
-                            <h5 className="text-muted">No events found</h5>
-                          </td>
-                        </tr>
-                      ) : (
-                        recentEvents.map((event) => (
-                          <tr key={event.id} className="hover:bg-gray-50">
-                            <td className="table-cell px-4 py-2 truncate">{event.name}</td>
-                            <td className="table-cell px-4 py-2 truncate hidden sm:table-cell">{event.location}</td>
-                            <td className="table-cell px-4 py-2 truncate hidden md:table-cell">{event.date}</td>
-                            <td className="table-cell px-4 py-2 text-success font-semibold">${event.goalAmount.toLocaleString()}</td>
-                            <td className="table-cell px-4 py-2 text-success font-semibold hidden lg:table-cell">{event.guests}</td>
-                            <td className="table-cell px-4 py-2 hidden lg:table-cell">{event.status}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Events Pagination Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center p-4 border-t border-gray-200">
-                  <div className="mb-2 sm:mb-0 text-sm">
-                    Showing {(eventsPagination.currentPage - 1) * eventsPagination.limit + 1} to{" "}
-                    {Math.min(eventsPagination.currentPage * eventsPagination.limit, eventsPagination.totalEvents)} of{" "}
-                    {eventsPagination.totalEvents} events
+        <div className="row g-4 mb-4">
+          {stats.map((stat) => (
+            <div key={stat.id} className="col-12 col-md-6 col-xl-3">
+              <div className="card h-100 border-0 shadow-sm bg-white">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <span className="text-primary">{stat.icon}</span>
                   </div>
-                  <nav>
-                    <ul className="pagination flex space-x-2">
-                      <li className={`page-item ${eventsPagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}>
-                        <button className="page-link px-3 py-1 border rounded" onClick={() => handleEventsPageChange(eventsPagination.currentPage - 1)}>
-                          Previous
-                        </button>
-                      </li>
-                      {[...Array(eventsPagination.totalPages)].map((_, i) => (
-                        <li key={i} className={`page-item ${eventsPagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
-                          <button className="page-link px-3 py-1" onClick={() => handleEventsPageChange(i + 1)}>
-                            {i + 1}
-                          </button>
-                        </li>
-                      ))}
-                      <li className={`page-item ${eventsPagination.currentPage === eventsPagination.totalPages ? "opacity-50 cursor-not-allowed" : ""}`}>
-                        <button className="page-link px-3 py-1 border rounded" onClick={() => handleEventsPageChange(eventsPagination.currentPage + 1)}>
-                          Next
-                        </button>
-                      </li>
-                    </ul>
-                  </nav>
+                  <h3 className="stat-value text-lg font-semibold">{stat.value}</h3>
+                  <p className="stat-title text-muted mb-0">{stat.title}</p>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+
+        <div className="row g-4">
+          <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm bg-white">
-              <div className="card-header bg-white flex justify-between items-center p-4">
-                <h5 className="card-title mb-0 text-lg font-semibold">All Users</h5>
+              <div className="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <h5 className="card-title mb-0 text-lg font-semibold">Recent Events</h5>
               </div>
               <div className="card-body p-0">
-                <div className="relative overflow-x-auto" style={{ maxHeight: 'calc(100vh - 400px)' }}>
+                <div className="table-responsive" style={{ maxHeight: "calc(100vh - 360px)" }}>
                   <table className="table-custom w-full text-sm">
                     <thead className="sticky top-0 bg-primary text-white">
                       <tr>
-                        <th className="table-header px-4 py-2">Name</th>
-                        <th className="table-header px-4 py-2 hidden sm:table-cell">Email</th>
-                        <th className="table-header px-4 py-2 hidden md:table-cell">Role</th>
-                        <th className="table-header px-4 py-2 hidden lg:table-cell">Joined</th>
+                        <th className="table-header px-4 py-2" style={{ width: "20%" }}>Event Name</th>
+                        <th className="table-header px-4 py-2" style={{ width: "20%" }}>Location</th>
+                        <th className="table-header px-4 py-2" style={{ width: "20%" }}>Date</th>
+                        <th className="table-header px-4 py-2" style={{ width: "15%" }}>Amount</th>
+                        <th className="table-header px-4 py-2" style={{ width: "15%" }}>Guests</th>
+                        <th className="table-header px-4 py-2" style={{ width: "10%" }}>Status</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {usersLoading ? (
-                        <tr>
-                          <td colSpan={4} className="text-center py-5">
-                            <div className="spinner-border text-primary" role="status">
-                              <span className="visually-hidden">Loading...</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : recentUsers.length === 0 ? (
-                        <tr>
-                          <td colSpan={4} className="text-center py-5">
-                            <h5 className="text-muted">No users found</h5>
-                          </td>
-                        </tr>
-                      ) : (
-                        recentUsers.map((user) => (
-                          <tr key={user.id} className="hover:bg-gray-50">
-                            <td className="table-cell px-4 py-2 truncate">{user.name}</td>
-                            <td className="table-cell px-4 py-2 truncate hidden sm:table-cell">{user.email}</td>
-                            <td className="table-cell px-4 py-2 hidden md:table-cell">
-                              <span className={`badge ${user.role === "Host" ? "bg-primary" : "bg-primary"} px-2 py-1 rounded`}>
-                                {user.role}
-                              </span>
-                            </td>
-                            <td className="table-cell px-4 py-2 truncate hidden lg:table-cell">{user.joined}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
+                    <tbody>{renderTableRows(recentEvents, eventsLoading, "events")}</tbody>
                   </table>
                 </div>
-                {/* Users Pagination Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center p-4 border-t border-gray-200">
-                  <div className="mb-2 sm:mb-0 text-sm">
-                    Showing {(usersPagination.currentPage - 1) * usersPagination.limit + 1} to{" "}
-                    {Math.min(usersPagination.currentPage * usersPagination.limit, usersPagination.totalUsers)} of{" "}
-                    {usersPagination.totalUsers} users
-                  </div>
-                  <nav>
-                    <ul className="pagination flex space-x-2">
-                      <li className={`page-item ${usersPagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}>
-                        <button className="page-link px-3 py-1 border rounded" onClick={() => handleUsersPageChange(usersPagination.currentPage - 1)}>
-                          Previous
-                        </button>
-                      </li>
-                      {[...Array(usersPagination.totalPages)].map((_, i) => (
-                        <li key={i} className={`page-item ${usersPagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
-                          <button className="page-link px-3 py-1" onClick={() => handleUsersPageChange(i + 1)}>
-                            {i + 1}
+                <div className="card-footer bg-white py-3 border-t border-gray-200">
+                  <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center">
+                    <div className="mb-2 mb-sm-0 text-sm">
+                      Showing {(eventsPagination.currentPage - 1) * eventsPagination.limit + 1} to{" "}
+                      {Math.min(eventsPagination.currentPage * eventsPagination.limit, eventsPagination.totalEvents)} of{" "}
+                      {eventsPagination.totalEvents} events
+                    </div>
+                    <nav aria-label="Page navigation">
+                      <ul className="pagination mb-0 flex space-x-2">
+                        <li className={`page-item ${eventsPagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}>
+                          <button className="page-link px-3 py-1 border rounded" onClick={() => handleEventsPageChange(eventsPagination.currentPage - 1)}>
+                            Previous
                           </button>
                         </li>
-                      ))}
-                      <li className={`page-item ${usersPagination.currentPage === usersPagination.totalPages ? "opacity-50 cursor-not-allowed" : ""}`}>
-                        <button className="page-link px-3 py-1 border rounded" onClick={() => handleUsersPageChange(usersPagination.currentPage + 1)}>
-                          Next
-                        </button>
-                      </li>
-                    </ul>
-                  </nav>
+                        {Array.from({ length: eventsPagination.totalPages }, (_, i) => (
+                          <li key={i} className={`page-item ${eventsPagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
+                            <button className="page-link px-3 py-1" onClick={() => handleEventsPageChange(i + 1)}>
+                              {i + 1}
+                            </button>
+                          </li>
+                        ))}
+                        <li className={`page-item ${eventsPagination.currentPage === eventsPagination.totalPages ? "opacity-50 cursor-not-allowed" : ""}`}>
+                          <button className="page-link px-3 py-1 border rounded" onClick={() => handleEventsPageChange(eventsPagination.currentPage + 1)}>
+                            Next
+                          </button>
+                        </li>
+                      </ul>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm bg-white">
+              <div className="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <h5 className="card-title mb-0 text-lg font-semibold">All Users</h5>
+              </div>
+              <div className="card-body p-0">
+                <div className="table-responsive" style={{ maxHeight: "calc(100vh - 360px)" }}>
+                  <table className="table-custom w-full text-sm">
+                    <thead className="sticky top-0 bg-primary text-white">
+                      <tr>
+                        <th className="table-header px-4 py-2" style={{ width: "25%" }}>Name</th>
+                        <th className="table-header px-4 py-2" style={{ width: "25%" }}>Email</th>
+                        <th className="table-header px-4 py-2" style={{ width: "25%" }}>Role</th>
+                        <th className="table-header px-4 py-2" style={{ width: "25%" }}>Joined</th>
+                      </tr>
+                    </thead>
+                    <tbody>{renderTableRows(recentUsers, usersLoading, "users")}</tbody>
+                  </table>
+                </div>
+                <div className="card-footer bg-white py-3 border-t border-gray-200">
+                  <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center">
+                    <div className="mb-2 mb-sm-0 text-sm">
+                      Showing {(usersPagination.currentPage - 1) * usersPagination.limit + 1} to{" "}
+                      {Math.min(usersPagination.currentPage * usersPagination.limit, usersPagination.totalUsers)} of{" "}
+                      {usersPagination.totalUsers} users
+                    </div>
+                    <nav aria-label="Page navigation">
+                      <ul className="pagination mb-0 flex space-x-2">
+                        <li className={`page-item ${usersPagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}>
+                          <button className="page-link px-3 py-1 border rounded" onClick={() => handleUsersPageChange(usersPagination.currentPage - 1)}>
+                            Previous
+                          </button>
+                        </li>
+                        {Array.from({ length: usersPagination.totalPages }, (_, i) => (
+                          <li key={i} className={`page-item ${usersPagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
+                            <button className="page-link px-3 py-1" onClick={() => handleUsersPageChange(i + 1)}>
+                              {i + 1}
+                            </button>
+                          </li>
+                        ))}
+                        <li className={`page-item ${usersPagination.currentPage === usersPagination.totalPages ? "opacity-50 cursor-not-allowed" : ""}`}>
+                          <button className="page-link px-3 py-1 border rounded" onClick={() => handleUsersPageChange(usersPagination.currentPage + 1)}>
+                            Next
+                          </button>
+                        </li>
+                      </ul>
+                    </nav>
+                  </div>
                 </div>
               </div>
             </div>
@@ -401,11 +405,9 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <style jsx>{`
-        .dashboard-static-container {
-          width: 100%;
-        }
         .table-custom {
           border-collapse: collapse;
+          width: 100%;
         }
         .table-header {
           font-weight: 600;
@@ -413,17 +415,11 @@ const AdminDashboard: React.FC = () => {
         .table-cell {
           border-bottom: 1px solid #dee2e6;
         }
-        .stat-icon {
-          color: #5144A1;
-        }
         .text-primary {
           color: #5144A1;
         }
         .bg-primary {
           background-color: #5144A1;
-        }
-        .text-success {
-          color: #28a745;
         }
         .text-muted {
           color: #6c757d;
@@ -439,12 +435,6 @@ const AdminDashboard: React.FC = () => {
           .table-header, .table-cell {
             padding: 0.5rem;
           }
-          .stat-value {
-            font-size: 1.25rem;
-          }
-          .card-body {
-            padding: 0.75rem;
-          }
           .pagination {
             flex-wrap: wrap;
             justify-content: center;
@@ -453,6 +443,9 @@ const AdminDashboard: React.FC = () => {
             padding: 0.25rem 0.5rem;
             font-size: 0.75rem;
           }
+          .stat-value {
+            font-size: 1.25rem;
+          }
         }
         @media (min-width: 641px) and (max-width: 1024px) {
           .table-custom {
@@ -460,6 +453,9 @@ const AdminDashboard: React.FC = () => {
           }
           .table-header, .table-cell {
             padding: 0.75rem;
+          }
+          .stat-value {
+            font-size: 1.5rem;
           }
         }
       `}</style>

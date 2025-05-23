@@ -26,6 +26,7 @@ interface Event {
   currentAmount: number;
   guestCount: number;
   imageUrl?: string;
+  isPublic: boolean;
   createdAt: string;
   recipient: {
     name: string;
@@ -50,8 +51,7 @@ const MyEventsPage: React.FC = () => {
     limit: 6,
   });
 
-  const baseUrl =
-    import.meta.env.VITE_BASE_URL;
+  const baseUrl = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     if (user?._id) {
@@ -60,11 +60,14 @@ const MyEventsPage: React.FC = () => {
     }
   }, [user, getEvents]);
 
-  const sortedEvents = [...events].sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  const sortedEvents = [...events].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const userEvents = user?.role === "admin" ? sortedEvents : sortedEvents.filter(event => event.host === user?._id);
+  const userEvents =
+    user?.role === "admin"
+      ? sortedEvents
+      : sortedEvents.filter((event) => event.host === user?._id);
 
   const handleEditEvent = (event: Event) => {
     console.log("Editing event:", event);
@@ -229,9 +232,9 @@ const MyEventsPage: React.FC = () => {
                   strokeLinejoin="round"
                   className="mx-auto mb-3"
                 >
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
-                  <circle cx="12" cy="12" r="3"/>
-                  <path d="M12 8v1m0 4v3m-4-2h8"/>
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 8v1m0 4v3m-4-2h8" />
                 </svg>
                 <h5 className="text-muted">No records found</h5>
               </div>
@@ -256,7 +259,10 @@ const MyEventsPage: React.FC = () => {
                         ) : (
                           <div
                             className="bg-light d-flex align-items-center justify-content-center"
-                            style={{ height: "160px", display: event.imageUrl ? "none" : "flex" }}
+                            style={{
+                              height: "160px",
+                              display: event.imageUrl ? "none" : "flex",
+                            }}
                           >
                             <Calendar size={32} className="text-muted" />
                           </div>
@@ -298,6 +304,13 @@ const MyEventsPage: React.FC = () => {
                             <Info size={16} className="text-primary me-2" />
                             <small>
                               Category: {event.recipient.categoryOfNeed}
+                            </small>
+                          </div>
+                          <div className="d-flex align-items-center mb-2">
+                            <Info size={16} className="text-primary me-2" />
+                            <small>
+                              Visibility:{" "}
+                              {event.isPublic ? "Public" : "Private"}
                             </small>
                           </div>
                         </div>
@@ -354,16 +367,26 @@ const MyEventsPage: React.FC = () => {
             {!loading && filteredEvents.length > 0 && (
               <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center p-3 border-top">
                 <div className="mb-2 mb-sm-0">
-                  Showing {(pagination.currentPage - 1) * pagination.limit + 1} to{" "}
-                  {Math.min(pagination.currentPage * pagination.limit, pagination.totalItems)} of{" "}
-                  {pagination.totalItems} events
+                  Showing {(pagination.currentPage - 1) * pagination.limit + 1}{" "}
+                  to{" "}
+                  {Math.min(
+                    pagination.currentPage * pagination.limit,
+                    pagination.totalItems
+                  )}{" "}
+                  of {pagination.totalItems} events
                 </div>
                 <nav aria-label="Page navigation">
                   <ul className="pagination mb-0">
-                    <li className={`page-item ${pagination.currentPage === 1 ? "disabled" : ""}`}>
+                    <li
+                      className={`page-item ${
+                        pagination.currentPage === 1 ? "disabled" : ""
+                      }`}
+                    >
                       <button
                         className="page-link"
-                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                        onClick={() =>
+                          handlePageChange(pagination.currentPage - 1)
+                        }
                       >
                         Previous
                       </button>
@@ -371,7 +394,9 @@ const MyEventsPage: React.FC = () => {
                     {[...Array(pagination.totalPages)].map((_, i) => (
                       <li
                         key={i}
-                        className={`page-item ${pagination.currentPage === i + 1 ? "active" : ""}`}
+                        className={`page-item ${
+                          pagination.currentPage === i + 1 ? "active" : ""
+                        }`}
                       >
                         <button
                           className="page-link"
@@ -381,10 +406,18 @@ const MyEventsPage: React.FC = () => {
                         </button>
                       </li>
                     ))}
-                    <li className={`page-item ${pagination.currentPage === pagination.totalPages ? "disabled" : ""}`}>
+                    <li
+                      className={`page-item ${
+                        pagination.currentPage === pagination.totalPages
+                          ? "disabled"
+                          : ""
+                      }`}
+                    >
                       <button
                         className="page-link"
-                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                        onClick={() =>
+                          handlePageChange(pagination.currentPage + 1)
+                        }
                       >
                         Next
                       </button>
@@ -409,25 +442,25 @@ const MyEventsPage: React.FC = () => {
 
       <style jsx>{`
         .text-primary {
-          color: #5144A1 !important;
+          color: #5144a1 !important;
         }
         .bg-primary {
-          background-color: #5144A1 !important;
+          background-color: #5144a1 !important;
         }
         .btn-primary {
-          background-color: #5144A1;
-          border-color: #5144A1;
+          background-color: #5144a1;
+          border-color: #5144a1;
         }
         .btn-primary:hover {
           background-color: #453b8c;
           border-color: #453b8c;
         }
         .btn-outline-primary {
-          color: #5144A1;
-          border-color: #5144A1;
+          color: #5144a1;
+          border-color: #5144a1;
         }
         .btn-outline-primary:hover {
-          background-color: #5144A1;
+          background-color: #5144a1;
           color: white;
         }
         .text-muted {

@@ -10,6 +10,7 @@ interface EventCardProps {
   date: string;
   location: string;
   hostName: string;
+  isPublic: boolean;
   attendees: number;
   maxAttendees: number;
   raised: number;
@@ -23,6 +24,7 @@ const EventCard: React.FC<EventCardProps> = ({
   date,
   location,
   hostName,
+  isPublic,
   attendees,
   maxAttendees,
   raised,

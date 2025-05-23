@@ -154,24 +154,24 @@ const ContributionsPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="container-fluid p-4">
-        <div className="card border-0 shadow-sm bg-white">
+      <div className="container-fluid p-4" style={{ width: "100%", overflowX: "auto" }}>
+        <div className="card border-0 shadow-sm bg-white" style={{ width: "100%" }}>
           <div className="card-header bg-white">
             <h5 className="card-title mb-0 text-lg font-semibold">Donations</h5>
           </div>
           <div className="card-body p-0">
-            <div className="table-responsive" style={{ maxHeight: "calc(100vh - 250px)" }}>
+            <div className="table-responsive" style={{ width: "100%", maxHeight: "calc(100vh - 250px)" }}>
               <table className="table-custom w-full text-sm">
                 <thead className="sticky top-0 bg-primary text-white">
                   <tr>
-                    <th className="table-header px-4 py-2" style={{ width: "5%" }}>ID</th>
-                    <th className="table-header px-4 py-2" style={{ width: "20%" }}>Event Title</th>
-                    <th className="table-header px-4 py-2" style={{ width: "15%" }}>User Name</th>
-                    <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "20%" }}>Email</th>
-                    <th className="table-header px-4 py-2" style={{ width: "15%" }}>Amount</th>
-                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Status</th>
+                    <th className="table-header px-4 py-2" style={{ minWidth: "5%" }}>ID</th>
+                    <th className="table-header px-4 py-2" style={{ minWidth: "20%" }}>Event Title</th>
+                    <th className="table-header px-4 py-2" style={{ minWidth: "15%" }}>User Name</th>
+                    <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ minWidth: "20%" }}>Email</th>
+                    <th className="table-header px-4 py-2" style={{ minWidth: "15%" }}>Amount</th>
+                    <th className="table-header px-4 py-2" style={{ minWidth: "10%" }}>Status</th>
                     {user?.role === "admin" && (
-                      <th className="table-header px-4 py-2" style={{ width: "15%" }}>Actions</th>
+                      <th className="table-header px-4 py-2" style={{ minWidth: "15%" }}>Actions</th>
                     )}
                   </tr>
                 </thead>
@@ -179,10 +179,20 @@ const ContributionsPage: React.FC = () => {
                   {contributions.length === 0 ? (
                     <tr>
                       <td colSpan={user?.role === "admin" ? 7 : 6} className="text-center py-5">
-                        <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
-                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
-                          <circle cx="12" cy="12" r="3"/>
-                          <path d="M12 8v1m0 4v3m-4-2h8"/>
+                        <svg
+                          width="128"
+                          height="128"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="mx-auto mb-3"
+                        >
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7" />
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M12 8v1m0 4v3m-4-2h8" />
                         </svg>
                         <h5 className="text-muted">No records found</h5>
                       </td>
@@ -190,28 +200,35 @@ const ContributionsPage: React.FC = () => {
                   ) : (
                     contributions.map((contribution, index) => (
                       <tr key={contribution._id} className="hover:bg-gray-50">
-                        <td className="table-cell px-4 py-2" style={{ width: "5%" }}>
+                        <td className="table-cell px-4 py-2" style={{ minWidth: "5%" }}>
                           {(pagination.currentPage - 1) * pagination.limit + index + 1}
                         </td>
-                        <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>
+                        <td className="table-cell px-4 py-2 truncate" style={{ minWidth: "20%" }}>
                           {contribution.eventId?.title || "N/A"}
                         </td>
-                        <td className="table-cell px-4 py-2 truncate" style={{ width: "15%" }}>
+                        <td className="table-cell px-4 py-2 truncate" style={{ minWidth: "15%" }}>
                           {contribution.userId
-                            ? `${contribution.userId.firstname || ""} ${contribution.userId.lastname || ""}`.trim() || "N/A"
+                            ? `${contribution.userId.firstname || ""} ${contribution.userId.lastname || ""}`.trim() ||
+                              "N/A"
                             : "N/A"}
                         </td>
-                        <td className="table-cell px-4 py-2 truncate d-none d-md-table-cell" style={{ width: "20%" }}>
+                        <td
+                          className="table-cell px-4 py-2 truncate d-none d-md-table-cell"
+                          style={{ minWidth: "20%" }}
+                        >
                           {contribution.userId?.email || "N/A"}
                         </td>
-                        <td className="table-cell px-4 py-2 text-success font-semibold" style={{ width: "15%" }}>
+                        <td
+                          className="table-cell px-4 py-2 text-success font-semibold"
+                          style={{ minWidth: "15%" }}
+                        >
                           ${contribution.amount?.toFixed(2) || "0.00"}
                         </td>
-                        <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
+                        <td className="table-cell px-4 py-2" style={{ minWidth: "10%" }}>
                           {contribution.status || "N/A"}
                         </td>
                         {user?.role === "admin" && (
-                          <td className="table-cell px-4 py-2" style={{ width: "15%" }}>
+                          <td className="table-cell px-4 py-2" style={{ minWidth: "15%" }}>
                             <div className="btn-group" role="group">
                               <button
                                 className="btn btn-outline-primary btn-sm me-2"
@@ -243,20 +260,37 @@ const ContributionsPage: React.FC = () => {
                 </div>
                 <nav aria-label="Page navigation">
                   <ul className="pagination mb-0 flex space-x-2">
-                    <li className={`page-item ${pagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}>
-                      <button className="page-link px-3 py-1 border rounded" onClick={() => handlePageChange(pagination.currentPage - 1)}>
+                    <li
+                      className={`page-item ${pagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <button
+                        className="page-link px-3 py-1 border rounded"
+                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                      >
                         Previous
                       </button>
                     </li>
                     {[...Array(pagination.totalPages)].map((_, i) => (
-                      <li key={i} className={`page-item ${pagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
+                      <li
+                        key={i}
+                        className={`page-item ${
+                          pagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"
+                        } border rounded`}
+                      >
                         <button className="page-link px-3 py-1" onClick={() => handlePageChange(i + 1)}>
                           {i + 1}
                         </button>
                       </li>
                     ))}
-                    <li className={`page-item ${pagination.currentPage === pagination.totalPages ? "opacity-50 cursor-not-allowed" : ""}`}>
-                      <button className="page-link px-3 py-1 border rounded" onClick={() => handlePageChange(pagination.currentPage + 1)}>
+                    <li
+                      className={`page-item ${
+                        pagination.currentPage === pagination.totalPages ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <button
+                        className="page-link px-3 py-1 border rounded"
+                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                      >
                         Next
                       </button>
                     </li>
@@ -267,8 +301,22 @@ const ContributionsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Add Edit Modal */}
         {selectedContribution && user?.role === "admin" && (
-          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div
+            className="modal"
+            tabIndex={-1}
+            style={{
+              display: "block",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1050,
+            }}
+          >
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
@@ -284,7 +332,12 @@ const ContributionsPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={editFormData.eventId.title}
-                        onChange={(e) => setEditFormData({ ...editFormData, eventId: { title: e.target.value } })}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            eventId: { ...editFormData.eventId, title: e.target.value },
+                          })
+                        }
                         required
                       />
                     </div>
@@ -294,7 +347,12 @@ const ContributionsPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={editFormData.userId.firstname}
-                        onChange={(e) => setEditFormData({ ...editFormData, userId: { ...editFormData.userId, firstname: e.target.value } })}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            userId: { ...editFormData.userId, firstname: e.target.value },
+                          })
+                        }
                         required
                       />
                     </div>
@@ -304,7 +362,12 @@ const ContributionsPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={editFormData.userId.lastname}
-                        onChange={(e) => setEditFormData({ ...editFormData, userId: { ...editFormData.userId, lastname: e.target.value } })}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            userId: { ...editFormData.userId, lastname: e.target.value },
+                          })
+                        }
                         required
                       />
                     </div>
@@ -314,7 +377,12 @@ const ContributionsPage: React.FC = () => {
                         type="email"
                         className="form-control"
                         value={editFormData.userId.email}
-                        onChange={(e) => setEditFormData({ ...editFormData, userId: { ...editFormData.userId, email: e.target.value } })}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            userId: { ...editFormData.userId, email: e.target.value },
+                          })
+                        }
                         required
                       />
                     </div>
@@ -322,6 +390,7 @@ const ContributionsPage: React.FC = () => {
                       <label className="form-label">Amount</label>
                       <input
                         type="number"
+                        step="0.01"
                         className="form-control"
                         value={editFormData.amount}
                         onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
@@ -360,6 +429,7 @@ const ContributionsPage: React.FC = () => {
       <style jsx>{`
         .table-custom {
           border-collapse: collapse;
+          width: 100%;
         }
         .table-header {
           font-weight: 600;
@@ -383,7 +453,8 @@ const ContributionsPage: React.FC = () => {
           .table-custom {
             font-size: 0.75rem;
           }
-          .table-header, .table-cell {
+          .table-header,
+          .table-cell {
             padding: 0.5rem;
           }
           .pagination {
@@ -399,7 +470,8 @@ const ContributionsPage: React.FC = () => {
           .table-custom {
             font-size: 0.875rem;
           }
-          .table-header, .table-cell {
+          .table-header,
+          .table-cell {
             padding: 0.75rem;
           }
         }

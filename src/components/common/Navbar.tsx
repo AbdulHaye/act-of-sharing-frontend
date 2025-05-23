@@ -64,58 +64,50 @@ const Navbar: React.FC = () => {
           </button>
 
           <div className={`collapse navbar-collapse ${isMenuOpen ? "show" : ""}`} id="navbarNav">
-            <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-              <li className="nav-item">
-                <Link to="/" className={`nav-link ${location.pathname === "/" ? "active" : ""}`}>
-                  Home
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  to="/how-it-works"
-                  className={`nav-link ${location.pathname === "/how-it-works" ? "active" : ""}`}
-                >
-                  How It Works
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/about" className={`nav-link ${location.pathname === "/about" ? "active" : ""}`}>
-                  About Us
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/dashboard" className={`nav-link ${location.pathname === "/dashboard" ? "active" : ""}`}>
-                  My Events
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/create-event" className="btn btn-primary ms-lg-3 mt-2 mt-lg-0">
-                  Host a Meal
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div className="ms-auto d-flex gap-2 align-items-center">
-            {isAuthenticated ? (
-              <>
-                <span>{user?.firstName}</span>
-                <button className="btn btn-outline-primary" onClick={logout} style={{ minWidth: "80px" }}>
-                  Logout
-                </button>
-                <Link to="/dashboard" className="btn btn-primary" style={{ minWidth: "80px" }}>
-                  Dashboard
-                </Link>
-              </>
-            ) : (
-              <>
-                <button className="btn btn-outline-primary" onClick={handleLoginClick} style={{ minWidth: "80px" }}>
-                  Login
-                </button>
-                <button className="btn btn-primary" onClick={handleSignupClick} style={{ minWidth: "80px" }}>
-                  Sign Up
-                </button>
-              </>
-            )}
+            <div className="ms-auto d-flex align-items-center gap-3">
+              <ul className="navbar-nav mb-2 mb-lg-0">
+                <li className="nav-item">
+                  <Link to="/" className={`nav-link ${location.pathname === "/" ? "active" : ""}`}>
+                    Home
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    to="/how-it-works"
+                    className={`nav-link ${location.pathname === "/how-it-works" ? "active" : ""}`}
+                  >
+                    How It Works
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/about" className={`nav-link ${location.pathname === "/about" ? "active" : ""}`}>
+                    About Us
+                  </Link>
+                </li>
+              </ul>
+              <div className="d-flex align-items-center gap-2">
+                {isAuthenticated ? (
+                  <>
+                    <span className="nav-link">{user?.firstName}</span>
+                    <button className="btn btn-outline-primary" onClick={logout} style={{ minWidth: "80px" }}>
+                      Logout
+                    </button>
+                    <Link to="/dashboard" className="btn btn-primary" style={{ minWidth: "80px" }}>
+                      Dashboard
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn-outline-primary" onClick={handleLoginClick} style={{ minWidth: "80px" }}>
+                      Login
+                    </button>
+                    <button className="btn btn-primary" onClick={handleSignupClick} style={{ minWidth: "80px" }}>
+                      Sign Up
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </nav>

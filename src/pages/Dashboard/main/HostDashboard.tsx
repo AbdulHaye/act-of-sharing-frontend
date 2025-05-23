@@ -245,7 +245,7 @@ const HostDashboard: React.FC = () => {
 
   return (
     <DashboardLayout userRole="host" userName={userName}>
-      <div className="container-fluid p-4">
+      <div className="container-fluid p-4" style={{ width: '100%', overflowX: 'auto' }}>
         <div className="card border-0 bg-primary text-white mb-4 shadow-sm">
           <div className="card-body p-4">
             <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
@@ -344,6 +344,7 @@ const HostDashboard: React.FC = () => {
       <style jsx>{`
         .table-custom {
           border-collapse: collapse;
+          width: 100%;
         }
         .table-header {
           font-weight: 600;

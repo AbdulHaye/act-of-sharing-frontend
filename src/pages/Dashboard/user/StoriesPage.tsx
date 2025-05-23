@@ -27,8 +27,8 @@ const StoriesPage: React.FC = () => {
     category: "",
     amount: "",
   });
-  const [addFile, setAddFile] = useState<File | null>(null); // New state for add file
-  const [editFile, setEditFile] = useState<File | null>(null); // New state for edit file
+  const [addFile, setAddFile] = useState<File | null>(null);
+  const [editFile, setEditFile] = useState<File | null>(null);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -102,62 +102,62 @@ const StoriesPage: React.FC = () => {
     }
   };
 
-  const validateFormData = (data: any) => {
+  const validateFormData = (data: any, isAdd: boolean = false) => {
     if (!data.quote || data.quote.trim() === "") return "Quote is required";
     if (!data.name || data.name.trim() === "") return "Name is required";
     if (!data.location || data.location.trim() === "") return "Location is required";
     if (!data.category || data.category.trim() === "") return "Category is required";
     if (!data.amount || isNaN(parseInt(data.amount)) || parseInt(data.amount) <= 0) return "Amount must be a valid positive number";
+    if (isAdd && !addFile) return "Image is required"; // Enforce image for adding story
     return null;
   };
 
   const handleAdd = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const validationError = validateFormData(addFormData);
-  if (validationError) {
-    toast.error(validationError);
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("quote", addFormData.quote.trim());
-  formData.append("name", addFormData.name.trim());
-  formData.append("location", addFormData.location.trim());
-  formData.append("category", addFormData.category.trim());
-  formData.append("amount", parseInt(addFormData.amount).toString());
-  if (addFile) {
-    formData.append("image", addFile);
-  }
-
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("Authentication token not found");
-
-    console.log("Submitting story with payload:", Object.fromEntries(formData));
-
-    const response = await axiosInstance.post(`/stories`, formData, {
-      headers: {
-        "x-auth-token": token,
-      },
-    });
-
-    if (!response.data) {
-      throw new Error("Failed to add story: No data returned");
+    const validationError = validateFormData(addFormData, true);
+    if (validationError) {
+      toast.error(validationError);
+      return;
     }
 
-    toast.success("Story added successfully");
-    setShowAddModal(false);
-    setAddFormData({ quote: "", name: "", location: "", category: "", amount: "" });
-    setAddFile(null);
-    setAddFilePreview(null);
-    fetchStories(pagination.currentPage);
-  } catch (err: any) {
-    const errorMessage = err.response?.data?.message || err.message || "Failed to add story";
-    console.error("Error adding story:", err.response?.data || err);
-    toast.error(errorMessage);
-  }
-};
+    const formData = new FormData();
+    formData.append("quote", addFormData.quote.trim());
+    formData.append("name", addFormData.name.trim());
+    formData.append("location", addFormData.location.trim());
+    formData.append("category", addFormData.category.trim());
+    formData.append("amount", parseInt(addFormData.amount).toString());
+    if (addFile) {
+      formData.append("image", addFile);
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Authentication token not found");
+
+      console.log("Submitting story with payload:", Object.fromEntries(formData));
+
+      const response = await axiosInstance.post(`/stories`, formData, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
+
+      if (!response.data) {
+        throw new Error("Failed to add story: No data returned");
+      }
+
+      toast.success("Story added successfully");
+      setShowAddModal(false);
+      setAddFormData({ quote: "", name: "", location: "", category: "", amount: "" });
+      setAddFile(null);
+      fetchStories(pagination.currentPage);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || "Failed to add story";
+      console.error("Error adding story:", err.response?.data || err);
+      toast.error(errorMessage);
+    }
+  };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +176,7 @@ const StoriesPage: React.FC = () => {
     formData.append("category", editFormData.category.trim());
     formData.append("amount", parseInt(editFormData.amount).toString());
     if (editFile) {
-      formData.append("image", editFile); // Append the file if selected
+      formData.append("image", editFile);
     }
 
     try {
@@ -214,7 +214,7 @@ const StoriesPage: React.FC = () => {
       category: story.category,
       amount: story.amount.toString(),
     });
-    setEditFile(null); // Reset file selection when opening edit modal
+    setEditFile(null);
   };
 
   const closeEditModal = () => {
@@ -224,7 +224,7 @@ const StoriesPage: React.FC = () => {
 
   const openAddModal = () => {
     setShowAddModal(true);
-    setAddFile(null); // Reset file selection when opening add modal
+    setAddFile(null);
   };
 
   const closeAddModal = () => {
@@ -533,12 +533,13 @@ const StoriesPage: React.FC = () => {
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="form-label">Image</label>
+                      <label className="form-label">Image <span className="text-danger">*</span></label>
                       <input
                         type="file"
                         className="form-control"
                         accept="image/*"
                         onChange={(e) => handleFileChange(e, setAddFile)}
+                        required
                       />
                     </div>
                   </div>

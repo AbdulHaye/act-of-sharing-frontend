@@ -1,12 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import '../../styles/impact-stories.css';
-
-
-
-
-
-
+import axiosInstance from '../../api/axiosInstance'; // Adjust the path based on your project structure
 
 interface StoryProps {
   image: string;
@@ -18,34 +13,60 @@ interface StoryProps {
 }
 
 const ImpactStories: React.FC = () => {
+  const [stories, setStories] = useState<StoryProps[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const stories: StoryProps[] = [
-    {
-      image: "https://images.pexels.com/photos/3771836/pexels-photo-3771836.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-      quote: "When my family lost everything in the fire, I didn't know where to turn. The support from the meal gathering gave us hope and helped us secure a temporary home while we rebuild.",
-      name: "Sarah Thompson",
-      location: "Portland, OR",
-      amount: "$3,850",
-      need: "Home fire recovery"
-    },
-    {
-      image: "https://images.pexels.com/photos/5759232/pexels-photo-5759232.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-      quote: "After my son was diagnosed with a rare condition, the medical bills were overwhelming. The generosity from our community meal helped cover his treatments when insurance fell short.",
-      name: "Marcus Johnson",
-      location: "Atlanta, GA",
-      amount: "$5,200",
-      need: "Medical expenses"
-    },
-    {
-      image: "https://images.pexels.com/photos/3771836/pexels-photo-3771836.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-      quote: "As a single mom, starting my small business seemed impossible. The meal gathering raised funds for my equipment and first month's rental space. I'm now employing two others!",
-      name: "Elena Rodriguez",
-      location: "Austin, TX",
-      amount: "$4,300",
-      need: "Small business startup"
-    }
-  ];
+  useEffect(() => {
+    const fetchStories = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axiosInstance.get('/stories?page=1&limit=10', {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
+
+        if (!response.data || !Array.isArray(response.data.stories)) {
+          throw new Error("Invalid data format from the server");
+        }
+
+        const fetchedStories = response.data.stories.map((story: any) => ({
+          image: `http://localhost:5000/${story.image}`, // Construct full image URL
+          quote: story.quote,
+          name: story.name,
+          location: story.location,
+          amount: "N/A", // Amount is not in API response, using placeholder
+          need: story.category, // Map 'category' to 'need'
+        }));
+        setStories(fetchedStories);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch stories");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStories();
+  }, []);
+
+  // Handle loading state
+  if (loading) {
+    return <div className="text-center py-5">Loading...</div>;
+  }
+
+  // Handle error state
+  if (error) {
+    return <div className="alert alert-danger text-center">{error}</div>;
+  }
+
+  // Handle empty state
+  if (stories.length === 0) {
+    return <div className="text-center py-5">No stories available</div>;
+  }
 
   const nextStory = () => {
     setActiveIndex((prevIndex) => (prevIndex + 1) % stories.length);
@@ -74,9 +95,9 @@ const ImpactStories: React.FC = () => {
                 <div className="row align-items-center">
                   <div className="col-md-5 mb-4 mb-md-0">
                     <div className="story-image-container">
-                      <img 
-                        src={stories[activeIndex].image} 
-                        alt={stories[activeIndex].name} 
+                      <img
+                        src={stories[activeIndex].image}
+                        alt={stories[activeIndex].name}
                         className="story-image img-fluid"
                       />
                       <div className="story-amount">{stories[activeIndex].amount}</div>
@@ -101,8 +122,8 @@ const ImpactStories: React.FC = () => {
               </div>
 
               <div className="story-navigation">
-                <button 
-                  className="story-nav-btn" 
+                <button
+                  className="story-nav-btn"
                   onClick={prevStory}
                   aria-label="Previous story"
                 >
@@ -110,7 +131,7 @@ const ImpactStories: React.FC = () => {
                 </button>
                 <div className="story-indicators">
                   {stories.map((_, index) => (
-                    <button 
+                    <button
                       key={index}
                       className={`story-indicator ${activeIndex === index ? 'active' : ''}`}
                       onClick={() => setActiveIndex(index)}
@@ -118,8 +139,8 @@ const ImpactStories: React.FC = () => {
                     />
                   ))}
                 </div>
-                <button 
-                  className="story-nav-btn" 
+                <button
+                  className="story-nav-btn"
                   onClick={nextStory}
                   aria-label="Next story"
                 >
