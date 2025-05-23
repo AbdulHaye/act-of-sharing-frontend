@@ -192,21 +192,19 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     setErrors((prev) => ({ ...prev, [`recipient${name.charAt(0).toUpperCase() + name.slice(1)}`]: '' }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name } = e.target;
-    const file = e.target.files ? e.target.files[0] : null;
-    if (name === 'eventImage') {
-      setFormData((prev) => ({ ...prev, eventImage: file }));
-    } else if (name === 'recipientPhoto') {
-      setFormData((prev) => ({
-        ...prev,
-        recipient: {
-          ...prev.recipient,
-          photo: file,
-        },
-      }));
-    }
-  };
+const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { name } = e.target;
+  const file = e.target.files ? e.target.files[0] : null;
+  console.log(`Selected ${name}:`, file);
+  if (name === 'eventImage') {
+    setFormData((prev) => ({ ...prev, eventImage: file }));
+  } else if (name === 'recipientPhoto') {
+    setFormData((prev) => ({
+      ...prev,
+      recipient: { ...prev.recipient, photo: file },
+    }));
+  }
+};
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsTermsChecked(e.target.checked);
@@ -217,55 +215,69 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!event) {
-      toast.error('No event selected');
-      return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!event) {
+    toast.error('No event selected');
+    return;
+  }
+
+  const step1Errors = validateStep(1);
+  const step2Errors = validateStep(2);
+  const allErrors = { ...step1Errors, ...step2Errors };
+  if (Object.keys(allErrors).length > 0) {
+    setErrors(allErrors);
+    return;
+  }
+  if (!isTermsChecked) {
+    setErrors((prev) => ({ ...prev, termsCheck: 'Please check the box' }));
+    return;
+  }
+
+  try {
+    // Create FormData object
+    const formDataToSend = new FormData();
+
+    // Append top-level fields
+    formDataToSend.append('title', formData.name);
+    formDataToSend.append('description', formData.description);
+    formDataToSend.append('date', formData.date);
+    formDataToSend.append('time', formData.time);
+    formDataToSend.append('location', formData.location);
+    formDataToSend.append('guestCount', formData.maxGuests);
+    formDataToSend.append('goalAmount', formData.fundingGoal);
+    formDataToSend.append('isPublic', String(formData.visibility === 'public'));
+    formDataToSend.append('visibility', formData.visibility);
+
+    // Append recipient fields as flat fields (consistent with EventCreationForm)
+    formDataToSend.append('recipientName', formData.recipient.name);
+    formDataToSend.append('categoryOfNeed', formData.recipient.categoryOfNeed);
+    formDataToSend.append('recipientStory', formData.recipient.story);
+    formDataToSend.append('fundsUsage', formData.recipient.fundsUsage);
+
+    // Append files if they exist
+    if (formData.eventImage) {
+      console.log('Appending eventImage:', formData.eventImage);
+      formDataToSend.append('eventImage', formData.eventImage);
+    }
+    if (formData.recipient.photo) {
+      console.log('Appending recipientPhoto:', formData.recipient.photo);
+      formDataToSend.append('recipientPhoto', formData.recipient.photo);
     }
 
-    const step1Errors = validateStep(1);
-    const step2Errors = validateStep(2);
-    const allErrors = { ...step1Errors, ...step2Errors };
-    if (Object.keys(allErrors).length > 0) {
-      setErrors(allErrors);
-      return;
-    }
-    if (!isTermsChecked) {
-      setErrors((prev) => ({ ...prev, termsCheck: 'Please check the box' }));
-      return;
+    console.log('FormData to send:', formDataToSend);
+    for (const [key, value] of formDataToSend.entries()) {
+      console.log(`FormData entry: ${key} =`, value);
     }
 
-    try {
-      const updatedData: Partial<EventFormData> = {
-        name: formData.name,
-        description: formData.description,
-        date: formData.date,
-        time: formData.time,
-        location: formData.location,
-        maxGuests: formData.maxGuests,
-        fundingGoal: formData.fundingGoal,
-        eventImage: formData.eventImage,
-        visibility: formData.visibility,
-        isPublic: formData.visibility === 'public',
-        recipient: {
-          name: formData.recipient.name,
-          categoryOfNeed: formData.recipient.categoryOfNeed,
-          story: formData.recipient.story,
-          fundsUsage: formData.recipient.fundsUsage,
-          photo: formData.recipient.photo,
-        },
-      };
-
-      await updateEvent(event._id, updatedData);
-      toast.success('Event updated successfully');
-      onHide();
-    } catch (err: any) {
-      console.error('Error updating event:', err);
-      toast.error('Failed to update event');
-    }
-  };
-
+    await updateEvent(event._id, formDataToSend);
+    toast.success('Event updated successfully');
+    onHide();
+  } catch (err: any) {
+    console.error('Error updating event:', err);
+    toast.error('Failed to update event');
+  }
+};
   if (!show) return null;
 
   return (

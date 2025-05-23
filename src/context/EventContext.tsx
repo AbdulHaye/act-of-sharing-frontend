@@ -238,42 +238,16 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Update an existing event
 // Update an existing event
 const updateEvent = useCallback(
-  async (id: string, formData: Partial<EventFormData>) => {
+  async (id: string, formData: FormData) => {
     setLoading(true);
     try {
-      const data = new FormData();
-      
-      // Append top-level fields
-      if (formData.name) data.append('title', formData.name);
-      if (formData.description) data.append('description', formData.description);
-      if (formData.date && formData.time) {
-        const eventDateTime = `${formData.date}T${formData.time}:00Z`;
-        data.append('date', eventDateTime);
-      }
-      if (formData.location) data.append('location', formData.location);
-      if (formData.maxGuests) data.append('guestCount', formData.maxGuests);
-      if (formData.fundingGoal) data.append('goalAmount', formData.fundingGoal);
-      if (formData.isPublic !== undefined) data.append('isPublic', formData.isPublic.toString());
-      if (formData.visibility) data.append('visibility', formData.visibility);
-
-      // Append recipient fields
-      if (formData.recipient) {
-        data.append('recipient[name]', formData.recipient.name);
-        data.append('recipient[categoryOfNeed]', formData.recipient.categoryOfNeed);
-        data.append('recipient[story]', formData.recipient.story);
-        data.append('recipient[fundsUsage]', formData.recipient.fundsUsage);
-      }
-
-      // Append files if they exist
-      if (formData.eventImage) data.append('eventImage', formData.eventImage as File);
-      if (formData.recipient?.photo) data.append('recipientPhoto', formData.recipient.photo as File);
-
       const token = localStorage.getItem('token') || (await refreshToken());
-      const response = await axiosInstance.put(`/events/${id}`, data, {
-        headers: { 
-          'x-auth-token': token, 
-          'X-Skip-Redirect': 'true' 
-        }, // Removed explicit Content-Type
+      const response = await axiosInstance.put(`/events/${id}`, formData, {
+        headers: {
+          'x-auth-token': token,
+          'X-Skip-Redirect': 'true',
+          'Content-Type': 'multipart/form-data', // Explicitly set to ensure correct type
+        },
       });
 
       // Update state and handle success
@@ -293,7 +267,6 @@ const updateEvent = useCallback(
   },
   [user, getEvents, getHostSpecificEvents, refreshToken]
 );
-
   // Delete an event
   const deleteEvent = useCallback(
     async (id: string) => {
