@@ -194,4 +194,9 @@ p {
   .section-subtitle {
     font-size: 1rem;
   }
+  .btn {
+    width: auto; /* Prevents full width */
+    margin: var(--space-2); /* Adds spacing around the button */
+    display: inline-block; /* Ensures it behaves as an inline element */
+  }
 }
