@@ -9,7 +9,7 @@ interface DonationFormProps {
   organizationName?: string;
 }
 
-const DonationForm: React.FC<DonationFormProps> = ({ eventId, organizationName = "Meals With A Mission" }) => {
+const DonationForm: React.FC<DonationFormProps> = ({ eventId, organizationName = "CommonChange" }) => {
   const [amount, setAmount] = useState<string>("0.00");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
