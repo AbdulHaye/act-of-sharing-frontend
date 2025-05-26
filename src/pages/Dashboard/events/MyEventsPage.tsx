@@ -51,10 +51,9 @@ const MyEventsPage: React.FC = () => {
     limit: 10,
   });
 
-  const baseUrl =
-    import.meta.env.VITE_BASE_URL;
+  const baseUrl = import.meta.env.VITE_BASE_URL;
 
-useEffect(() => {
+  useEffect(() => {
     if (user?._id) {
       console.log("Fetching events for user:", user._id);
       getEvents(1, pagination.limit).then((response) => {
@@ -72,7 +71,10 @@ useEffect(() => {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const userEvents = user?.role === "admin" ? sortedEvents : sortedEvents.filter(event => event.host === user?._id);
+  const userEvents =
+    user?.role === "admin"
+      ? sortedEvents
+      : sortedEvents.filter((event) => event.host === user?._id);
 
   const handleEditEvent = (event: Event) => {
     console.log("Editing event:", event);
@@ -189,7 +191,7 @@ useEffect(() => {
               <div className="btn-group">
                 <button
                   className={`btn ${
-                    filter === "all" ? "btn-primary" : "btn-outline-primary"
+                    filter === "all" ? "ms-auto btn-primary" : "ms-auto btn-outline-primary"
                   }`}
                   onClick={() => setFilter("all")}
                 >
@@ -207,7 +209,7 @@ useEffect(() => {
                 </button>
                 <button
                   className={`btn ${
-                    filter === "past" ? "btn-primary" : "btn-outline-primary"
+                    filter === "past" ? "ms-auto btn-primary" : "ms-auto btn-outline-primary"
                   }`}
                   onClick={() => setFilter("past")}
                 >
@@ -308,10 +310,10 @@ useEffect(() => {
                               Category: {event.recipient.categoryOfNeed}
                             </small>
                           </div>
- <div className="d-flex align-items-center mb-2">
-  <Info size={16} className="text-primary me-2" />
-  <small>Visibility: {event.isPublic ? "Public" : "Private"}</small>
-</div>
+                          <div className="d-flex align-items-center mb-2">
+                            <Info size={16} className="text-primary me-2" />
+                            <small>Visibility: {event.isPublic ? "Public" : "Private"}</small>
+                          </div>
                         </div>
                         <div className="mb-3">
                           <div className="d-flex justify-content-between align-items-center mb-1">
@@ -332,10 +334,10 @@ useEffect(() => {
                             ></div>
                           </div>
                         </div>
-                        <div className="d-flex gap-2">
+                        <div className="d-flex gap-2 button-group">
                           {user.role !== "guest" && (
                             <button
-                              className="btn btn-sm btn-outline-secondary"
+                              className="ms-auto btn btn-sm btn-outline-secondary"
                               onClick={() => handleEditEvent(event)}
                             >
                               <Edit size={16} className="me-1" />
@@ -470,6 +472,23 @@ useEffect(() => {
           .page-link {
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
+          }
+        }
+        @media (max-width: 780px) {
+          .button-group {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          .button-group .btn {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+          }
+          .button-group .btn-outline-secondary {
+            order: 1;
+          }
+          .button-group .btn-outline-danger {
+            order: 2;
           }
         }
       `}</style>

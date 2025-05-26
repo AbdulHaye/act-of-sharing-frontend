@@ -130,7 +130,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   // Fetch host-specific events (for host dashboard)
-  const getHostSpecificEvents = useCallback(async (page: number = 1, limit: number = 100) => {
+  const getHostSpecificEvents = useCallback(async (page: number = 1, limit: number = 10000) => {
     console.log('getHostSpecificEvents called', { page, limit });
     if (!user || !isAuthenticated) {
       setError('User must be authenticated to fetch host-specific events');

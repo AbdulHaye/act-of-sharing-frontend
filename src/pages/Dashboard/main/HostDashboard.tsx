@@ -127,7 +127,6 @@ const HostDashboard: React.FC = () => {
       setTotalGoalAmount(totalGoal);
     } catch (error: any) {
       console.error("Error fetching total goal amount:", error);
-      // toast.error(error.response?.data?.message || "Failed to fetch total goal amount");
       setTotalGoalAmount(0);
     }
   };
@@ -140,6 +139,45 @@ const HostDashboard: React.FC = () => {
       fetchTotalGoalAmount();
     }
   }, [user, pagination.currentPage]);
+
+  // Compute upcoming events
+  const upcomingEvents = useMemo(() => {
+    if (!events?.length) return [];
+    return events
+      .filter((event: Event) => event.status === "upcoming")
+      .sort((a: Event, b: Event) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((event: Event) => ({
+        id: event._id,
+        name: event.title || "Unnamed Event",
+        location: event.location || "Unknown",
+        date: new Date(event.date).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        }),
+        goalAmount: Number(event.goalAmount) || 0,
+        guests: Number(event.guestCount) || 0,
+        status: event.status,
+      }));
+  }, [events]);
+
+  // Update pagination based on upcomingEvents length
+  useEffect(() => {
+    const totalItems = upcomingEvents.length;
+    const totalPages = Math.ceil(totalItems / pagination.limit);
+    setPagination((prev) => ({
+      ...prev,
+      totalEvents: totalItems,
+      totalPages: totalPages || 1,
+      currentPage: Math.min(prev.currentPage, totalPages) || 1,
+    }));
+  }, [upcomingEvents, pagination.limit]);
+
+  // Paginate the upcoming events
+  const paginatedEvents = upcomingEvents.slice(
+    (pagination.currentPage - 1) * pagination.limit,
+    pagination.currentPage * pagination.limit
+  );
 
   // Handle page change
   const handlePageChange = (page: number): void => {
@@ -164,28 +202,7 @@ const HostDashboard: React.FC = () => {
       { id: 5, title: "Total Goal Amount", value: `$${totalIndividualGoals.toLocaleString()}`, icon: <DollarSign size={24} /> },
       { id: 3, title: "Total Donations", value: `$${totalRaised.toLocaleString()}`, icon: <DollarSign size={24} /> },
     ];
-  }, [events, totalRaised, totalGoalAmount, pagination.totalEvents]);
-
-  // Compute upcoming events
-  const upcomingEvents = useMemo(() => {
-    if (!events?.length) return [];
-    return events
-      .filter((event: Event) => event.status === "upcoming")
-      .sort((a: Event, b: Event) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .map((event: Event) => ({
-        id: event._id,
-        name: event.title || "Unnamed Event",
-        location: event.location || "Unknown",
-        date: new Date(event.date).toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        }),
-        goalAmount: Number(event.goalAmount) || 0,
-        guests: Number(event.guestCount) || 0,
-        status: event.status,
-      }));
-  }, [events]);
+  }, [events, totalRaised, totalGoalAmount]);
 
   // Get user name
   const getUserName = (): string => {
@@ -199,7 +216,7 @@ const HostDashboard: React.FC = () => {
     fetchEvents(pagination.currentPage);
   };
 
-  // Render table rows
+  // Render table rows using paginated events
   const renderTableRows = (): JSX.Element => {
     if (eventsLoading) {
       return (
@@ -212,7 +229,7 @@ const HostDashboard: React.FC = () => {
         </tr>
       );
     }
-    if (upcomingEvents.length === 0) {
+    if (paginatedEvents.length === 0) {
       return (
         <tr>
           <td colSpan={6} className="text-center py-5">
@@ -229,7 +246,7 @@ const HostDashboard: React.FC = () => {
     }
     return (
       <>
-        {upcomingEvents.map((event: any) => (
+        {paginatedEvents.map((event: any) => (
           <tr key={event.id} className="hover:bg-gray-50">
             <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{event.name}</td>
             <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{event.location}</td>
