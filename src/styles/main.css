@@ -200,3 +200,18 @@ p {
     display: inline-block; /* Ensures it behaves as an inline element */
   }
 }
+
+@media (max-width: 992px) {
+  /* .section-title {
+    font-size: 1.875rem;
+  }
+  
+  .section-subtitle {
+    font-size: 1rem;
+  } */
+  .btn {
+    width: auto; /* Prevents full width */
+    margin: var(--space-2); /* Adds spacing around the button */
+    display: inline-block; /* Ensures it behaves as an inline element */
+  }
+}
