@@ -44,41 +44,42 @@ const AuthModal: React.FC<AuthModalProps> = ({
   }, [onClose]);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage(null);
-    try {
-      if (mode === "signup") {
-        // Password validation: at least 8 characters and contains at least one special character
-        const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
-        if (password.length < 8) {
-          setMessage({
-            text: "Password must be at least 8 characters long",
-            type: "error",
-          });
-          return;
-        }
-        if (!specialCharRegex.test(password)) {
-          setMessage({
-            text: "Password must contain at least one special character",
-            type: "error",
-          });
-          return;
-        }
-        await register({ firstname, lastname, email, password, role });
-        setMessage({ text: "User registered successfully", type: "success" });
-        toast.success("registered succcessfully");
-      } else {
-        await login(email, password);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setMessage(null);
+  try {
+    if (mode === "signup") {
+      // Password validation
+      const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
+      if (password.length < 8) {
+        setMessage({
+          text: "Password must be at least 8 characters long",
+          type: "error",
+        });
+        return;
       }
+      if (!specialCharRegex.test(password)) {
+        setMessage({
+          text: "Password must contain at least one special character",
+          type: "error",
+        });
+        return;
+      }
+      const successMessage = await register({ firstname, lastname, email, password, role });
+      setMessage({ text: successMessage || "User registered successfully", type: "success" });
+      toast.success("Registered successfully");
       onClose();
-    } catch (err: any) {
-      setMessage({
-        text: err.response?.data?.message || "An error occurred",
-        type: "error",
-      });
+    } else {
+      await login(email, password);
+      onClose();
     }
-  };
+  } catch (err: any) {
+    setMessage({
+      text: err.message || "An error occurred",
+      type: "error",
+    });
+  }
+};
 
   const handleClose = () => {
     setIsVisible(false);

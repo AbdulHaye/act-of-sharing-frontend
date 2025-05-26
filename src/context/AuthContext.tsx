@@ -102,30 +102,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (userData: { firstname: string; lastname: string; email: string; password: string; role: string }) => {
-    try {
-      const response = await axiosInstance.post('/users/register', userData);
-      const { message } = response.data; // Assuming backend returns a success message
-      console.log('Registration successful:', message);
-      navigate('/'); // Redirect to homepage after successful signup
-    } catch (error: any) {
-      // Log detailed error information
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Unknown error';
-      console.error('Registration failed:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: errorMessage,
-      });
-      // Attempt auto-login to handle cases where user was registered despite error
-      // try {
-      //   await login(userData.email, userData.password);
-      //   console.log('User was registered; auto-login successful');
-      // } catch (loginError) {
-      //   console.error('Auto-login after registration failed:', loginError);
-      //   throw new Error(`Registration failed: ${errorMessage}`);
-      // }
-    }
-  };
+const register = async (userData: { firstname: string; lastname: string; email: string; password: string; role: string }) => {
+  try {
+    const response = await axiosInstance.post('/users/register', userData);
+    const { message } = response.data; // Assuming backend returns a success message
+    console.log('Registration successful:', message);
+    return message; // Return success message to indicate success
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || 'An error occurred';
+    console.error('Registration failed:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: errorMessage,
+    });
+    throw new Error(errorMessage); // Throw the error to be caught by the caller
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('token');
