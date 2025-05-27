@@ -1,8 +1,17 @@
 import React, { useState } from "react";
-import { X, Calendar, Clock, MapPin, Users, DollarSign, FileText, Image } from "lucide-react";
+import {
+  X,
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  DollarSign,
+  FileText,
+  Image,
+} from "lucide-react";
 import { useEvent } from "../context/EventContext";
 import { useAuth } from "../context/AuthContext";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 interface EventFormData {
   name: string;
@@ -67,20 +76,30 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       if (!formData.location) errors.location = "Location is required";
       if (!formData.maxGuests) {
         errors.maxGuests = "Max guests is required";
-      } else if (isNaN(Number(formData.maxGuests)) || Number(formData.maxGuests) < 2) {
+      } else if (
+        isNaN(Number(formData.maxGuests)) ||
+        Number(formData.maxGuests) < 2
+      ) {
         errors.maxGuests = "Max guests must be at least 2";
       }
       if (!formData.fundingGoal) {
         errors.fundingGoal = "Funding goal is required";
-      } else if (isNaN(Number(formData.fundingGoal)) || Number(formData.fundingGoal) < 25) {
+      } else if (
+        isNaN(Number(formData.fundingGoal)) ||
+        Number(formData.fundingGoal) < 25
+      ) {
         errors.fundingGoal = "Funding goal must be at least 25";
       }
       if (!formData.description) errors.description = "Description is required";
-      if (!formData.visibility) errors.visibility = "Event visibility is required";
+      if (!formData.visibility)
+        errors.visibility = "Event visibility is required";
     } else if (step === 2) {
-      if (!formData.recipientName) errors.recipientName = "Recipient name is required";
-      if (!formData.categoryOfNeed) errors.categoryOfNeed = "Category of need is required";
-      if (!formData.recipientStory) errors.recipientStory = "Recipient story is required";
+      if (!formData.recipientName)
+        errors.recipientName = "Recipient name is required";
+      if (!formData.categoryOfNeed)
+        errors.categoryOfNeed = "Category of need is required";
+      if (!formData.recipientStory)
+        errors.recipientStory = "Recipient story is required";
       if (!formData.fundsUsage) errors.fundsUsage = "Funds usage is required";
     }
     return errors;
@@ -144,7 +163,11 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -169,7 +192,16 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     <div
       className="modal"
       tabIndex={-1}
-      style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}
+      style={{
+        display: "block",
+        backgroundColor: "rgba(0,0,0,0.5)",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1050,
+      }}
     >
       <div className="modal-dialog modal-lg modal-dialog-centered">
         <div className="modal-content">
@@ -189,39 +221,52 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                   <div
                     key={index}
                     className={`progress-step text-center ${
-                      currentStep > index + 1 ? 'completed' : ''
-                    } ${currentStep === index + 1 ? 'active' : ''}`}
+                      currentStep > index + 1 ? "completed" : ""
+                    } ${currentStep === index + 1 ? "active" : ""}`}
                     style={{ flex: 1 }}
                   >
                     <div
                       className="progress-circle mx-auto"
                       style={{
-                        width: '30px',
-                        height: '30px',
-                        borderRadius: '50%',
-                        backgroundColor: currentStep > index + 1 ? '#5144A1' : currentStep === index + 1 ? '#5144A1' : '#dee2e6',
-                        color: currentStep >= index + 1 ? 'white' : '#6c757d',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '14px',
+                        width: "30px",
+                        height: "30px",
+                        borderRadius: "50%",
+                        backgroundColor:
+                          currentStep > index + 1
+                            ? "#5144A1"
+                            : currentStep === index + 1
+                            ? "#5144A1"
+                            : "#dee2e6",
+                        color: currentStep >= index + 1 ? "white" : "#6c757d",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "14px",
                       }}
                     >
                       {index + 1}
                     </div>
-                    <div className="progress-label mt-2" style={{ fontSize: '12px' }}>
-                      {index === 0 ? 'Event Details' : index === 1 ? 'Recipient Info' : 'Review'}
+                    <div
+                      className="progress-label mt-2"
+                      style={{ fontSize: "12px" }}
+                    >
+                      {index === 0
+                        ? "Event Details"
+                        : index === 1
+                        ? "Recipient Info"
+                        : "Review"}
                     </div>
                     {index < totalSteps - 1 && (
                       <div
                         className="progress-line"
                         style={{
-                          position: 'absolute',
-                          top: '15px',
-                          left: '50%',
-                          width: '50%',
-                          height: '2px',
-                          backgroundColor: currentStep > index + 1 ? '#5144A1' : '#dee2e6',
+                          position: "absolute",
+                          top: "15px",
+                          left: "50%",
+                          width: "50%",
+                          height: "2px",
+                          backgroundColor:
+                            currentStep > index + 1 ? "#5144A1" : "#dee2e6",
                         }}
                       ></div>
                     )}
@@ -234,11 +279,14 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                   <div className="form-step">
                     <h2 className="h4 mb-2">Event Details</h2>
                     <p className="text-muted mb-4">
-                      Let's set up your meal gathering. Provide details about when and where you'll host.
+                      Let's set up your meal gathering. Provide details about
+                      when and where you'll host.
                     </p>
 
                     <div className="mb-3">
-                      <label htmlFor="name" className="form-label">Event Title *</label>
+                      <label htmlFor="name" className="form-label">
+                        Event Title *
+                      </label>
                       <div className="input-group">
                         <span className="input-group-text">
                           <FileText size={18} />
@@ -255,12 +303,16 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                           disabled={loading}
                         />
                       </div>
-                      {errors.name && <div className="text-danger mt-1">{errors.name}</div>}
+                      {errors.name && (
+                        <div className="text-danger mt-1">{errors.name}</div>
+                      )}
                     </div>
 
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="date" className="form-label">Date *</label>
+                        <label htmlFor="date" className="form-label">
+                          Date *
+                        </label>
                         <div className="input-group">
                           <span className="input-group-text">
                             <Calendar size={18} />
@@ -274,12 +326,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             className="form-control"
                             required
                             disabled={loading}
+                            min={new Date().toISOString().split("T")[0]} // Sets min to today
                           />
                         </div>
-                        {errors.date && <div className="text-danger mt-1">{errors.date}</div>}
+                        {errors.date && (
+                          <div className="text-danger mt-1">{errors.date}</div>
+                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="time" className="form-label">Time *</label>
+                        <label htmlFor="time" className="form-label">
+                          Time *
+                        </label>
                         <div className="input-group">
                           <span className="input-group-text">
                             <Clock size={18} />
@@ -295,12 +352,16 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             disabled={loading}
                           />
                         </div>
-                        {errors.time && <div className="text-danger mt-1">{errors.time}</div>}
+                        {errors.time && (
+                          <div className="text-danger mt-1">{errors.time}</div>
+                        )}
                       </div>
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="location" className="form-label">Location *</label>
+                      <label htmlFor="location" className="form-label">
+                        Location *
+                      </label>
                       <div className="input-group">
                         <span className="input-group-text">
                           <MapPin size={18} />
@@ -317,12 +378,18 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                           disabled={loading}
                         />
                       </div>
-                      {errors.location && <div className="text-danger mt-1">{errors.location}</div>}
+                      {errors.location && (
+                        <div className="text-danger mt-1">
+                          {errors.location}
+                        </div>
+                      )}
                     </div>
 
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="maxGuests" className="form-label">Max Guests *</label>
+                        <label htmlFor="maxGuests" className="form-label">
+                          Max Guests *
+                        </label>
                         <div className="input-group">
                           <span className="input-group-text">
                             <Users size={18} />
@@ -340,10 +407,16 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             disabled={loading}
                           />
                         </div>
-                        {errors.maxGuests && <div className="text-danger mt-1">{errors.maxGuests}</div>}
+                        {errors.maxGuests && (
+                          <div className="text-danger mt-1">
+                            {errors.maxGuests}
+                          </div>
+                        )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="fundingGoal" className="form-label">Funding Goal *</label>
+                        <label htmlFor="fundingGoal" className="form-label">
+                          Funding Goal *
+                        </label>
                         <div className="input-group">
                           <span className="input-group-text">
                             <DollarSign size={18} />
@@ -361,12 +434,18 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             disabled={loading}
                           />
                         </div>
-                        {errors.fundingGoal && <div className="text-danger mt-1">{errors.fundingGoal}</div>}
+                        {errors.fundingGoal && (
+                          <div className="text-danger mt-1">
+                            {errors.fundingGoal}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="visibility" className="form-label">Visibility *</label>
+                      <label htmlFor="visibility" className="form-label">
+                        Visibility *
+                      </label>
                       <div className="input-group">
                         <span className="input-group-text">
                           <Users size={18} />
@@ -380,16 +459,24 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                           required
                           disabled={loading}
                         >
-                          <option value="" disabled>Select visibility</option>
+                          <option value="" disabled>
+                            Select visibility
+                          </option>
                           <option value="public">Public</option>
                           <option value="private">Private</option>
                         </select>
                       </div>
-                      {errors.visibility && <div className="text-danger mt-1">{errors.visibility}</div>}
+                      {errors.visibility && (
+                        <div className="text-danger mt-1">
+                          {errors.visibility}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="description" className="form-label">Event Description *</label>
+                      <label htmlFor="description" className="form-label">
+                        Event Description *
+                      </label>
                       <textarea
                         id="description"
                         name="description"
@@ -401,11 +488,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         required
                         disabled={loading}
                       ></textarea>
-                      {errors.description && <div className="text-danger mt-1">{errors.description}</div>}
+                      {errors.description && (
+                        <div className="text-danger mt-1">
+                          {errors.description}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="eventImage" className="form-label">Event Image</label>
+                      <label htmlFor="eventImage" className="form-label">
+                        Event Image
+                      </label>
                       <div className="input-group">
                         <span className="input-group-text">
                           <Image size={18} />
@@ -421,7 +514,8 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         />
                       </div>
                       <small className="text-muted d-block mt-1">
-                        Upload an image that represents your meal gathering. Recommended size: 1200x800px.
+                        Upload an image that represents your meal gathering.
+                        Recommended size: 1200x800px.
                       </small>
                     </div>
                   </div>
@@ -431,11 +525,14 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                   <div className="form-step">
                     <h2 className="h4 mb-2">Recipient Information</h2>
                     <p className="text-muted mb-4">
-                      Share the story of who will benefit from your meal gathering and why they need support.
+                      Share the story of who will benefit from your meal
+                      gathering and why they need support.
                     </p>
 
                     <div className="mb-3">
-                      <label htmlFor="recipientName" className="form-label">Recipient Name *</label>
+                      <label htmlFor="recipientName" className="form-label">
+                        Recipient Name *
+                      </label>
                       <input
                         type="text"
                         id="recipientName"
@@ -447,11 +544,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         required
                         disabled={loading}
                       />
-                      {errors.recipientName && <div className="text-danger mt-1">{errors.recipientName}</div>}
+                      {errors.recipientName && (
+                        <div className="text-danger mt-1">
+                          {errors.recipientName}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="categoryOfNeed" className="form-label">Category of Need *</label>
+                      <label htmlFor="categoryOfNeed" className="form-label">
+                        Category of Need *
+                      </label>
                       <select
                         id="categoryOfNeed"
                         name="categoryOfNeed"
@@ -469,11 +572,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         <option value="disaster">Disaster Relief</option>
                         <option value="other">Other</option>
                       </select>
-                      {errors.categoryOfNeed && <div className="text-danger mt-1">{errors.categoryOfNeed}</div>}
+                      {errors.categoryOfNeed && (
+                        <div className="text-danger mt-1">
+                          {errors.categoryOfNeed}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="recipientStory" className="form-label">Their Story *</label>
+                      <label htmlFor="recipientStory" className="form-label">
+                        Their Story *
+                      </label>
                       <textarea
                         id="recipientStory"
                         name="recipientStory"
@@ -485,11 +594,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         required
                         disabled={loading}
                       ></textarea>
-                      {errors.recipientStory && <div className="text-danger mt-1">{errors.recipientStory}</div>}
+                      {errors.recipientStory && (
+                        <div className="text-danger mt-1">
+                          {errors.recipientStory}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="recipientPhoto" className="form-label">Recipient Photo</label>
+                      <label htmlFor="recipientPhoto" className="form-label">
+                        Recipient Photo
+                      </label>
                       <div className="input-group">
                         <span className="input-group-text">
                           <Image size={18} />
@@ -505,12 +620,15 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         />
                       </div>
                       <small className="text-muted d-block mt-1">
-                        With permission, upload a photo of the recipient or something representing their situation.
+                        With permission, upload a photo of the recipient or
+                        something representing their situation.
                       </small>
                     </div>
 
                     <div className="mb-3">
-                      <label htmlFor="fundsUsage" className="form-label">How Funds Will Be Used *</label>
+                      <label htmlFor="fundsUsage" className="form-label">
+                        How Funds Will Be Used *
+                      </label>
                       <textarea
                         id="fundsUsage"
                         name="fundsUsage"
@@ -522,7 +640,11 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         required
                         disabled={loading}
                       ></textarea>
-                      {errors.fundsUsage && <div className="text-danger mt-1">{errors.fundsUsage}</div>}
+                      {errors.fundsUsage && (
+                        <div className="text-danger mt-1">
+                          {errors.fundsUsage}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -542,7 +664,9 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                       </div>
                       <div className="mb-2">
                         <span className="fw-bold">Date & Time:</span>
-                        <span className="ms-2">{formData.date} • {formData.time}</span>
+                        <span className="ms-2">
+                          {formData.date} • {formData.time}
+                        </span>
                       </div>
                       <div className="mb-2">
                         <span className="fw-bold">Location:</span>
@@ -567,7 +691,9 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                       {formData.eventImage && (
                         <div className="mb-2">
                           <span className="fw-bold">Event Image:</span>
-                          <span className="ms-2">{formData.eventImage.name}</span>
+                          <span className="ms-2">
+                            {formData.eventImage.name}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -580,7 +706,10 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                       </div>
                       <div className="mb-2">
                         <span className="fw-bold">Category:</span>
-                        <span className="ms-2">{categoryLabels[formData.categoryOfNeed] || formData.categoryOfNeed}</span>
+                        <span className="ms-2">
+                          {categoryLabels[formData.categoryOfNeed] ||
+                            formData.categoryOfNeed}
+                        </span>
                       </div>
                       <div className="mb-2">
                         <span className="fw-bold">Story:</span>
@@ -589,7 +718,9 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                       {formData.recipientPhoto && (
                         <div className="mb-2">
                           <span className="fw-bold">Recipient Photo:</span>
-                          <span className="ms-2">{formData.recipientPhoto.name}</span>
+                          <span className="ms-2">
+                            {formData.recipientPhoto.name}
+                          </span>
                         </div>
                       )}
                       <div className="mb-2">
@@ -609,11 +740,18 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         disabled={loading}
                       />
                       <label className="form-check-label" htmlFor="termsCheck">
-                        I confirm that all information is accurate and I have permission to share the recipient's story.
+                        I confirm that all information is accurate and I have
+                        permission to share the recipient's story.
                       </label>
-                      {errors.termsCheck && <div className="text-danger mt-2">{errors.termsCheck}</div>}
+                      {errors.termsCheck && (
+                        <div className="text-danger mt-2">
+                          {errors.termsCheck}
+                        </div>
+                      )}
                     </div>
-                    {errors.submit && <div className="text-danger mt-2">{errors.submit}</div>}
+                    {errors.submit && (
+                      <div className="text-danger mt-2">{errors.submit}</div>
+                    )}
                   </div>
                 )}
               </div>

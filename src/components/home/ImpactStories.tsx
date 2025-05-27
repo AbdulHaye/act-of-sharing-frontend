@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import '../../styles/impact-stories.css';
-import axiosInstance from '../../api/axiosInstance'; // Adjust the path based on your project structure
+import React, { useState, useEffect } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import "../../styles/impact-stories.css";
+import axiosInstance from "../../api/axiosInstance"; // Adjust the path based on your project structure
 
 interface StoryProps {
   image: string;
@@ -24,7 +24,7 @@ const ImpactStories: React.FC = () => {
       setError(null);
       try {
         const token = localStorage.getItem("token");
-        const response = await axiosInstance.get('/stories?page=1&limit=10', {
+        const response = await axiosInstance.get("/stories?page=1&limit=50", {
           headers: {
             "x-auth-token": token,
           },
@@ -39,7 +39,7 @@ const ImpactStories: React.FC = () => {
           quote: story.quote,
           name: story.name,
           location: story.location,
-          amount: "N/A", // Amount is not in API response, using placeholder
+          amount: story.amount, // Amount is not in API response, using placeholder
           need: story.category, // Map 'category' to 'need'
         }));
         setStories(fetchedStories);
@@ -73,7 +73,9 @@ const ImpactStories: React.FC = () => {
   };
 
   const prevStory = () => {
-    setActiveIndex((prevIndex) => (prevIndex - 1 + stories.length) % stories.length);
+    setActiveIndex(
+      (prevIndex) => (prevIndex - 1 + stories.length) % stories.length
+    );
   };
 
   return (
@@ -100,7 +102,9 @@ const ImpactStories: React.FC = () => {
                         alt={stories[activeIndex].name}
                         className="story-image img-fluid"
                       />
-                      <div className="story-amount">{stories[activeIndex].amount}</div>
+                      <div className="story-amount">
+                        {stories[activeIndex].amount}
+                      </div>
                     </div>
                   </div>
                   <div className="col-md-7">
@@ -109,11 +113,17 @@ const ImpactStories: React.FC = () => {
                         "{stories[activeIndex].quote}"
                       </div>
                       <div className="story-meta">
-                        <div className="story-name">{stories[activeIndex].name}</div>
+                        <div className="story-name">
+                          {stories[activeIndex].name}
+                        </div>
                         <div className="story-details">
-                          <span className="story-location">{stories[activeIndex].location}</span>
+                          <span className="story-location">
+                            {stories[activeIndex].location}
+                          </span>
                           <span className="story-divider">•</span>
-                          <span className="story-need">{stories[activeIndex].need}</span>
+                          <span className="story-need">
+                            {stories[activeIndex].need}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -133,7 +143,9 @@ const ImpactStories: React.FC = () => {
                   {stories.map((_, index) => (
                     <button
                       key={index}
-                      className={`story-indicator ${activeIndex === index ? 'active' : ''}`}
+                      className={`story-indicator ${
+                        activeIndex === index ? "active" : ""
+                      }`}
                       onClick={() => setActiveIndex(index)}
                       aria-label={`Go to story ${index + 1}`}
                     />
