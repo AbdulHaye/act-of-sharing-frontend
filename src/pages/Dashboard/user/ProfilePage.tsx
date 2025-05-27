@@ -71,6 +71,14 @@ const ProfilePage: React.FC = () => {
     setSuccess(null);
     setLoading(true);
 
+    // Email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address (e.g., user@example.com)");
+      setLoading(false);
+      return;
+    }
+
     if (formData.newPassword) {
       if (formData.newPassword !== formData.confirmPassword) {
         setPasswordError("New passwords do not match");
