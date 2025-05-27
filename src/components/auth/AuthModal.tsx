@@ -45,7 +45,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const navigate = useNavigate();
 
   const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|org|net|edu|gov|co)$/;
     return emailRegex.test(email);
   };
 

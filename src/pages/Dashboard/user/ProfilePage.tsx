@@ -72,7 +72,7 @@ const ProfilePage: React.FC = () => {
     setLoading(true);
 
     // Email validation
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|org|net|edu|gov|co)$/;
     if (!emailRegex.test(formData.email)) {
       setError("Please enter a valid email address (e.g., user@example.com)");
       setLoading(false);
