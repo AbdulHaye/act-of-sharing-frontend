@@ -36,7 +36,7 @@ const stripePromise = loadStripe(
   "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
 );
 
-// Component to handle redirect based on use
+// Component to handle redirect based on us
 const DashboardRedirect: React.FC = () => {
   const { user } = useAuth();
   if (!user) {
@@ -48,7 +48,10 @@ const DashboardRedirect: React.FC = () => {
 
 function App() {
   const location = useLocation();
-  const hideNavbarAndFooter = location.pathname.startsWith("/payment/") || location.pathname.startsWith("/dashboard") || location.pathname.startsWith("/checkout");
+  const hideNavbarAndFooter =
+    location.pathname.startsWith("/payment/") ||
+    location.pathname.startsWith("/dashboard") ||
+    location.pathname.startsWith("/checkout");
 
   return (
     <Elements stripe={stripePromise}>
@@ -65,13 +68,19 @@ function App() {
                 <Route path="/checkout/:eventId" element={<CheckoutPage />} />
                 <Route path="/payment/:eventId" element={<DonationPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
-                
-                <Route element={<ProtectedRoute allowedRoles={["admin", "host"]} />}>
+
+                <Route
+                  element={<ProtectedRoute allowedRoles={["admin", "host"]} />}
+                >
                   <Route path="/create-event" element={<CreateEventPage />} />
                   <Route path="/dashboard/invite" element={<InvitePage />} />
                 </Route>
 
-                <Route element={<ProtectedRoute allowedRoles={["admin", "host", "guest"]} />}>
+                <Route
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "host", "guest"]} />
+                  }
+                >
                   <Route path="/dashboard" element={<DashboardPage />}>
                     <Route index element={<DashboardRedirect />} />
                     <Route path="admin" element={<AdminDashboard />} />
@@ -79,11 +88,18 @@ function App() {
                     <Route path="guest" element={<GuestDashboard />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="my-events" element={<MyEventsPage />} />
-                    <Route path="contributions" element={<ContributionsPage />} />
+                    <Route
+                      path="contributions"
+                      element={<ContributionsPage />}
+                    />
                     <Route path="users" element={<UsersPage />} />
-                    <Route path="request-assistance" element={<RequestsPage />} />
+                    <Route
+                      path="request-assistance"
+                      element={<RequestsPage />}
+                    />
                     <Route path="contactus" element={<ContactPage />} />
-                    <Route path="stories" element={<StoriesPage />} /> {/* Added Stories route */}
+                    <Route path="stories" element={<StoriesPage />} />{" "}
+                    {/* Added Stories route */}
                   </Route>
                 </Route>
               </Routes>
