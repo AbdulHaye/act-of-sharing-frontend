@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -7,18 +8,140 @@ import { useAuth } from "../../../context/AuthContext";
 import { toast } from "react-toastify";
 import { Edit, Trash2 } from "lucide-react";
 
+// Define interfaces for better TypeScript support
+interface User {
+  firstname: string;
+  lastname: string;
+  email: string;
+}
+
+interface Event {
+  title: string;
+}
+
+interface Contribution {
+  _id: string;
+  eventId: Event | null;
+  userId: User | null;
+  amount: number;
+  status: string;
+  createdAt: string;
+}
+
+interface EditFormData {
+  eventId: { title: string };
+  userId: { firstname: string; lastname: string; email: string };
+  amount: string;
+  status: string;
+}
+
+interface DeleteConfirmationModalProps {
+  show: boolean;
+  onHide: () => void;
+  onConfirm: () => void;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  show,
+  onHide,
+  onConfirm,
+}) => {
+  if (!show) return null;
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">Confirm Deletion</h5>
+        </div>
+        <div className="modal-body">
+          <p>Are you sure you want to delete this contribution? This action cannot be undone.</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-outline-secondary" onClick={onHide}>
+            No
+          </button>
+          <button className="btn btn-danger" onClick={onConfirm}>
+            Yes
+          </button>
+        </div>
+      </div>
+      <style jsx>{`
+        .modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1050;
+        }
+        .modal-content {
+          background: white;
+          border-radius: 8px;
+          width: 400px;
+          max-width: 90%;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .modal-header {
+          padding: 1rem;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .modal-title {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 500;
+        }
+        .modal-body {
+          padding: 1rem;
+          color: #333;
+        }
+        .modal-footer {
+          padding: 1rem;
+          border-top: 1px solid #dee2e6;
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.5rem;
+        }
+        .btn-danger {
+          background-color: #dc3545;
+          border-color: #dc3545;
+          color: white;
+        }
+        .btn-danger:hover {
+          background-color: #c82333;
+          border-color: #bd2130;
+        }
+        .btn-outline-secondary {
+          color: #6c757d;
+          border-color: #6c757d;
+        }
+        .btn-outline-secondary:hover {
+          background-color: #6c757d;
+          color: white;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const ContributionsPage: React.FC = () => {
-  const [contributions, setContributions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const [selectedContribution, setSelectedContribution] = useState<any | null>(null);
-  const [editFormData, setEditFormData] = useState({
+  const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
+  const [editFormData, setEditFormData] = useState<EditFormData>({
     eventId: { title: "" },
     userId: { firstname: "", lastname: "", email: "" },
     amount: "",
     status: "",
   });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [contributionIdToDelete, setContributionIdToDelete] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -37,9 +160,20 @@ const ContributionsPage: React.FC = () => {
         },
       });
       console.log("Fetched contributions data:", response.data);
-      const sortedContributions = response.data.contributions.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+
+      // Sort contributions by createdAt in descending order (most recent first)
+      const sortedContributions = [...response.data.contributions].sort(
+        (a: Contribution, b: Contribution) => {
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+          // Fallback to 0 if dates are invalid to avoid NaN issues
+          return isNaN(dateB.getTime()) ? 0 : isNaN(dateA.getTime()) ? -1 : dateB.getTime() - dateA.getTime();
+        }
       );
+
+      // Debug log to verify sorting
+      console.log("Sorted contributions:", sortedContributions.map(c => ({ _id: c._id, createdAt: c.createdAt })));
+
       setContributions(sortedContributions);
       setPagination({
         currentPage: response.data.pagination.currentPage,
@@ -48,7 +182,7 @@ const ContributionsPage: React.FC = () => {
         limit: response.data.pagination.limit,
       });
       setError(null);
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to fetch contributions: " + (err.response?.data?.message || err.message));
       console.error("Fetch error:", err);
     } finally {
@@ -60,22 +194,31 @@ const ContributionsPage: React.FC = () => {
     fetchContributions(pagination.currentPage);
   }, [pagination.currentPage]);
 
-  const handleDelete = async (contributionId: string) => {
-    if (window.confirm("Are you sure you want to delete this contribution?")) {
-      try {
-        const token = localStorage.getItem("token");
-        await axiosInstance.delete(`/contributions/${contributionId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            "x-auth-token": token,
-          },
-        });
-        toast.info("Contribution deleted successfully");
-        fetchContributions(pagination.currentPage);
-      } catch (err) {
-        setError("Failed to delete contribution: " + (err.response?.data?.message || err.message));
-        console.error("Delete error:", err);
-      }
+  const handleDelete = (contributionId: string) => {
+    console.log("Preparing to delete contribution with ID:", contributionId);
+    setContributionIdToDelete(contributionId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!contributionIdToDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axiosInstance.delete(`/contributions/${contributionIdToDelete}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
+      });
+      toast.info("Contribution deleted successfully");
+      fetchContributions(pagination.currentPage);
+    } catch (err: any) {
+      setError("Failed to delete contribution: " + (err.response?.data?.message || err.message));
+      console.error("Delete error:", err);
+    } finally {
+      setShowDeleteModal(false);
+      setContributionIdToDelete(null);
     }
   };
 
@@ -103,20 +246,22 @@ const ContributionsPage: React.FC = () => {
         },
       });
 
-      setContributions(contributions.map((c) =>
-        c._id === selectedContribution._id ? { ...c, ...updatedData } : c
-      ));
+      setContributions(
+        contributions.map((c) =>
+          c._id === selectedContribution._id ? { ...c, ...updatedData } : c
+        )
+      );
       setSelectedContribution(null);
       setError(null);
       toast.info("Contribution updated successfully");
       fetchContributions(pagination.currentPage);
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to update contribution: " + (err.response?.data?.message || err.message));
       console.error("Edit error:", err);
     }
   };
 
-  const openEditModal = (contribution: any) => {
+  const openEditModal = (contribution: Contribution) => {
     setSelectedContribution(contribution);
     setEditFormData({
       eventId: { title: contribution.eventId?.title || "" },
@@ -139,6 +284,17 @@ const ContributionsPage: React.FC = () => {
     if (page >= 1 && page <= pagination.totalPages) {
       setPagination((prev) => ({ ...prev, currentPage: page }));
     }
+  };
+
+  // Format date function
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   if (loading) {
@@ -169,6 +325,7 @@ const ContributionsPage: React.FC = () => {
                     <th className="table-header px-4 py-2" style={{ minWidth: "15%" }}>User Name</th>
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ minWidth: "20%" }}>Email</th>
                     <th className="table-header px-4 py-2" style={{ minWidth: "15%" }}>Amount</th>
+                    <th className="table-header px-4 py-2" style={{ minWidth: "15%" }}>Date</th>
                     <th className="table-header px-4 py-2" style={{ minWidth: "10%" }}>Status</th>
                     {user?.role === "admin" && (
                       <th className="table-header px-4 py-2" style={{ minWidth: "15%" }}>Actions</th>
@@ -178,7 +335,7 @@ const ContributionsPage: React.FC = () => {
                 <tbody>
                   {contributions.length === 0 ? (
                     <tr>
-                      <td colSpan={user?.role === "admin" ? 7 : 6} className="text-center py-5">
+                      <td colSpan={user?.role === "admin" ? 8 : 7} className="text-center py-5">
                         <svg
                           width="128"
                           height="128"
@@ -223,6 +380,9 @@ const ContributionsPage: React.FC = () => {
                           style={{ minWidth: "15%" }}
                         >
                           ${contribution.amount?.toFixed(2) || "0.00"}
+                        </td>
+                        <td className="table-cell px-4 py-2" style={{ minWidth: "15%" }}>
+                          {formatDate(contribution.createdAt)}
                         </td>
                         <td className="table-cell px-4 py-2" style={{ minWidth: "10%" }}>
                           {contribution.status || "N/A"}
@@ -301,7 +461,7 @@ const ContributionsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Add Edit Modal */}
+        {/* Edit Modal */}
         {selectedContribution && user?.role === "admin" && (
           <div
             className="modal"
@@ -424,6 +584,15 @@ const ContributionsPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        <DeleteConfirmationModal
+          show={showDeleteModal}
+          onHide={() => {
+            setShowDeleteModal(false);
+            setContributionIdToDelete(null);
+          }}
+          onConfirm={confirmDelete}
+        />
       </div>
 
       <style jsx>{`

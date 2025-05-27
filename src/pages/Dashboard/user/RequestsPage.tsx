@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -8,18 +9,53 @@ import { toast } from "react-toastify";
 import { Edit, Trash2 } from "lucide-react";
 
 // Helper function to truncate text after 15 words
-const truncateText = (text: string, wordLimit: number = 15) => {
+const truncateText = (text: string, wordLimit: number = 15): string => {
   if (!text) return "";
   const words = text.trim().split(/\s+/);
   if (words.length <= wordLimit) return text;
   return words.slice(0, wordLimit).join(" ") + "...";
 };
 
+interface DeleteConfirmationModalProps {
+  show: boolean;
+  onHide: () => void;
+  onConfirm: () => void;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  show,
+  onHide,
+  onConfirm,
+}) => {
+  if (!show) return null;
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">Confirm Deletion</h5>
+        </div>
+        <div className="modal-body">
+          <p>Are you sure you want to delete this request? This action cannot be undone.</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-outline-secondary" onClick={onHide}>
+            No
+          </button>
+          <button className="btn btn-danger" onClick={onConfirm}>
+            Yes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RequestsPage: React.FC = () => {
-  const [requests, setRequests] = useState([]);
-  const [sortedRequests, setSortedRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [sortedRequests, setSortedRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -32,6 +68,8 @@ const RequestsPage: React.FC = () => {
     preferredDate: "",
     additionalInfo: "",
   });
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [requestIdToDelete, setRequestIdToDelete] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -50,7 +88,7 @@ const RequestsPage: React.FC = () => {
         },
       });
       console.log("Fetched requests data:", response.data);
-      setRequests(response.data.requests);
+      setRequests(response.data.requests || []);
       setPagination({
         currentPage: response.data.pagination.currentPage,
         totalPages: response.data.pagination.totalPages,
@@ -58,7 +96,7 @@ const RequestsPage: React.FC = () => {
         limit: response.data.pagination.limit,
       });
       setError(null);
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to fetch requests: " + (err.response?.data?.message || err.message));
       console.error("Fetch error:", err);
     } finally {
@@ -84,23 +122,32 @@ const RequestsPage: React.FC = () => {
     }
   }, [requests]);
 
-  const handleDelete = async (requestId: string) => {
-    if (window.confirm("Are you sure you want to delete this request?")) {
-      try {
-        const token = localStorage.getItem("token");
-        await axiosInstance.delete(`/request/${requestId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            "x-auth-token": token,
-          },
-        });
-        setRequests(requests.filter((r) => r._id !== requestId));
-        toast.success("Request deleted successfully");
-        fetchRequests(pagination.currentPage);
-      } catch (err) {
-        setError("Failed to delete request: " + (err.response?.data?.message || err.message));
-        console.error("Delete error:", err);
-      }
+  const handleDelete = (requestId: string) => {
+    console.log("Preparing to delete request with ID:", requestId);
+    setRequestIdToDelete(requestId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!requestIdToDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axiosInstance.delete(`/request/${requestIdToDelete}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
+      });
+      setRequests(requests.filter((r) => r._id !== requestIdToDelete));
+      toast.success("Request deleted successfully");
+      fetchRequests(pagination.currentPage);
+    } catch (err: any) {
+      setError("Failed to delete request: " + (err.response?.data?.message || err.message));
+      console.error("Delete error:", err);
+    } finally {
+      setShowDeleteModal(false);
+      setRequestIdToDelete(null);
     }
   };
 
@@ -135,7 +182,7 @@ const RequestsPage: React.FC = () => {
       setError(null);
       toast.success("Request updated successfully");
       fetchRequests(pagination.currentPage);
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to update request: " + (err.response?.data?.message || err.message));
       console.error("Edit error:", err);
     }
@@ -303,7 +350,7 @@ const RequestsPage: React.FC = () => {
         </div>
 
         {selectedRequest && user?.role === "admin" && (
-          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}>
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
@@ -406,9 +453,74 @@ const RequestsPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        <DeleteConfirmationModal
+          show={showDeleteModal}
+          onHide={() => {
+            setShowDeleteModal(false);
+            setRequestIdToDelete(null);
+          }}
+          onConfirm={confirmDelete}
+        />
       </div>
 
       <style jsx>{`
+        .modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1050;
+        }
+        .modal-content {
+          background: white;
+          border-radius: 8px;
+          width: 400px;
+          max-width: 90%;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .modal-header {
+          padding: 1rem;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .modal-title {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 500;
+        }
+        .modal-body {
+          padding: 1rem;
+          color: #333;
+        }
+        .modal-footer {
+          padding: 1rem;
+          border-top: 1px solid #dee2e6;
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.5rem;
+        }
+        .btn-danger {
+          background-color: #dc3545;
+          border-color: #dc3545;
+          color: white;
+        }
+        .btn-danger:hover {
+          background-color: #c82333;
+          border-color: #bd2130;
+        }
+        .btn-outline-secondary {
+          color: #6c757d;
+          border-color: #6c757d;
+        }
+        .btn-outline-secondary:hover {
+          background-color: #6c757d;
+          color: white;
+        }
         .table-custom {
           border-collapse: collapse;
         }

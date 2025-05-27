@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -36,6 +37,41 @@ interface Event {
   host?: string;
 }
 
+interface DeleteConfirmationModalProps {
+  show: boolean;
+  onHide: () => void;
+  onConfirm: () => void;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  show,
+  onHide,
+  onConfirm,
+}) => {
+  if (!show) return null;
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">Confirm Deletion</h5>
+        </div>
+        <div className="modal-body">
+          <p>Are you sure you want to delete this event? This action cannot be undone.</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-outline-secondary" onClick={onHide}>
+            No
+          </button>
+          <button className="btn btn-danger" onClick={onConfirm}>
+            Yes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MyEventsPage: React.FC = () => {
   const { events, loading, error, getEvents, deleteEvent } = useEvent();
   const { user } = useAuth();
@@ -44,6 +80,8 @@ const MyEventsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [eventIdToDelete, setEventIdToDelete] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -82,22 +120,25 @@ const MyEventsPage: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    console.log("Deleting event with ID:", eventId);
-    if (
-      window.confirm(
-        "Are you sure you want to delete this event? This action cannot be undone."
-      )
-    ) {
-      setIsDeleting(eventId);
-      try {
-        await deleteEvent(eventId);
-        toast.success("Event deleted successfully");
-      } catch (err) {
-        console.error("Failed to delete event:", err);
-      } finally {
-        setIsDeleting(null);
-      }
+  const handleDeleteEvent = (eventId: string) => {
+    console.log("Preparing to delete event with ID:", eventId);
+    setEventIdToDelete(eventId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!eventIdToDelete) return;
+
+    setIsDeleting(eventIdToDelete);
+    setShowDeleteModal(false);
+    try {
+      await deleteEvent(eventIdToDelete);
+      toast.success("Event deleted successfully");
+    } catch (err) {
+      console.error("Failed to delete event:", err);
+    } finally {
+      setIsDeleting(null);
+      setEventIdToDelete(null);
     }
   };
 
@@ -334,29 +375,29 @@ const MyEventsPage: React.FC = () => {
                             ></div>
                           </div>
                         </div>
-                        <div className="d-flex gap-2 button-group">
-                          {user.role !== "guest" && (
-                            <button
-                              className="ms-auto btn btn-sm btn-outline-secondary"
-                              onClick={() => handleEditEvent(event)}
-                            >
-                              <Edit size={16} className="me-1" />
-                              <span>Edit</span>
-                            </button>
-                          )}
-                          {user.role !== "guest" && (
-                            <button
-                              className="btn btn-sm btn-outline-danger ms-auto"
-                              onClick={() => handleDeleteEvent(event._id)}
-                              disabled={isDeleting === event._id}
-                            >
-                              <Trash2 size={16} className="me-1" />
-                              <span>
-                                {isDeleting === event._id
-                                  ? "Deleting..."
-                                  : "Delete"}
-                              </span>
-                            </button>
+                        <div className="d-flex justify-content-between  button-group">
+                          {(user.role === "admin" || (user.role === "host" && isUpcoming(event.date))) && (
+                            <>
+                              <button
+                                className="btn btn-sm btn-outline-secondary"
+                                onClick={() => handleEditEvent(event)}
+                              >
+                                <Edit size={16} className="me-1" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleDeleteEvent(event._id)}
+                                disabled={isDeleting === event._id}
+                              >
+                                <Trash2 size={16} className="me-1" />
+                                <span>
+                                  {isDeleting === event._id
+                                    ? "Deleting..."
+                                    : "Delete"}
+                                </span>
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -419,9 +460,74 @@ const MyEventsPage: React.FC = () => {
           }}
           event={selectedEvent}
         />
+
+        <DeleteConfirmationModal
+          show={showDeleteModal}
+          onHide={() => {
+            setShowDeleteModal(false);
+            setEventIdToDelete(null);
+          }}
+          onConfirm={confirmDeleteEvent}
+        />
       </div>
 
       <style jsx>{`
+        .modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1050;
+        }
+        .modal-content {
+          background: white;
+          border-radius: 8px;
+          width: 400px;
+          max-width: 90%;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .modal-header {
+          padding: 1rem;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .modal-title {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 500;
+        }
+        .modal-body {
+          padding: 1rem;
+          color: #333;
+        }
+        .modal-footer {
+          padding: 1rem;
+          border-top: 1px solid #dee2e6;
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.5rem;
+        }
+        .btn-danger {
+          background-color: #dc3545;
+          border-color: #dc3545;
+          color: white;
+        }
+        .btn-danger:hover {
+          background-color: #c82333;
+          border-color: #bd2130;
+        }
+        .btn-outline-secondary {
+          color: #6c757d;
+          border-color: #6c757d;
+        }
+        .btn-outline-secondary:hover {
+          background-color: #6c757d;
+          color: white;
+        }
         .text-primary {
           color: #5144A1 !important;
         }
@@ -452,6 +558,9 @@ const MyEventsPage: React.FC = () => {
         }
         .card:hover {
           transform: translateY(-5px);
+        }
+        .button-group {
+          justify-content: flex-end;
         }
         @media (max-width: 576px) {
           .btn-group {

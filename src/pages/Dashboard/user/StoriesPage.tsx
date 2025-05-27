@@ -8,6 +8,47 @@ import axiosInstance from "../../../api/axiosInstance";
 import { toast } from "react-toastify";
 import { Edit, Trash2, Plus } from "lucide-react";
 
+// Helper function to truncate text to a specified length
+const truncateText = (text: string, maxLength: number): string => {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + "...";
+};
+
+interface DeleteConfirmationModalProps {
+  show: boolean;
+  onHide: () => void;
+  onConfirm: () => void;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  show,
+  onHide,
+  onConfirm,
+}) => {
+  if (!show) return null;
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">Confirm Deletion</h5>
+        </div>
+        <div className="modal-body">
+          <p>Are you sure you want to delete this story? This action cannot be undone.</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-outline-secondary" onClick={onHide}>
+            No
+          </button>
+          <button className="btn btn-danger" onClick={onConfirm}>
+            Yes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const StoriesPage: React.FC = () => {
   const [stories, setStories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,6 +78,8 @@ const StoriesPage: React.FC = () => {
     limit: 10,
   });
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [storyIdToDelete, setStoryIdToDelete] = useState<string | null>(null);
 
   const fetchStories = async (page: number = 1) => {
     setLoading(true);
@@ -79,27 +122,35 @@ const StoriesPage: React.FC = () => {
     fetchStories(pagination.currentPage);
   }, [pagination.currentPage]);
 
-  const handleDelete = async (storyId: string) => {
-    if (window.confirm("Are you sure you want to delete this story?")) {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axiosInstance.delete(`/stories/${storyId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            "x-auth-token": token,
-          },
-        });
+  const handleDelete = (storyId: string) => {
+    setStoryIdToDelete(storyId);
+    setShowDeleteModal(true);
+  };
 
-        if (!response.data) {
-          throw new Error("Failed to delete story");
-        }
+  const confirmDelete = async () => {
+    if (!storyIdToDelete) return;
 
-        toast.success("Story deleted successfully");
-        fetchStories(pagination.currentPage);
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.message || err.message || "Failed to delete story";
-        toast.error(errorMessage);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axiosInstance.delete(`/stories/${storyIdToDelete}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
+      });
+
+      if (!response.data) {
+        throw new Error("Failed to delete story");
       }
+
+      toast.success("Story deleted successfully");
+      fetchStories(pagination.currentPage);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || "Failed to delete story";
+      toast.error(errorMessage);
+    } finally {
+      setShowDeleteModal(false);
+      setStoryIdToDelete(null);
     }
   };
 
@@ -249,10 +300,14 @@ const StoriesPage: React.FC = () => {
     }
   };
 
-  // Function to truncate text to a specified length
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + "...";
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   if (loading) {
@@ -268,7 +323,7 @@ const StoriesPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-         <div className="container-fluid p-4" style={{ width: "100%", overflowX: "auto" }}>
+      <div className="container-fluid p-4" style={{ width: "100%", overflowX: "auto" }}>
         <div className="card border-0 shadow-sm bg-white">
           <div className="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 className="card-title mb-0 text-lg font-semibold">Stories</h5>
@@ -285,11 +340,12 @@ const StoriesPage: React.FC = () => {
                 <thead className="sticky top-0 bg-primary text-white">
                   <tr>
                     <th className="table-header px-4 py-2" style={{ width: "5%" }}>ID</th>
-                    <th className="table-header px-4 py-2" style={{ width: "25%" }}>Quote</th>
+                    <th className="table-header px-4 py-2" style={{ width: "20%" }}>Quote</th>
                     <th className="table-header px-4 py-2" style={{ width: "15%" }}>Name</th>
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "15%" }}>Location</th>
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "15%" }}>Category</th>
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Amount</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Date</th>
                     {user?.role === "admin" && (
                       <th className="table-header px-4 py-2" style={{ width: "15%" }}>Actions</th>
                     )}
@@ -298,7 +354,7 @@ const StoriesPage: React.FC = () => {
                 <tbody>
                   {stories.length === 0 ? (
                     <tr>
-                      <td colSpan={user?.role === "admin" ? 7 : 6} className="text-center py-5">
+                      <td colSpan={user?.role === "admin" ? 8 : 7} className="text-center py-5">
                         <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
                           <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
                           <circle cx="12" cy="12" r="3"/>
@@ -313,7 +369,7 @@ const StoriesPage: React.FC = () => {
                         <td className="table-cell px-4 py-2" style={{ width: "5%" }}>
                           {(pagination.currentPage - 1) * pagination.limit + index + 1}
                         </td>
-                        <td className="table-cell px-4 py-2 truncate" style={{ width: "25%" }}>
+                        <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>
                           {truncateText(story.quote, 30)}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "15%" }}>
@@ -327,6 +383,9 @@ const StoriesPage: React.FC = () => {
                         </td>
                         <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
                           ${story.amount}
+                        </td>
+                        <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
+                          {formatDate(story.createdAt)}
                         </td>
                         {user?.role === "admin" && (
                           <td className="table-cell px-4 py-2" style={{ width: "15%" }}>
@@ -386,7 +445,7 @@ const StoriesPage: React.FC = () => {
         </div>
 
         {selectedStory && user?.role === "admin" && (
-          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}>
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
@@ -475,7 +534,7 @@ const StoriesPage: React.FC = () => {
         )}
 
         {showAddModal && user?.role === "admin" && (
-          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}>
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
@@ -563,9 +622,74 @@ const StoriesPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        <DeleteConfirmationModal
+          show={showDeleteModal}
+          onHide={() => {
+            setShowDeleteModal(false);
+            setStoryIdToDelete(null);
+          }}
+          onConfirm={confirmDelete}
+        />
       </div>
 
       <style jsx>{`
+        .modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1050;
+        }
+        .modal-content {
+          background: white;
+          border-radius: 8px;
+          width: 400px;
+          max-width: 90%;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .modal-header {
+          padding: 1rem;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .modal-title {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 500;
+        }
+        .modal-body {
+          padding: 1rem;
+          color: #333;
+        }
+        .modal-footer {
+          padding: 1rem;
+          border-top: 1px solid #dee2e6;
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.5rem;
+        }
+        .btn-danger {
+          background-color: #dc3545;
+          border-color: #dc3545;
+          color: white;
+        }
+        .btn-danger:hover {
+          background-color: #c82333;
+          border-color: #bd2130;
+        }
+        .btn-outline-secondary {
+          color: #6c757d;
+          border-color: #6c757d;
+        }
+        .btn-outline-secondary:hover {
+          background-color: #6c757d;
+          color: white;
+        }
         .table-custom {
           border-collapse: collapse;
           width: 100%;
