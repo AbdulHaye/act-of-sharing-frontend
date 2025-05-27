@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useEvent } from "../../../context/EventContext";
@@ -19,6 +18,14 @@ const InvitePage: React.FC = () => {
       getHostSpecificEvents();
     }
   }, [user, getHostSpecificEvents]);
+
+  // Filter events to show only today or future events
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to start of the day for accurate comparison
+  const upcomingEvents = events.filter((event) => {
+    const eventDate = new Date(event.date);
+    return eventDate >= today;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +95,7 @@ const InvitePage: React.FC = () => {
                   disabled={loading}
                 >
                   <option value="">Select an event</option>
-                  {events.map((event) => (
+                  {upcomingEvents.map((event) => (
                     <option key={event._id} value={event._id}>
                       {event.title} - {new Date(event.date).toLocaleDateString("en-US", {
                         month: "long",
@@ -101,9 +108,9 @@ const InvitePage: React.FC = () => {
                 {loading && (
                   <small className="text-muted">Loading events...</small>
                 )}
-                {!loading && events.length === 0 && (
+                {!loading && upcomingEvents.length === 0 && (
                   <small className="text-muted">
-                    No events available. Create an event first.
+                    No upcoming events available. Create an event first.
                   </small>
                 )}
               </div>

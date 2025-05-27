@@ -44,9 +44,24 @@ const AuthModal: React.FC<AuthModalProps> = ({
   }, [onClose]);
   const navigate = useNavigate();
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+
+    // Email validation
+    if (!validateEmail(email)) {
+      setMessage({
+        text: "Please enter a valid email address (e.g., user@example.com)",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       if (mode === "signup") {
         // Password validation: at least 8 characters and contains at least one special character
@@ -67,14 +82,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
         }
         await register({ firstname, lastname, email, password, role });
         setMessage({ text: "User registered successfully", type: "success" });
-        toast.success("registered succcessfully");
+        toast.success("Registered successfully");
       } else {
-        await login(email, password);
+        try {
+          await login(email, password);
+        } catch (loginError: any) {
+          throw new Error("Invalid credentials");
+        }
       }
       onClose();
     } catch (err: any) {
       setMessage({
-        text: err.response?.data?.message || "An error occurred",
+        text: err.message || err.response?.data?.message || "An error occurred",
         type: "error",
       });
     }
@@ -205,9 +224,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 onChange={(e) => setRole(e.target.value)}
                 className="auth-input"
               >
-                {/* <option value="guest">Guest</option> */}
                 <option value="host">Host</option>
-                {/* <option value="admin">Admin</option> */}
               </select>
             </div>
           )}

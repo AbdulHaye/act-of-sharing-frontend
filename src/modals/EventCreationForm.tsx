@@ -120,10 +120,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       return;
     }
 
+    // Ensure createdBy is not undefined
+    if (!user?.id) {
+      setErrors((prev) => ({ ...prev, submit: "User authentication required" }));
+      toast.error("Please log in to create an event");
+      return;
+    }
+
     const eventDataWithCreator = {
       ...formData,
-      createdBy: user?.id || "",
-      visibility: formData.visibility === "public" ? "true" : "false",
+      createdBy: user.id,
+      isPublic: formData.visibility === "public", // Send boolean value
     };
 
     try {
@@ -551,7 +558,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                       </div>
                       <div className="mb-2">
                         <span className="fw-bold">Visibility:</span>
-                        <span className="ms-2">{formData.visibility.charAt(0).toUpperCase() + formData.visibility.slice(1)}</span>
+                        <span className="ms-2">{formData.visibility === "public" ? "Public" : formData.visibility === "private" ? "Private" : "Not selected"}</span>
                       </div>
                       <div className="mb-2">
                         <span className="fw-bold">Description:</span>
