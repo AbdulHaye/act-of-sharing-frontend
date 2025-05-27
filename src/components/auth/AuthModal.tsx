@@ -90,19 +90,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
           throw new Error("Invalid credentials");
         }
       }
-      if (!specialCharRegex.test(password)) {
-        setMessage({
-          text: "Password must contain at least one special character",
-          type: "error",
-        });
-        return;
-      }
-      const successMessage = await register({ firstname, lastname, email, password, role });
-      setMessage({ text: successMessage || "User registered successfully", type: "success" });
-      toast.success("Registered successfully");
-      onClose();
-    } else {
-      await login(email, password);
       onClose();
     } catch (err: any) {
       setMessage({
@@ -110,13 +97,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         type: "error",
       });
     }
-  } catch (err: any) {
-    setMessage({
-      text: err.message || "An error occurred",
-      type: "error",
-    });
-  }
-};
+  };
 
   const handleClose = () => {
     setIsVisible(false);
