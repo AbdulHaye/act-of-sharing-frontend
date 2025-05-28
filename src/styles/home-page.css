@@ -74,6 +74,12 @@
   overflow: hidden;
   opacity: 0;
   transition: max-height 0.5s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+  max-width: 80%; /* Keep the existing max-width */
+  margin-left: auto; /* Add this to center */
+  margin-right: auto; /* Add this to center */
+  display: flex; /* Add flex to help with internal alignment */
+  flex-direction: column; /* Keep the form elements in a column */
+  /* align-items: center; Center the form content horizontally */
 }
 
 .assistance-form-section.form-visible {
@@ -81,7 +87,9 @@
   opacity: 1;
   margin-top: 2rem;
   padding: 2.5rem;
-  max-width: 80%;
+  max-width: 80%; /* Keep the existing max-width */
+  margin-left: auto; /* Add this to center */
+  margin-right: auto; /* Add this to center */
 }
 
 .form-title {

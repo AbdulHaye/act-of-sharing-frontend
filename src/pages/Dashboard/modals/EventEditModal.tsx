@@ -286,7 +286,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       tabIndex={-1}
       style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}
     >
-      <div className="modal-dialog modal-lg modal-dialog-centered">
+      <div className="modal-dialog  modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title">Edit Event</h5>

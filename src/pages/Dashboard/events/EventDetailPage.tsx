@@ -64,7 +64,7 @@ const EventDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="event-detail-page mt-5">
+    <div className="event-detail-page ">
       <div className="event-header">
         <div className="container">
           <div className="event-breadcrumb mb-3">

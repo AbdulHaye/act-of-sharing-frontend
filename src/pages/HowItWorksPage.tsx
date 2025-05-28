@@ -29,9 +29,9 @@ const HowItWorksPage: React.FC = () => {
           <div className="row">
             <div className="col-lg-8 mx-auto text-center">
               <h1 className="hero-title">How It Works</h1>
-              <p className="mb-2 text-white">
-                A simple step-by-step guide to hosting your own meal gathering and creating positive impact
-              </p>
+             <p className="mb-2" style={{ color: '#5144A1' }}>
+  A simple step-by-step guide to hosting your own meal gathering and creating positive impact
+</p>
             </div>
           </div>
         </div>

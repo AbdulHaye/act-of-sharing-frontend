@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,7 +5,7 @@ import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import axiosInstance from "../../../api/axiosInstance";
 import { useAuth } from "../../../context/AuthContext";
 import { toast } from "react-toastify";
-import { Edit, Trash2 } from "lucide-react";
+import { HandCoins, Trash2 } from "lucide-react";
 
 // Helper function to truncate text after 15 words
 const truncateText = (text: string, wordLimit: number = 15): string => {
@@ -51,25 +50,77 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   );
 };
 
+interface DonationModalProps {
+  show: boolean;
+  onHide: () => void;
+  onConfirm: (amount: number) => void;
+}
+
+const DonationModal: React.FC<DonationModalProps> = ({ show, onHide, onConfirm }) => {
+  const [donationAmount, setDonationAmount] = useState<string>("");
+
+  if (!show) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(donationAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid donation amount");
+      return;
+    }
+    onConfirm(amount);
+    setDonationAmount("");
+  };
+
+  return (
+    <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}>
+      <div className="modal-dialog">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">Donate to Request</h5>
+            <button type="button" className="btn-close" onClick={onHide}></button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              <div className="mb-3">
+                <label className="form-label">Donation Amount ($)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  value={donationAmount}
+                  onChange={(e) => setDonationAmount(e.target.value)}
+                  placeholder="Enter donation amount"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={onHide}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Donate
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RequestsPage: React.FC = () => {
   const [requests, setRequests] = useState<any[]>([]);
   const [sortedRequests, setSortedRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
-  const [editFormData, setEditFormData] = useState({
-    fullName: "",
-    phone: "",
-    email: "",
-    personName: "",
-    relationshipToRequester: "",
-    immediateNeed: "",
-    preferredDate: "",
-    additionalInfo: "",
-  });
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [requestIdToDelete, setRequestIdToDelete] = useState<string | null>(null);
+  const [showDonationModal, setShowDonationModal] = useState<boolean>(false);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -151,24 +202,15 @@ const RequestsPage: React.FC = () => {
     }
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedRequest) return;
-
+  const handleDonate = async (requestId: string, amount: number) => {
     try {
       const token = localStorage.getItem("token");
       const updatedData = {
-        fullName: editFormData.fullName,
-        phone: editFormData.phone,
-        email: editFormData.email,
-        personName: editFormData.personName,
-        relationshipToRequester: editFormData.relationshipToRequester,
-        immediateNeed: editFormData.immediateNeed,
-        preferredDate: editFormData.preferredDate,
-        additionalInfo: editFormData.additionalInfo,
+        status: "Completed",
+        donationAmount: amount,
       };
 
-      await axiosInstance.put(`/request/${selectedRequest._id}`, updatedData, {
+      await axiosInstance.put(`/request/${requestId}`, updatedData, {
         headers: {
           "Content-Type": "application/json",
           "x-auth-token": token,
@@ -176,34 +218,27 @@ const RequestsPage: React.FC = () => {
       });
 
       setRequests(requests.map((r) =>
-        r._id === selectedRequest._id ? { ...r, ...updatedData } : r
+        r._id === requestId ? { ...r, ...updatedData } : r
       ));
-      setSelectedRequest(null);
-      setError(null);
-      toast.success("Request updated successfully");
+      toast.success(`Donation of $${amount} processed successfully`);
       fetchRequests(pagination.currentPage);
     } catch (err: any) {
-      setError("Failed to update request: " + (err.response?.data?.message || err.message));
-      console.error("Edit error:", err);
+      setError("Failed to process donation: " + (err.response?.data?.message || err.message));
+      console.error("Donation error:", err);
+    } finally {
+      setShowDonationModal(false);
+      setSelectedRequestId(null);
     }
   };
 
-  const openEditModal = (request: any) => {
-    setSelectedRequest(request);
-    setEditFormData({
-      fullName: request.fullName,
-      phone: request.phone,
-      email: request.email,
-      personName: request.personName,
-      relationshipToRequester: request.relationshipToRequester || "Self",
-      immediateNeed: request.immediateNeed,
-      preferredDate: request.preferredDate ? new Date(request.preferredDate).toISOString().split('T')[0] : "",
-      additionalInfo: request.additionalInfo,
-    });
+  const openDonationModal = (requestId: string) => {
+    setSelectedRequestId(requestId);
+    setShowDonationModal(true);
   };
 
-  const closeEditModal = () => {
-    setSelectedRequest(null);
+  const closeDonationModal = () => {
+    setShowDonationModal(false);
+    setSelectedRequestId(null);
     setError(null);
   };
 
@@ -245,6 +280,8 @@ const RequestsPage: React.FC = () => {
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Immediate Need</th>
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "10%" }}>Date</th>
                     <th className="table-header px-4 py-2 d-none d-lg-table-cell" style={{ width: "10%" }}>Additional Info</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Donated Amount</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Status</th>
                     {user?.role === "admin" && (
                       <th className="table-header px-4 py-2" style={{ width: "15%" }}>Actions</th>
                     )}
@@ -253,7 +290,7 @@ const RequestsPage: React.FC = () => {
                 <tbody>
                   {sortedRequests.length === 0 ? (
                     <tr>
-                      <td colSpan={user?.role === "admin" ? 10 : 9} className="text-center py-5">
+                      <td colSpan={user?.role === "admin" ? 12 : 11} className="text-center py-5">
                         <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
                           <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
                           <circle cx="12" cy="12" r="3"/>
@@ -292,14 +329,25 @@ const RequestsPage: React.FC = () => {
                         <td className="table-cell px-4 py-2 truncate d-none d-lg-table-cell" style={{ width: "10%" }}>
                           {truncateText(request.additionalInfo || "")}
                         </td>
+                        <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
+                          {request.donationAmount ? `$${request.donationAmount.toFixed(2)}` : "-"}
+                        </td>
+                        <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
+                          <span
+                            className={`status-${request.status?.toLowerCase() || "pending"}`}
+                          >
+                            {request.status || "Pending"}
+                          </span>
+                        </td>
                         {user?.role === "admin" && (
                           <td className="table-cell px-4 py-2" style={{ width: "15%" }}>
                             <div className="btn-group" role="group">
                               <button
                                 className="btn btn-outline-primary btn-sm me-2"
-                                onClick={() => openEditModal(request)}
+                                onClick={() => openDonationModal(request._id)}
+                                disabled={request.status === "Completed"}
                               >
-                                <Edit size={16} /> Edit
+                                <HandCoins size={16} /> Donate
                               </button>
                               <button
                                 className="btn btn-outline-danger btn-sm"
@@ -349,110 +397,11 @@ const RequestsPage: React.FC = () => {
           </div>
         </div>
 
-        {selectedRequest && user?.role === "admin" && (
-          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}>
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Edit Request</h5>
-                  <button type="button" className="btn-close" onClick={closeEditModal}></button>
-                </div>
-                <form onSubmit={handleEdit}>
-                  <div className="modal-body">
-                    {error && <div className="alert alert-danger">{error}</div>}
-                    <div className="mb-3">
-                      <label className="form-label">Full Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={editFormData.fullName}
-                        onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Phone</label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        value={editFormData.phone}
-                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Email</label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        value={editFormData.email}
-                        onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Person Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={editFormData.personName}
-                        onChange={(e) => setEditFormData({ ...editFormData, personName: e.target.value })}
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Relationship to Requester</label>
-                      <select
-                        className="form-control"
-                        value={editFormData.relationshipToRequester}
-                        onChange={(e) => setEditFormData({ ...editFormData, relationshipToRequester: e.target.value })}
-                        required
-                      >
-                        <option value="Self">Self</option>
-                        <option value="Friend">Friend</option>
-                        <option value="Family">Family</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Immediate Need</label>
-                      <textarea
-                        className="form-control"
-                        value={editFormData.immediateNeed}
-                        onChange={(e) => setEditFormData({ ...editFormData, immediateNeed: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Preferred Date</label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={editFormData.preferredDate}
-                        onChange={(e) => setEditFormData({ ...editFormData, preferredDate: e.target.value })}
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Additional Info</label>
-                      <textarea
-                        className="form-control"
-                        value={editFormData.additionalInfo}
-                        onChange={(e) => setEditFormData({ ...editFormData, additionalInfo: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={closeEditModal}>
-                      Close
-                    </button>
-                    <button type="submit" className="btn btn-primary">
-                      Save Changes
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
+        <DonationModal
+          show={showDonationModal}
+          onHide={closeDonationModal}
+          onConfirm={(amount) => selectedRequestId && handleDonate(selectedRequestId, amount)}
+        />
 
         <DeleteConfirmationModal
           show={showDeleteModal}
@@ -523,12 +472,19 @@ const RequestsPage: React.FC = () => {
         }
         .table-custom {
           border-collapse: collapse;
+          width: 100%;
         }
         .table-header {
           font-weight: 600;
+          background-color: #5144A1;
+          color: white;
+          position: sticky;
+          top: 0;
+          z-index: 1;
         }
         .table-cell {
           border-bottom: 1px solid #dee2e6;
+          padding: 8px;
         }
         .text-primary {
           color: #5144A1;
@@ -538,6 +494,14 @@ const RequestsPage: React.FC = () => {
         }
         .text-muted {
           color: #6c757d;
+        }
+        .status-pending {
+          color: #ff9800; /* Orange for Pending */
+          font-weight: bold;
+        }
+        .status-completed {
+          color: #4caf50; /* Green for Completed */
+          font-weight: bold;
         }
         @media (max-width: 640px) {
           .table-custom {

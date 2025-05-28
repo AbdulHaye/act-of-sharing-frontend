@@ -1,6 +1,6 @@
 .how-it-works-hero {
   padding: 7rem 0 4rem;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  /* background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); */
   color: white;
   text-align: center;
 }
@@ -9,7 +9,7 @@
   font-size: 3rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
-  color: white;
+  color: #5144A1;
 }
 
 .how-it-works-hero .hero-subtitle {
@@ -17,6 +17,7 @@
   max-width: 700px;
   margin: 0 auto;
   opacity: 0.9;
+  
 }
 
 .process-timeline {

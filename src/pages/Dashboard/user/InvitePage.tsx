@@ -3,7 +3,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useEvent } from "../../../context/EventContext";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import { toast } from "react-toastify";
-import "../../../styles/invite-page.css"; // Assuming a CSS file for styling
+import "../../../styles/invite-page.css"; 
 
 const InvitePage: React.FC = () => {
   const { user } = useAuth();

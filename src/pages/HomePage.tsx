@@ -447,7 +447,7 @@ const HomePage: React.FC = () => {
                             : ""
                         }
                       >
-                        Name
+                        Name *
                       </label>
                     </div>
 
@@ -525,7 +525,7 @@ const HomePage: React.FC = () => {
                             : ""
                         }
                       >
-                        Preferred Date for Assistance
+                        Preferred Date for Assistance *
                       </label>
                     </div>
 
@@ -553,7 +553,7 @@ const HomePage: React.FC = () => {
                             : ""
                         }
                       >
-                        Additional Information
+                        Additional Information *
                       </label>
                     </div>
                   </div>

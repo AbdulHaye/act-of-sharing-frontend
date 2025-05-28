@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,7 +5,7 @@ import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import { useAuth } from "../../../context/AuthContext";
 import axiosInstance from "../../../api/axiosInstance";
 import { toast } from "react-toastify";
-import { Edit, Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 
 interface DeleteConfirmationModalProps {
   show: boolean;
@@ -106,12 +105,6 @@ const ContactPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const [selectedContact, setSelectedContact] = useState<any | null>(null);
-  const [editFormData, setEditFormData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [contactIdToDelete, setContactIdToDelete] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
@@ -142,7 +135,10 @@ const ContactPage: React.FC = () => {
 
       const sortedContacts = data.sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      ).map(contact => ({
+        ...contact,
+        status: contact.status || "pending" // Default to "pending" if status is not provided
+      }));
       setContacts(sortedContacts);
       setPagination({
         currentPage: response.data.pagination.currentPage,
@@ -197,59 +193,30 @@ const ContactPage: React.FC = () => {
     }
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedContact) return;
-
-    const emailRegex = /^\S+@\S+\.\S+$/;
-    if (!emailRegex.test(editFormData.email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    const updatedData = {
-      name: editFormData.name,
-      email: editFormData.email,
-      message: editFormData.message,
-    };
-
+  const handleResolve = async (contactId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axiosInstance.put(`/contact/${selectedContact._id}`, updatedData, {
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": token,
-        },
-      });
+      const response = await axiosInstance.put(
+        `/contact/${contactId}`,
+        { status: "completed" },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-auth-token": token,
+          },
+        }
+      );
 
       if (!response.data) {
-        throw new Error("Failed to update contact");
+        throw new Error("Failed to resolve contact");
       }
 
-      const updatedContact = response.data;
-      setContacts(contacts.map((c) =>
-        c._id === selectedContact._id ? updatedContact : c
-      ));
-      setSelectedContact(null);
-      toast.success("Contact updated successfully");
+      toast.success("Query resolved successfully");
       fetchContacts(pagination.currentPage);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || "Failed to update contact";
+      const errorMessage = err.response?.data?.message || err.message || "Failed to resolve contact";
       toast.error(errorMessage);
     }
-  };
-
-  const openEditModal = (contact: any) => {
-    setSelectedContact(contact);
-    setEditFormData({
-      name: contact.name,
-      email: contact.email,
-      message: contact.message,
-    });
-  };
-
-  const closeEditModal = () => {
-    setSelectedContact(null);
   };
 
   const handlePageChange = (page: number) => {
@@ -284,18 +251,19 @@ const ContactPage: React.FC = () => {
       <div className="container-fluid p-4">
         <div className="card border-0 shadow-sm bg-white">
           <div className="card-header bg-white">
-            <h5 className="card-title mb-0 text-lg font-semibold">Contact</h5>
+            <h5 className="card-title mb-0 text-lg font-semibold">Contact Us</h5>
           </div>
           <div className="card-body p-0">
             <div className="table-responsive" style={{ maxHeight: "calc(100vh - 250px)" }}>
               <table className="table-custom w-full text-sm">
                 <thead className="sticky top-0 bg-primary text-white">
                   <tr>
-                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>ID</th>
+                    <th className="table-header px-4 py-2" style={{ width: "8%" }}>ID</th>
                     <th className="table-header px-4 py-2" style={{ width: "15%" }}>Name</th>
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "20%" }}>Email</th>
-                    <th className="table-header px-4 py-2" style={{ width: "30%" }}>Message</th>
-                    <th className="table-header px-4 py-2" style={{ width: "15%" }}>Date</th>
+                    <th className="table-header px-4 py-2" style={{ width: "25%" }}>Message</th>
+                    <th className="table-header px-4 py-2" style={{ width: "12%" }}>Status</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Date</th>
                     {user?.role === "admin" && (
                       <th className="table-header px-4 py-2" style={{ width: "10%" }}>Actions</th>
                     )}
@@ -304,7 +272,7 @@ const ContactPage: React.FC = () => {
                 <tbody>
                   {contacts.length === 0 ? (
                     <tr>
-                      <td colSpan={user?.role === "admin" ? 6 : 5} className="text-center py-5">
+                      <td colSpan={user?.role === "admin" ? 7 : 6} className="text-center py-5">
                         <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
                           <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
                           <circle cx="12" cy="12" r="3"/>
@@ -316,7 +284,7 @@ const ContactPage: React.FC = () => {
                   ) : (
                     contacts.map((contact, index) => (
                       <tr key={contact._id} className="hover:bg-gray-50">
-                        <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
+                        <td className="table-cell px-4 py-2" style={{ width: "8%" }}>
                           {(pagination.currentPage - 1) * pagination.limit + index + 1}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "15%" }}>
@@ -325,20 +293,30 @@ const ContactPage: React.FC = () => {
                         <td className="table-cell px-4 py-2 truncate d-none d-md-table-cell" style={{ width: "20%" }}>
                           {contact.email}
                         </td>
-                        <td className="table-cell px-4 py-2 truncate" style={{ width: "30%" }}>
+                        <td className="table-cell px-4 py-2 truncate" style={{ width: "25%" }}>
                           {contact.message || "N/A"}
                         </td>
-                        <td className="table-cell px-4 py-2" style={{ width: "15%" }}>
+                        <td className="table-cell px-4 py-2" style={{ width: "12%" }}>
+                          <span
+                            className={`status-${contact.status.toLowerCase()}`}
+                          >
+                            {contact.status}
+                          </span>
+                        </td>
+                        <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
                           {formatDate(contact.createdAt)}
                         </td>
                         {user?.role === "admin" && (
                           <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
                             <div className="btn-group" role="group">
                               <button
-                                className="btn btn-outline-primary btn-sm me-2"
-                                onClick={() => openEditModal(contact)}
+                                className={`btn btn-outline-success btn-sm me-2 ${
+                                  contact.status === "completed" ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
+                                onClick={() => handleResolve(contact._id)}
+                                disabled={contact.status === "completed"}
                               >
-                                <Edit size={16} /> Edit
+                                <Check size={16} /> Resolve
                               </button>
                               <button
                                 className="btn btn-outline-danger btn-sm"
@@ -388,62 +366,6 @@ const ContactPage: React.FC = () => {
           </div>
         </div>
 
-        {selectedContact && user?.role === "admin" && (
-          <div className="modal" tabIndex={-1} style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}>
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Edit Contact</h5>
-                  <button type="button" className="btn-close" onClick={closeEditModal}></button>
-                </div>
-                <form onSubmit={handleEdit}>
-                  <div className="modal-body">
-                    {error && <div className="alert alert-danger">{error}</div>}
-                    <div className="mb-3">
-                      <label className="form-label">Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={editFormData.name}
-                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Email</label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        value={editFormData.email}
-                        onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Message</label>
-                      <textarea
-                        className="form-control"
-                        value={editFormData.message}
-                        onChange={(e) => setEditFormData({ ...editFormData, message: e.target.value })}
-                        rows={3}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={closeEditModal}>
-                      Close
-                    </button>
-                    <button type="submit" className="btn btn-primary">
-                      Save Changes
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-
         <DeleteConfirmationModal
           show={showDeleteModal}
           onHide={() => {
@@ -472,6 +394,22 @@ const ContactPage: React.FC = () => {
         }
         .text-muted {
           color: #6c757d;
+        }
+        .btn-outline-success {
+          color: #28a745;
+          border-color: #28a745;
+        }
+        .btn-outline-success:hover {
+          background-color: #28a745;
+          color: white;
+        }
+        .status-pending {
+          color: #ff9800; /* Orange for Pending */
+          font-weight: bold;
+        }
+        .status-completed {
+          color: #4caf50; /* Green for Completed */
+          font-weight: bold;
         }
         @media (max-width: 640px) {
           .table-custom {

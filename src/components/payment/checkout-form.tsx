@@ -210,7 +210,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscripti
         <div
           className="card text-white text-center p-4 rounded"
           style={{
-            background: "linear-gradient(to right, #4a6cf7, #8b5cf6)",
+            background: "linear-gradient(to right, #8b5cf6, #8b5cf6)",
             position: "relative",
             transition: "transform 0.3s ease",
           }}

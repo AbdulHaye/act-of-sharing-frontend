@@ -473,7 +473,7 @@ const MyEventsPage: React.FC = () => {
 
       <style jsx>{`
         .modal-backdrop {
-          position: fixed;
+          // position: fixed;
           top: 0;
           left: 0;
           width: 100%;
@@ -487,8 +487,8 @@ const MyEventsPage: React.FC = () => {
         .modal-content {
           background: white;
           border-radius: 8px;
-          width: 400px;
-          max-width: 90%;
+          width: 1100px;
+          max-width: 100%;
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         .modal-header {

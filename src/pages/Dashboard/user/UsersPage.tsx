@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -195,7 +194,7 @@ const UsersPage = () => {
         firstname: editFormData.firstname,
         lastname: editFormData.lastname,
         email: editFormData.email,
-        role: editFormData.role,
+        // Role is not included in the update payload since it's read-only
       };
 
       await axiosInstance.put(`/users/${selectedUser._id}`, updatedData, {
@@ -422,16 +421,12 @@ const UsersPage = () => {
                     </div>
                     <div className="mb-3">
                       <label className="form-label">Role</label>
-                      <select
+                      <input
+                        type="text"
                         className="form-control"
                         value={editFormData.role}
-                        onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-                        required
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="host">Host</option>
-                        <option value="guest">Guest</option>
-                      </select>
+                        readOnly
+                      />
                     </div>
                   </div>
                   <div className="modal-footer">
