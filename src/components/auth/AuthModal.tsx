@@ -215,7 +215,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {mode === "signup" && (
+          {/* {mode === "signup" && (
             <div className="auth-form-group">
               <label htmlFor="role">Role</label>
               <select
@@ -227,7 +227,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 <option value="host">Host</option>
               </select>
             </div>
-          )}
+          )} */}
 
           <button type="submit" className="auth-submit-button">
             {mode === "login" ? "Login" : "Sign Up"}

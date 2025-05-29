@@ -303,7 +303,7 @@ const RequestsPage: React.FC = () => {
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Immediate Need</th>
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "10%" }}>Date</th>
                     <th className="table-header px-4 py-2 d-none d-lg-table-cell" style={{ width: "10%" }}>Additional Info</th>
-                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Donated Amount</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Donated_Amount</th>
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Status</th>
                     {user?.role === "admin" && (
                       <th className="table-header px-4 py-2" style={{ width: "15%" }}>Actions</th>

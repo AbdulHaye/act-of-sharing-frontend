@@ -228,14 +228,14 @@ const ContributionsPage: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const updatedData = {
-        eventId: { title: editFormData.eventId.title },
+        eventId: { title: editFormData.eventId.title }, // Keep event title as is from backend
         userId: {
           firstname: editFormData.userId.firstname,
           lastname: editFormData.userId.lastname,
           email: editFormData.userId.email,
         },
         amount: parseFloat(editFormData.amount),
-        status: editFormData.status,
+        status: editFormData.status, // Keep status as is from backend
       };
 
       await axiosInstance.put(`/contributions/${selectedContribution._id}`, updatedData, {
@@ -491,13 +491,7 @@ const ContributionsPage: React.FC = () => {
                         type="text"
                         className="form-control"
                         value={editFormData.eventId.title}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            eventId: { ...editFormData.eventId, title: e.target.value },
-                          })
-                        }
-                        required
+                        readOnly
                       />
                     </div>
                     <div className="mb-3">
@@ -558,16 +552,12 @@ const ContributionsPage: React.FC = () => {
                     </div>
                     <div className="mb-3">
                       <label className="form-label">Status</label>
-                      <select
+                      <input
+                        type="text"
                         className="form-control"
                         value={editFormData.status}
-                        onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                        required
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="completed">Completed</option>
-                        <option value="failed">Failed</option>
-                      </select>
+                        readOnly
+                      />
                     </div>
                   </div>
                   <div className="modal-footer">

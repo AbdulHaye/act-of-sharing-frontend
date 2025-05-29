@@ -67,6 +67,9 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     other: "Other",
   };
 
+  const MAX_GUESTS = 1000000;
+  const MAX_FUNDING_GOAL = 100000000;
+
   const validateStep = (step: number): Record<string, string> => {
     const errors: Record<string, string> = {};
     if (step === 1) {
@@ -78,17 +81,19 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
         errors.maxGuests = "Max guests is required";
       } else if (
         isNaN(Number(formData.maxGuests)) ||
-        Number(formData.maxGuests) < 2
+        Number(formData.maxGuests) < 2 ||
+        Number(formData.maxGuests) > MAX_GUESTS
       ) {
-        errors.maxGuests = "Max guests must be at least 2";
+        errors.maxGuests = `Max guests must be between 2 and ${MAX_GUESTS.toLocaleString()}`;
       }
       if (!formData.fundingGoal) {
         errors.fundingGoal = "Funding goal is required";
       } else if (
         isNaN(Number(formData.fundingGoal)) ||
-        Number(formData.fundingGoal) < 25
+        Number(formData.fundingGoal) < 25 ||
+        Number(formData.fundingGoal) > MAX_FUNDING_GOAL
       ) {
-        errors.fundingGoal = "Funding goal must be at least 25";
+        errors.fundingGoal = `Funding goal must be between 25 and ${MAX_FUNDING_GOAL.toLocaleString()}`;
       }
       if (!formData.description) errors.description = "Description is required";
       if (!formData.visibility)
@@ -403,6 +408,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             className="form-control"
                             placeholder="e.g., 12"
                             min="2"
+                            max={MAX_GUESTS}
                             required
                             disabled={loading}
                           />
@@ -414,7 +420,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         )}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label htmlFor="fundingGoal" className="form-label">
+                        <label htmlFor="fundingGoal" className=" permits up to $100,000,000form-label">
                           Funding Goal *
                         </label>
                         <div className="input-group">
@@ -430,6 +436,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             className="form-control"
                             placeholder="e.g., 500"
                             min="25"
+                            max={MAX_FUNDING_GOAL}
                             required
                             disabled={loading}
                           />
@@ -740,7 +747,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         disabled={loading}
                       />
                       <label className="form-check-label" htmlFor="termsCheck">
-                        I confirm that all information is accurate and I have
+                        I confirm that all information is accurate and I maka
                         permission to share the recipient's story.
                       </label>
                       {errors.termsCheck && (
