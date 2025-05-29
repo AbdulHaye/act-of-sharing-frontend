@@ -197,7 +197,7 @@ const ContactPage: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axiosInstance.put(
-        `/contact/${contactId}`,
+        `/contact/status/${contactId}`,
         { status: "completed" },
         {
           headers: {
@@ -211,8 +211,12 @@ const ContactPage: React.FC = () => {
         throw new Error("Failed to resolve contact");
       }
 
+      setContacts((prevContacts) =>
+        prevContacts.map((contact) =>
+          contact._id === contactId ? { ...contact, status: "completed" } : contact
+        )
+      );
       toast.success("Query resolved successfully");
-      fetchContacts(pagination.currentPage);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || "Failed to resolve contact";
       toast.error(errorMessage);
@@ -249,13 +253,13 @@ const ContactPage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="container-fluid p-4">
-        <div className="card border-0 shadow-sm bg-white">
+        <div className="card border-0 shadow-sm bg-white" style={{ width: "100%" }}>
           <div className="card-header bg-white">
             <h5 className="card-title mb-0 text-lg font-semibold">Contact Us</h5>
           </div>
           <div className="card-body p-0">
-            <div className="table-responsive" style={{ maxHeight: "calc(100vh - 250px)" }}>
-              <table className="table-custom w-full text-sm">
+            <div className="table-responsive" style={{ width: "100%", maxHeight: "calc(100vh - 250px)" }}>
+              <table className="table-custom w-100 text-sm">
                 <thead className="sticky top-0 bg-primary text-white">
                   <tr>
                     <th className="table-header px-4 py-2" style={{ width: "8%" }}>ID</th>
@@ -272,11 +276,21 @@ const ContactPage: React.FC = () => {
                 <tbody>
                   {contacts.length === 0 ? (
                     <tr>
-                      <td colSpan={user?.role === "admin" ? 7 : 6} className="text-center py-5">
-                        <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
-                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
-                          <circle cx="12" cy="12" r="3"/>
-                          <path d="M12 8v1m0 4v3m-4-2h8"/>
+                      <td colSpan={user?.role === "admin" ? 7 : 6} className="text-center py-5" style={{ width: "100%" }}>
+                        <svg
+                          width="128"
+                          height="128"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="mx-auto mb-3"
+                        >
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7" />
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M12 8v1m0 4v3m-4-2h8" />
                         </svg>
                         <h5 className="text-muted">No data here</h5>
                       </td>
@@ -379,6 +393,7 @@ const ContactPage: React.FC = () => {
       <style jsx>{`
         .table-custom {
           border-collapse: collapse;
+          width: 100%;
         }
         .table-header {
           font-weight: 600;

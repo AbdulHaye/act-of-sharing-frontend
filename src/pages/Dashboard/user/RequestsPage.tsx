@@ -15,6 +15,30 @@ const truncateText = (text: string, wordLimit: number = 15): string => {
   return words.slice(0, wordLimit).join(" ") + "...";
 };
 
+// Interfaces for TypeScript
+interface Request {
+  _id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  personName: string;
+  relationshipToRequester?: string;
+  immediateNeed: string;
+  preferredDate?: string;
+  additionalInfo?: string;
+  createdAt: string;
+  __v?: number;
+  donatedAmount?: number;
+  status?: string;
+}
+
+interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalRequests: number;
+  limit: number;
+}
+
 interface DeleteConfirmationModalProps {
   show: boolean;
   onHide: () => void;
@@ -112,8 +136,8 @@ const DonationModal: React.FC<DonationModalProps> = ({ show, onHide, onConfirm }
 };
 
 const RequestsPage: React.FC = () => {
-  const [requests, setRequests] = useState<any[]>([]);
-  const [sortedRequests, setSortedRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [sortedRequests, setSortedRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -121,7 +145,7 @@ const RequestsPage: React.FC = () => {
   const [requestIdToDelete, setRequestIdToDelete] = useState<string | null>(null);
   const [showDonationModal, setShowDonationModal] = useState<boolean>(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
+  const [pagination, setPagination] = useState<Pagination>({
     currentPage: 1,
     totalPages: 1,
     totalRequests: 0,
@@ -205,20 +229,19 @@ const RequestsPage: React.FC = () => {
   const handleDonate = async (requestId: string, amount: number) => {
     try {
       const token = localStorage.getItem("token");
-      const updatedData = {
-        status: "Completed",
-        donationAmount: amount,
-      };
-
-      await axiosInstance.put(`/request/${requestId}`, updatedData, {
+      const response = await axiosInstance.put(`/request/donate/${requestId}`, {
+        donatedAmount: amount,
+      }, {
         headers: {
           "Content-Type": "application/json",
           "x-auth-token": token,
         },
       });
 
+      // Update the local state based on the response
+      const updatedRequest = response.data;
       setRequests(requests.map((r) =>
-        r._id === requestId ? { ...r, ...updatedData } : r
+        r._id === requestId ? { ...r, donatedAmount: updatedRequest.donatedAmount, status: updatedRequest.status } : r
       ));
       toast.success(`Donation of $${amount} processed successfully`);
       fetchRequests(pagination.currentPage);
@@ -330,7 +353,7 @@ const RequestsPage: React.FC = () => {
                           {truncateText(request.additionalInfo || "")}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
-                          {request.donationAmount ? `$${request.donationAmount.toFixed(2)}` : "-"}
+                          {request.donatedAmount ? `$${request.donatedAmount.toFixed(2)}` : "-"}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
                           <span
@@ -345,7 +368,7 @@ const RequestsPage: React.FC = () => {
                               <button
                                 className="btn btn-outline-primary btn-sm me-2"
                                 onClick={() => openDonationModal(request._id)}
-                                disabled={request.status === "Completed"}
+                                // disabled={request.status === "completed"}
                               >
                                 <HandCoins size={16} /> Donate
                               </button>
