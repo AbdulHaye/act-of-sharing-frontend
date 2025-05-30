@@ -28,9 +28,10 @@ import CheckoutPage from "./pages/Dashboard/user/checkout-page";
 import ContributionsPage from "./pages/Dashboard/user/Contributions-Page";
 import UsersPage from "./pages/Dashboard/user/UsersPage";
 import RequestsPage from "./pages/Dashboard/user/RequestsPage";
-import ContactPage from "./pages/Dashboard/user/ContanctPage"; // Corrected typo
-import StoriesPage from "./pages/Dashboard/user/StoriesPage"; // Added import for StoriesPage
+import ContactPage from "./pages/Dashboard/user/ContanctPage";
+import StoriesPage from "./pages/Dashboard/user/StoriesPage";
 import ResetPasswordPage from "./pages/Dashboard/user/ResetPasswordPage";
+import VerifyEmail from "./components/auth/email-verify"; // Added import for VerifyEmail
 
 const stripePromise = loadStripe(
   "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
@@ -51,7 +52,8 @@ function App() {
   const hideNavbarAndFooter =
     location.pathname.startsWith("/payment/") ||
     location.pathname.startsWith("/dashboard") ||
-    location.pathname.startsWith("/checkout");
+    location.pathname.startsWith("/checkout") ||
+    location.pathname.startsWith("/verify-email"); // Added verify-email to hide Navbar and Footer
 
   return (
     <Elements stripe={stripePromise}>
@@ -68,6 +70,7 @@ function App() {
                 <Route path="/checkout/:eventId" element={<CheckoutPage />} />
                 <Route path="/payment/:eventId" element={<DonationPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/verify-email" element={<VerifyEmail />} /> 
 
                 <Route
                   element={<ProtectedRoute allowedRoles={["admin", "host"]} />}
@@ -98,8 +101,7 @@ function App() {
                       element={<RequestsPage />}
                     />
                     <Route path="contactus" element={<ContactPage />} />
-                    <Route path="stories" element={<StoriesPage />} />{" "}
-                    {/* Added Stories route */}
+                    <Route path="stories" element={<StoriesPage />} />
                   </Route>
                 </Route>
               </Routes>
