@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Calendar,
@@ -39,6 +39,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isTermsChecked, setIsTermsChecked] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState<string | null>(null);
   const totalSteps = 3;
   const [formData, setFormData] = useState<EventFormData>({
     name: "",
@@ -55,6 +56,13 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     recipientPhoto: null,
     fundsUsage: "",
     visibility: "",
+  });
+  const [previewUrls, setPreviewUrls] = useState<{
+    eventImage: string | null;
+    recipientPhoto: string | null;
+  }>({
+    eventImage: null,
+    recipientPhoto: null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -144,7 +152,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       return;
     }
 
-    // Ensure createdBy is not undefined
     if (!user?.id) {
       setErrors((prev) => ({ ...prev, submit: "User authentication required" }));
       toast.error("Please log in to create an event");
@@ -154,7 +161,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     const eventDataWithCreator = {
       ...formData,
       createdBy: user.id,
-      isPublic: formData.visibility === "public", // Send boolean value
+      isPublic: formData.visibility === "public",
     };
 
     try {
@@ -182,7 +189,45 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     const { name } = e.target;
     const file = e.target.files ? e.target.files[0] : null;
     setFormData((prev) => ({ ...prev, [name]: file }));
+
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewUrls((prev) => {
+        if (name === "eventImage" && prev.eventImage) {
+          URL.revokeObjectURL(prev.eventImage);
+        } else if (name === "recipientPhoto" && prev.recipientPhoto) {
+          URL.revokeObjectURL(prev.recipientPhoto);
+        }
+        return {
+          ...prev,
+          [name]: previewUrl,
+        };
+      });
+    } else {
+      setPreviewUrls((prev) => {
+        if (name === "eventImage" && prev.eventImage) {
+          URL.revokeObjectURL(prev.eventImage);
+        } else if (name === "recipientPhoto" && prev.recipientPhoto) {
+          URL.revokeObjectURL(prev.recipientPhoto);
+        }
+        return {
+          ...prev,
+          [name]: null,
+        };
+      });
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrls.eventImage) {
+        URL.revokeObjectURL(previewUrls.eventImage);
+      }
+      if (previewUrls.recipientPhoto) {
+        URL.revokeObjectURL(previewUrls.recipientPhoto);
+      }
+    };
+  }, []);
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsTermsChecked(e.target.checked);
@@ -193,609 +238,720 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     }
   };
 
+  const handleImagePreview = (imageUrl: string) => {
+    if (!imageUrl) {
+      console.error("Image URL is invalid:", imageUrl);
+      return;
+    }
+    setShowImagePreview(imageUrl);
+  };
+
+  const closeImagePreview = () => {
+    setShowImagePreview(null);
+  };
+
   return (
-    <div
-      className="modal"
-      tabIndex={-1}
-      style={{
-        display: "block",
-        backgroundColor: "rgba(0,0,0,0.5)",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1050,
-      }}
-    >
-      <div className="modal-dialog modal-lg modal-dialog-centered">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">Create New Event</h5>
-            <button
-              type="button"
-              className="btn-close"
-              onClick={onClose}
-              disabled={loading}
-            ></button>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div className="modal-body">
-              <div className="form-progress mb-4 d-flex justify-content-between align-items-center">
-                {[...Array(totalSteps)].map((_, index) => (
-                  <div
-                    key={index}
-                    className={`progress-step text-center ${
-                      currentStep > index + 1 ? "completed" : ""
-                    } ${currentStep === index + 1 ? "active" : ""}`}
-                    style={{ flex: 1 }}
-                  >
+    <>
+      <div
+        className="modal"
+        tabIndex={-1}
+        style={{
+          display: "block",
+          backgroundColor: "rgba(0,0,0,0.5)",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1050,
+        }}
+      >
+        <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Create New Event</h5>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={onClose}
+                disabled={loading}
+              ></button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="modal-body">
+                <div className="form-progress mb-4 d-flex justify-content-between align-items-center">
+                  {[...Array(totalSteps)].map((_, index) => (
                     <div
-                      className="progress-circle mx-auto"
-                      style={{
-                        width: "30px",
-                        height: "30px",
-                        borderRadius: "50%",
-                        backgroundColor:
-                          currentStep > index + 1
-                            ? "#5144A1"
-                            : currentStep === index + 1
-                            ? "#5144A1"
-                            : "#dee2e6",
-                        color: currentStep >= index + 1 ? "white" : "#6c757d",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "14px",
-                      }}
+                      key={index}
+                      className={`progress-step text-center ${
+                        currentStep > index + 1 ? "completed" : ""
+                      } ${currentStep === index + 1 ? "active" : ""}`}
+                      style={{ flex: 1 }}
                     >
-                      {index + 1}
-                    </div>
-                    <div
-                      className="progress-label mt-2"
-                      style={{ fontSize: "12px" }}
-                    >
-                      {index === 0
-                        ? "Event Details"
-                        : index === 1
-                        ? "Recipient Info"
-                        : "Review"}
-                    </div>
-                    {index < totalSteps - 1 && (
                       <div
-                        className="progress-line"
+                        className="progress-circle mx-auto"
                         style={{
-                          position: "absolute",
-                          top: "15px",
-                          left: "50%",
-                          width: "50%",
-                          height: "2px",
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
                           backgroundColor:
-                            currentStep > index + 1 ? "#5144A1" : "#dee2e6",
+                            currentStep > index + 1
+                              ? "#5144A1"
+                              : currentStep === index + 1
+                              ? "#5144A1"
+                              : "#dee2e6",
+                          color: currentStep >= index + 1 ? "white" : "#6c757d",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "14px",
                         }}
-                      ></div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="form-card">
-                {currentStep === 1 && (
-                  <div className="form-step">
-                    <h2 className="h4 mb-2">Event Details</h2>
-                    <p className="text-muted mb-4">
-                      Let's set up your meal gathering. Provide details about
-                      when and where you'll host.
-                    </p>
-
-                    <div className="mb-3">
-                      <label htmlFor="name" className="form-label">
-                        Event Title *
-                      </label>
-                      <div className="input-group">
-                        <span className="input-group-text">
-                          <FileText size={18} />
-                        </span>
-                        <input
-                          type="text"
-                          id="name"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          className="form-control"
-                          placeholder="Give your event a meaningful name"
-                          required
-                          disabled={loading}
-                        />
+                      >
+                        {index + 1}
                       </div>
-                      {errors.name && (
-                        <div className="text-danger mt-1">{errors.name}</div>
+                      <div
+                        className="progress-label mt-2"
+                        style={{ fontSize: "12px" }}
+                      >
+                        {index === 0
+                          ? "Event Details"
+                          : index === 1
+                          ? "Recipient Info"
+                          : "Review"}
+                      </div>
+                      {index < totalSteps - 1 && (
+                        <div
+                          className="progress-line"
+                          style={{
+                            position: "absolute",
+                            top: "15px",
+                            left: "50%",
+                            width: "50%",
+                            height: "2px",
+                            backgroundColor:
+                              currentStep > index + 1 ? "#5144A1" : "#dee2e6",
+                          }}
+                        ></div>
                       )}
                     </div>
+                  ))}
+                </div>
 
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="date" className="form-label">
-                          Date *
+                <div className="form-card">
+                  {currentStep === 1 && (
+                    <div className="form-step">
+                      <h2 className="h4 mb-2">Event Details</h2>
+                      <p className="text-muted mb-4">
+                        Let's set up your meal gathering. Provide details about
+                        when and where you'll host.
+                      </p>
+
+                      <div className="mb-3">
+                        <label htmlFor="name" className="form-label">
+                          Event Title *
                         </label>
                         <div className="input-group">
                           <span className="input-group-text">
-                            <Calendar size={18} />
+                            <FileText size={18} />
                           </span>
                           <input
-                            type="date"
-                            id="date"
-                            name="date"
-                            value={formData.date}
+                            type="text"
+                            id="name"
+                            name="name"
+                            value={formData.name}
                             onChange={handleInputChange}
                             className="form-control"
-                            required
-                            disabled={loading}
-                            min={new Date().toISOString().split("T")[0]} // Sets min to today
-                          />
-                        </div>
-                        {errors.date && (
-                          <div className="text-danger mt-1">{errors.date}</div>
-                        )}
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="time" className="form-label">
-                          Time *
-                        </label>
-                        <div className="input-group">
-                          <span className="input-group-text">
-                            <Clock size={18} />
-                          </span>
-                          <input
-                            type="time"
-                            id="time"
-                            name="time"
-                            value={formData.time}
-                            onChange={handleInputChange}
-                            className="form-control"
+                            placeholder="Give your event a meaningful name"
                             required
                             disabled={loading}
                           />
                         </div>
-                        {errors.time && (
-                          <div className="text-danger mt-1">{errors.time}</div>
+                        {errors.name && (
+                          <div className="text-danger mt-1">{errors.name}</div>
                         )}
                       </div>
-                    </div>
 
-                    <div className="mb-3">
-                      <label htmlFor="location" className="form-label">
-                        Location *
-                      </label>
-                      <div className="input-group">
-                        <span className="input-group-text">
-                          <MapPin size={18} />
-                        </span>
-                        <input
-                          type="text"
-                          id="location"
-                          name="location"
-                          value={formData.location}
-                          onChange={handleInputChange}
-                          className="form-control"
-                          placeholder="Address or virtual link"
-                          required
-                          disabled={loading}
-                        />
-                      </div>
-                      {errors.location && (
-                        <div className="text-danger mt-1">
-                          {errors.location}
+                      <div className="row">
+                        <div className="col-md-6 mb-3">
+                          <label htmlFor="date" className="form-label">
+                            Date *
+                          </label>
+                          <div className="input-group">
+                            <span className="input-group-text">
+                              <Calendar size={18} />
+                            </span>
+                            <input
+                              type="date"
+                              id="date"
+                              name="date"
+                              value={formData.date}
+                              onChange={handleInputChange}
+                              className="form-control"
+                              required
+                              disabled={loading}
+                              min={new Date().toISOString().split("T")[0]}
+                            />
+                          </div>
+                          {errors.date && (
+                            <div className="text-danger mt-1">{errors.date}</div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                        <div className="col-md-6 mb-3">
+                          <label htmlFor="time" className="form-label">
+                            Time *
+                          </label>
+                          <div className="input-group">
+                            <span className="input-group-text">
+                              <Clock size={18} />
+                            </span>
+                            <input
+                              type="time"
+                              id="time"
+                              name="time"
+                              value={formData.time}
+                              onChange={handleInputChange}
+                              className="form-control"
+                              required
+                              disabled={loading}
+                            />
+                          </div>
+                          {errors.time && (
+                            <div className="text-danger mt-1">{errors.time}</div>
+                          )}
+                        </div>
+                      </div>
 
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="maxGuests" className="form-label">
-                          Max Guests *
+                      <div className="mb-3">
+                        <label htmlFor="location" className="form-label">
+                          Location *
+                        </label>
+                        <div className="input-group">
+                          <span className="input-group-text">
+                            <MapPin size={18} />
+                          </span>
+                          <input
+                            type="text"
+                            id="location"
+                            name="location"
+                            value={formData.location}
+                            onChange={handleInputChange}
+                            className="form-control"
+                            placeholder="Address or virtual link"
+                            required
+                            disabled={loading}
+                          />
+                        </div>
+                        {errors.location && (
+                          <div className="text-danger mt-1">
+                            {errors.location}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="row">
+                        <div className="col-md-6 mb-3">
+                          <label htmlFor="maxGuests" className="form-label">
+                            Max Guests *
+                          </label>
+                          <div className="input-group">
+                            <span className="input-group-text">
+                              <Users size={18} />
+                            </span>
+                            <input
+                              type="number"
+                              id="maxGuests"
+                              name="maxGuests"
+                              value={formData.maxGuests}
+                              onChange={handleInputChange}
+                              className="form-control"
+                              placeholder="e.g., 12"
+                              min="2"
+                              max={MAX_GUESTS}
+                              required
+                              disabled={loading}
+                            />
+                          </div>
+                          {errors.maxGuests && (
+                            <div className="text-danger mt-1">
+                              {errors.maxGuests}
+                            </div>
+                          )}
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <label htmlFor="fundingGoal" className="form-label">
+                            Funding Goal *
+                          </label>
+                          <div className="input-group">
+                            <span className="input-group-text">
+                              <DollarSign size={18} />
+                            </span>
+                            <input
+                              type="number"
+                              id="fundingGoal"
+                              name="fundingGoal"
+                              value={formData.fundingGoal}
+                              onChange={handleInputChange}
+                              className="form-control"
+                              placeholder="e.g., 500"
+                              min="25"
+                              max={MAX_FUNDING_GOAL}
+                              required
+                              disabled={loading}
+                            />
+                          </div>
+                          {errors.fundingGoal && (
+                            <div className="text-danger mt-1">
+                              {errors.fundingGoal}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <label htmlFor="visibility" className="form-label">
+                          Visibility *
                         </label>
                         <div className="input-group">
                           <span className="input-group-text">
                             <Users size={18} />
                           </span>
-                          <input
-                            type="number"
-                            id="maxGuests"
-                            name="maxGuests"
-                            value={formData.maxGuests}
+                          <select
+                            id="visibility"
+                            name="visibility"
+                            value={formData.visibility}
                             onChange={handleInputChange}
                             className="form-control"
-                            placeholder="e.g., 12"
-                            min="2"
-                            max={MAX_GUESTS}
                             required
                             disabled={loading}
-                          />
+                          >
+                            <option value="" disabled>
+                              Select visibility
+                            </option>
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                          </select>
                         </div>
-                        {errors.maxGuests && (
+                        {errors.visibility && (
                           <div className="text-danger mt-1">
-                            {errors.maxGuests}
+                            {errors.visibility}
                           </div>
                         )}
                       </div>
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="fundingGoal" className=" permits up to $100,000,000form-label">
-                          Funding Goal *
+
+                      <div className="mb-3">
+                        <label htmlFor="description" className="form-label">
+                          Event Description *
                         </label>
-                        <div className="input-group">
-                          <span className="input-group-text">
-                            <DollarSign size={18} />
+                        <textarea
+                          id="description"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleInputChange}
+                          className="form-control"
+                          rows={4}
+                          placeholder="Tell your guests what to expect at your gathering"
+                          required
+                          disabled={loading}
+                        ></textarea>
+                        {errors.description && (
+                          <div className="text-danger mt-1">
+                            {errors.description}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mb-3">
+                        <label htmlFor="eventImage" className="form-label">
+                          Event Image
+                        </label>
+                        <div className="input-group" style={{ height: "50px" }}>
+                          <span className="input-group-text" style={{ height: "100%" }}>
+                            <Image size={18} />
                           </span>
                           <input
-                            type="number"
-                            id="fundingGoal"
-                            name="fundingGoal"
-                            value={formData.fundingGoal}
-                            onChange={handleInputChange}
+                            type="file"
+                            id="eventImage"
+                            name="eventImage"
+                            onChange={handleFileChange}
                             className="form-control"
-                            placeholder="e.g., 500"
-                            min="25"
-                            max={MAX_FUNDING_GOAL}
-                            required
+                            accept="image/*"
+                            style={{ height: "100%" }}
                             disabled={loading}
                           />
+                          {previewUrls.eventImage && (
+                            <span className="input-group-text" style={{ height: "100%" }}>
+                              <img
+                                src={previewUrls.eventImage}
+                                alt="Event preview"
+                                style={{
+                                  maxWidth: "60px",
+                                  maxHeight: "60px",
+                                  objectFit: "contain",
+                                  cursor: "pointer",
+                                  marginLeft: "10px",
+                                }}
+                                onClick={() => handleImagePreview(previewUrls.eventImage!)}
+                              />
+                            </span>
+                          )}
                         </div>
-                        {errors.fundingGoal && (
+                        <small className="text-muted d-block mt-1">
+                          Upload an image that represents your meal gathering.
+                          Recommended size: 1200x800px.
+                        </small>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 2 && (
+                    <div className="form-step">
+                      <h2 className="h4 mb-2">Recipient Information</h2>
+                      <p className="text-muted mb-4">
+                        Share the story of who will benefit from your meal
+                        gathering and why they need support.
+                      </p>
+
+                      <div className="mb-3">
+                        <label htmlFor="recipientName" className="form-label">
+                          Recipient Name *
+                        </label>
+                        <input
+                          type="text"
+                          id="recipientName"
+                          name="recipientName"
+                          value={formData.recipientName}
+                          onChange={handleInputChange}
+                          className="form-control"
+                          placeholder="Individual or family name"
+                          required
+                          disabled={loading}
+                        />
+                        {errors.recipientName && (
                           <div className="text-danger mt-1">
-                            {errors.fundingGoal}
+                            {errors.recipientName}
                           </div>
                         )}
                       </div>
-                    </div>
 
-                    <div className="mb-3">
-                      <label htmlFor="visibility" className="form-label">
-                        Visibility *
-                      </label>
-                      <div className="input-group">
-                        <span className="input-group-text">
-                          <Users size={18} />
-                        </span>
+                      <div className="mb-3">
+                        <label htmlFor="categoryOfNeed" className="form-label">
+                          Category of Need *
+                        </label>
                         <select
-                          id="visibility"
-                          name="visibility"
-                          value={formData.visibility}
+                          id="categoryOfNeed"
+                          name="categoryOfNeed"
+                          value={formData.categoryOfNeed}
                           onChange={handleInputChange}
                           className="form-control"
                           required
                           disabled={loading}
                         >
-                          <option value="" disabled>
-                            Select visibility
-                          </option>
-                          <option value="public">Public</option>
-                          <option value="private">Private</option>
+                          <option value="">Select a category</option>
+                          <option value="medical">Medical Expenses</option>
+                          <option value="housing">Housing</option>
+                          <option value="education">Education</option>
+                          <option value="business">Small Business</option>
+                          <option value="disaster">Disaster Relief</option>
+                          <option value="other">Other</option>
                         </select>
+                        {errors.categoryOfNeed && (
+                          <div className="text-danger mt-1">
+                            {errors.categoryOfNeed}
+                          </div>
+                        )}
                       </div>
-                      {errors.visibility && (
-                        <div className="text-danger mt-1">
-                          {errors.visibility}
-                        </div>
-                      )}
-                    </div>
 
-                    <div className="mb-3">
-                      <label htmlFor="description" className="form-label">
-                        Event Description *
-                      </label>
-                      <textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        className="form-control"
-                        rows={4}
-                        placeholder="Tell your guests what to expect at your gathering"
-                        required
-                        disabled={loading}
-                      ></textarea>
-                      {errors.description && (
-                        <div className="text-danger mt-1">
-                          {errors.description}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-3">
-                      <label htmlFor="eventImage" className="form-label">
-                        Event Image
-                      </label>
-                      <div className="input-group">
-                        <span className="input-group-text">
-                          <Image size={18} />
-                        </span>
-                        <input
-                          type="file"
-                          id="eventImage"
-                          name="eventImage"
-                          onChange={handleFileChange}
+                      <div className="mb-3">
+                        <label htmlFor="recipientStory" className="form-label">
+                          Their Story *
+                        </label>
+                        <textarea
+                          id="recipientStory"
+                          name="recipientStory"
+                          value={formData.recipientStory}
+                          onChange={handleInputChange}
                           className="form-control"
-                          accept="image/*"
+                          rows={6}
+                          placeholder="Share why this person or family needs support and how the funds will help"
+                          required
                           disabled={loading}
-                        />
+                        ></textarea>
+                        {errors.recipientStory && (
+                          <div className="text-danger mt-1">
+                            {errors.recipientStory}
+                          </div>
+                        )}
                       </div>
-                      <small className="text-muted d-block mt-1">
-                        Upload an image that represents your meal gathering.
-                        Recommended size: 1200x800px.
-                      </small>
-                    </div>
-                  </div>
-                )}
 
-                {currentStep === 2 && (
-                  <div className="form-step">
-                    <h2 className="h4 mb-2">Recipient Information</h2>
-                    <p className="text-muted mb-4">
-                      Share the story of who will benefit from your meal
-                      gathering and why they need support.
-                    </p>
-
-                    <div className="mb-3">
-                      <label htmlFor="recipientName" className="form-label">
-                        Recipient Name *
-                      </label>
-                      <input
-                        type="text"
-                        id="recipientName"
-                        name="recipientName"
-                        value={formData.recipientName}
-                        onChange={handleInputChange}
-                        className="form-control"
-                        placeholder="Individual or family name"
-                        required
-                        disabled={loading}
-                      />
-                      {errors.recipientName && (
-                        <div className="text-danger mt-1">
-                          {errors.recipientName}
+                      <div className="mb-3">
+                        <label htmlFor="recipientPhoto" className="form-label">
+                          Recipient Photo
+                        </label>
+                        <div className="input-group" style={{ height: "50px" }}>
+                          <span className="input-group-text" style={{ height: "100%" }}>
+                            <Image size={18} />
+                          </span>
+                          <input
+                            type="file"
+                            id="recipientPhoto"
+                            name="recipientPhoto"
+                            onChange={handleFileChange}
+                            className="form-control"
+                            accept="image/*"
+                            style={{ height: "100%" }}
+                            disabled={loading}
+                          />
+                          {previewUrls.recipientPhoto && (
+                            <span className="input-group-text" style={{ height: "100%" }}>
+                              <img
+                                src={previewUrls.recipientPhoto}
+                                alt="Recipient preview"
+                                style={{
+                                  maxWidth: "60px",
+                                  maxHeight: "60px",
+                                  objectFit: "contain",
+                                  cursor: "pointer",
+                                  marginLeft: "10px",
+                                }}
+                                onClick={() => handleImagePreview(previewUrls.recipientPhoto!)}
+                              />
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
+                        <small className="text-muted d-block mt-1">
+                          With permission, upload a photo of the recipient or
+                          something representing their situation.
+                        </small>
+                      </div>
 
-                    <div className="mb-3">
-                      <label htmlFor="categoryOfNeed" className="form-label">
-                        Category of Need *
-                      </label>
-                      <select
-                        id="categoryOfNeed"
-                        name="categoryOfNeed"
-                        value={formData.categoryOfNeed}
-                        onChange={handleInputChange}
-                        className="form-control"
-                        required
-                        disabled={loading}
-                      >
-                        <option value="">Select a category</option>
-                        <option value="medical">Medical Expenses</option>
-                        <option value="housing">Housing</option>
-                        <option value="education">Education</option>
-                        <option value="business">Small Business</option>
-                        <option value="disaster">Disaster Relief</option>
-                        <option value="other">Other</option>
-                      </select>
-                      {errors.categoryOfNeed && (
-                        <div className="text-danger mt-1">
-                          {errors.categoryOfNeed}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-3">
-                      <label htmlFor="recipientStory" className="form-label">
-                        Their Story *
-                      </label>
-                      <textarea
-                        id="recipientStory"
-                        name="recipientStory"
-                        value={formData.recipientStory}
-                        onChange={handleInputChange}
-                        className="form-control"
-                        rows={6}
-                        placeholder="Share why this person or family needs support and how the funds will help"
-                        required
-                        disabled={loading}
-                      ></textarea>
-                      {errors.recipientStory && (
-                        <div className="text-danger mt-1">
-                          {errors.recipientStory}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-3">
-                      <label htmlFor="recipientPhoto" className="form-label">
-                        Recipient Photo
-                      </label>
-                      <div className="input-group">
-                        <span className="input-group-text">
-                          <Image size={18} />
-                        </span>
-                        <input
-                          type="file"
-                          id="recipientPhoto"
-                          name="recipientPhoto"
-                          onChange={handleFileChange}
+                      <div className="mb-3">
+                        <label htmlFor="fundsUsage" className="form-label">
+                          How Funds Will Be Used *
+                        </label>
+                        <textarea
+                          id="fundsUsage"
+                          name="fundsUsage"
+                          value={formData.fundsUsage}
+                          onChange={handleInputChange}
                           className="form-control"
-                          accept="image/*"
+                          rows={4}
+                          placeholder="Explain exactly how the money raised will help the recipient"
+                          required
                           disabled={loading}
-                        />
+                        ></textarea>
+                        {errors.fundsUsage && (
+                          <div className="text-danger mt-1">
+                            {errors.fundsUsage}
+                          </div>
+                        )}
                       </div>
-                      <small className="text-muted d-block mt-1">
-                        With permission, upload a photo of the recipient or
-                        something representing their situation.
-                      </small>
                     </div>
+                  )}
 
-                    <div className="mb-3">
-                      <label htmlFor="fundsUsage" className="form-label">
-                        How Funds Will Be Used *
-                      </label>
-                      <textarea
-                        id="fundsUsage"
-                        name="fundsUsage"
-                        value={formData.fundsUsage}
-                        onChange={handleInputChange}
-                        className="form-control"
-                        rows={4}
-                        placeholder="Explain exactly how the money raised will help the recipient"
-                        required
-                        disabled={loading}
-                      ></textarea>
-                      {errors.fundsUsage && (
-                        <div className="text-danger mt-1">
-                          {errors.fundsUsage}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  {currentStep === 3 && (
+                    <div className="form-step">
+                      <h2 className="h4 mb-2">Review Your Event</h2>
+                      <p className="text-muted mb-4">
+                        Please review all details before creating your event.
+                      </p>
 
-                {currentStep === 3 && (
-                  <div className="form-step">
-                    <h2 className="h4 mb-2">Review Your Event</h2>
-                    <p className="text-muted mb-4">
-                      Please review all details before creating your event.
-                    </p>
-
-                    <div className="review-section mb-4">
-                      <h3 className="h5 mb-3">Event Details</h3>
-                      <div className="mb-2">
-                        <span className="fw-bold">Title:</span>
-                        <span className="ms-2">{formData.name}</span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="fw-bold">Date & Time:</span>
-                        <span className="ms-2">
-                          {formData.date} • {formData.time}
-                        </span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="fw-bold">Location:</span>
-                        <span className="ms-2">{formData.location}</span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="fw-bold">Max Guests:</span>
-                        <span className="ms-2">{formData.maxGuests}</span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="fw-bold">Funding Goal:</span>
-                        <span className="ms-2">${formData.fundingGoal}</span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="fw-bold">Visibility:</span>
-                        <span className="ms-2">{formData.visibility === "public" ? "Public" : formData.visibility === "private" ? "Private" : "Not selected"}</span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="fw-bold">Description:</span>
-                        <span className="ms-2">{formData.description}</span>
-                      </div>
-                      {formData.eventImage && (
+                      <div className="review-section mb-4">
+                        <h3 className="h5 mb-3">Event Details</h3>
                         <div className="mb-2">
-                          <span className="fw-bold">Event Image:</span>
+                          <span className="fw-bold">Title:</span>
+                          <span className="ms-2">{formData.name}</span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="fw-bold">Date & Time:</span>
                           <span className="ms-2">
-                            {formData.eventImage.name}
+                            {formData.date} • {formData.time}
                           </span>
                         </div>
-                      )}
-                    </div>
-
-                    <div className="review-section mb-4">
-                      <h3 className="h5 mb-3">Recipient Information</h3>
-                      <div className="mb-2">
-                        <span className="fw-bold">Name:</span>
-                        <span className="ms-2">{formData.recipientName}</span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="fw-bold">Category:</span>
-                        <span className="ms-2">
-                          {categoryLabels[formData.categoryOfNeed] ||
-                            formData.categoryOfNeed}
-                        </span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="fw-bold">Story:</span>
-                        <span className="ms-2">{formData.recipientStory}</span>
-                      </div>
-                      {formData.recipientPhoto && (
                         <div className="mb-2">
-                          <span className="fw-bold">Recipient Photo:</span>
+                          <span className="fw-bold">Location:</span>
+                          <span className="ms-2">{formData.location}</span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="fw-bold">Max Guests:</span>
+                          <span className="ms-2">{formData.maxGuests}</span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="fw-bold">Funding Goal:</span>
+                          <span className="ms-2">${formData.fundingGoal}</span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="fw-bold">Visibility:</span>
                           <span className="ms-2">
-                            {formData.recipientPhoto.name}
+                            {formData.visibility === "public"
+                              ? "Public"
+                              : formData.visibility === "private"
+                              ? "Private"
+                              : "Not selected"}
                           </span>
                         </div>
-                      )}
-                      <div className="mb-2">
-                        <span className="fw-bold">Funds Usage:</span>
-                        <span className="ms-2">{formData.fundsUsage}</span>
-                      </div>
-                    </div>
-
-                    <div className="form-check mb-3">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        id="termsCheck"
-                        checked={isTermsChecked}
-                        onChange={handleCheckboxChange}
-                        required
-                        disabled={loading}
-                      />
-                      <label className="form-check-label" htmlFor="termsCheck">
-                        I confirm that all information is accurate and I maka
-                        permission to share the recipient's story.
-                      </label>
-                      {errors.termsCheck && (
-                        <div className="text-danger mt-2">
-                          {errors.termsCheck}
+                        <div className="mb-2">
+                          <span className="fw-bold">Description:</span>
+                          <span className="ms-2">{formData.description}</span>
                         </div>
+                        {previewUrls.eventImage && (
+                          <div className="mb-2">
+                            <span className="fw-bold">Event Image:</span>
+                            <span
+                              className="ms-2 text-primary"
+                              style={{ cursor: "pointer" }}
+                              onClick={() =>
+                                handleImagePreview(previewUrls.eventImage!)
+                              }
+                            >
+                              View Event Image
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="review-section mb-4">
+                        <h3 className="h5 mb-3">Recipient Information</h3>
+                        <div className="mb-2">
+                          <span className="fw-bold">Name:</span>
+                          <span className="ms-2">{formData.recipientName}</span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="fw-bold">Category:</span>
+                          <span className="ms-2">
+                            {categoryLabels[formData.categoryOfNeed] ||
+                              formData.categoryOfNeed}
+                          </span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="fw-bold">Story:</span>
+                          <span className="ms-2">{formData.recipientStory}</span>
+                        </div>
+                        {previewUrls.recipientPhoto && (
+                          <div className="mb-2">
+                            <span className="fw-bold">Recipient Photo:</span>
+                            <span
+                              className="ms-2 text-primary"
+                              style={{ cursor: "pointer" }}
+                              onClick={() =>
+                                handleImagePreview(previewUrls.recipientPhoto!)
+                              }
+                            >
+                              View Recipient Photo
+                            </span>
+                          </div>
+                        )}
+                        <div className="mb-2">
+                          <span className="fw-bold">Funds Usage:</span>
+                          <span className="ms-2">{formData.fundsUsage}</span>
+                        </div>
+                      </div>
+
+                      <div className="form-check mb-3">
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          id="termsCheck"
+                          checked={isTermsChecked}
+                          onChange={handleCheckboxChange}
+                          required
+                          disabled={loading}
+                        />
+                        <label className="form-check-label" htmlFor="termsCheck">
+                          I confirm that all information is accurate and I have
+                          permission to share the recipient's story.
+                        </label>
+                        {errors.termsCheck && (
+                          <div className="text-danger mt-2">
+                            {errors.termsCheck}
+                          </div>
+                        )}
+                      </div>
+                      {errors.submit && (
+                        <div className="text-danger mt-2">{errors.submit}</div>
                       )}
                     </div>
-                    {errors.submit && (
-                      <div className="text-danger mt-2">{errors.submit}</div>
-                    )}
-                  </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={prevStep}
+                    disabled={loading}
+                  >
+                    Back
+                  </button>
+                )}
+                {currentStep < totalSteps ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={nextStep}
+                    disabled={loading}
+                  >
+                    Continue
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading || !isTermsChecked}
+                  >
+                    {loading ? "Creating..." : "Create Event"}
+                  </button>
                 )}
               </div>
-            </div>
-            <div className="modal-footer">
-              {currentStep > 1 && (
-                <button
-                  type="button"
-                  className="btn btn-outline-primary"
-                  onClick={prevStep}
-                  disabled={loading}
-                >
-                  Back
-                </button>
-              )}
-              {currentStep < totalSteps ? (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={nextStep}
-                  disabled={loading}
-                >
-                  Continue
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={loading || !isTermsChecked}
-                >
-                  {loading ? "Creating..." : "Create Event"}
-                </button>
-              )}
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
+
+      {showImagePreview && (
+        <div
+          className="modal"
+          style={{
+            display: "block",
+            backgroundColor: "rgba(0,0,0,0.8)",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1060,
+          }}
+          onClick={closeImagePreview}
+        >
+          <div
+            className="modal-dialog modal-lg modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content" style={{ background: "transparent", border: "none" }}>
+              <div className="modal-header" style={{ border: "none", position: "relative" }}>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={closeImagePreview}
+                  style={{ position: "absolute", top: "10px", right: "10px", zIndex: 1061 }}
+                ></button>
+              </div>
+              <div className="modal-body d-flex justify-content-center align-items-center">
+                <img
+                  src={showImagePreview}
+                  alt="Preview"
+                  style={{
+                    maxWidth: "90%",
+                    maxHeight: "90vh",
+                    objectFit: "contain",
+                  }}
+                  onError={() => console.error("Failed to load image:", showImagePreview)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .text-primary {
@@ -814,7 +970,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
           position: relative;
         }
         .progress-step {
-          position: relative;
+          position: "relative";
         }
         .progress-circle {
           transition: background-color 0.3s;
@@ -840,8 +996,26 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
         .review-value {
           color: #6c757d;
         }
+        .btn-close-white {
+          filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        .input-group {
+          height: 50px !important;
+        }
+        .input-group-text {
+          height: 100% !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+        .form-control {
+          height: 100% !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+        .input-group img {
+          max-width: 60px !important;
+          max-height: 60px !important;
+        }
       `}</style>
-    </div>
+    </>
   );
 };
 
