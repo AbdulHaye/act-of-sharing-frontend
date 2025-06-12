@@ -50,52 +50,50 @@ const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setMessage(null);
+    e.preventDefault();
+    setMessage(null);
 
-  // Email validation
-  if (!validateEmail(email)) {
-    setMessage({
-      text: "Please enter a valid email address (e.g., user@example.com)",
-      type: "error",
-    });
-    return;
-  }
-
-  try {
-    if (mode === "signup") {
-      const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
-      if (password.length < 8) {
-        setMessage({
-          text: "Password must be at least 8 characters long",
-          type: "error",
-        });
-        return;
-      }
-      if (!specialCharRegex.test(password)) {
-        setMessage({
-          text: "Password must contain at least one special character",
-          type: "error",
-        });
-        return;
-      }
-      await register({ firstname, lastname, email, password, role });
-      setMessage({ text: "User registered successfully", type: "success" });
-      toast.success("Registered successfully");
-    } else {
-      await login(email, password);
+    // Email validation
+    if (!validateEmail(email)) {
+      setMessage({
+        text: "Please enter a valid email address (e.g., user@example.com)",
+        type: "error",
+      });
+      return;
     }
-    onClose();
-  } catch (err: any) {
-    const errorMessage = err.message || err.response?.data?.message || "An error occurred";
-    setMessage({
-      text: errorMessage === "Please verify your email before logging in" 
-        ? errorMessage 
-        : "Invalid credentials",
-      type: "error",
-    });
-  }
-};
+
+    try {
+      if (mode === "signup") {
+        const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
+        if (password.length < 8) {
+          setMessage({
+            text: "Password must be at least 8 characters long",
+            type: "error",
+          });
+          return;
+        }
+        if (!specialCharRegex.test(password)) {
+          setMessage({
+            text: "Password must contain at least one special character",
+            type: "error",
+          });
+          return;
+        }
+        await register({ firstname, lastname, email, password, role });
+        setMessage({ text: "User registered successfully", type: "success" });
+        toast.success("Registered successfully");
+      } else {
+        await login(email, password);
+      }
+      onClose();
+    } catch (err: any) {
+      const errorMessage = err.message || err.response?.data?.message || "An error occurred";
+      setMessage({
+        text: errorMessage,
+        type: "error",
+      });
+    }
+  };
 
   const handleClose = () => {
     setIsVisible(false);
@@ -212,20 +210,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </button>
             </div>
           )}
-
-          {/* {mode === "signup" && (
-            <div className="auth-form-group">
-              <label htmlFor="role">Role</label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="auth-input"
-              >
-                <option value="host">Host</option>
-              </select>
-            </div>
-          )} */}
 
           <button type="submit" className="auth-submit-button">
             {mode === "login" ? "Login" : "Sign Up"}

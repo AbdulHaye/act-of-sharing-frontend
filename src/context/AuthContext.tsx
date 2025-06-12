@@ -110,7 +110,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       redirectToDashboard(user.role);
     } catch (error: any) {
       console.error('Login failed:', error.response?.data || error.message);
-      throw error; // Re-throw to be caught by the caller
+      if (error.response?.status === 403) {
+        throw new Error('Please verify your email before logging in');
+      }
+      throw error; // Re-throw other errors
     }
   };
 
