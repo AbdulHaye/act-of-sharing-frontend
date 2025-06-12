@@ -50,54 +50,52 @@ const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage(null);
+  e.preventDefault();
+  setMessage(null);
 
-    // Email validation
-    if (!validateEmail(email)) {
-      setMessage({
-        text: "Please enter a valid email address (e.g., user@example.com)",
-        type: "error",
-      });
-      return;
-    }
+  // Email validation
+  if (!validateEmail(email)) {
+    setMessage({
+      text: "Please enter a valid email address (e.g., user@example.com)",
+      type: "error",
+    });
+    return;
+  }
 
-    try {
-      if (mode === "signup") {
-        // Password validation: at least 8 characters and contains at least one special character
-        const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
-        if (password.length < 8) {
-          setMessage({
-            text: "Password must be at least 8 characters long",
-            type: "error",
-          });
-          return;
-        }
-        if (!specialCharRegex.test(password)) {
-          setMessage({
-            text: "Password must contain at least one special character",
-            type: "error",
-          });
-          return;
-        }
-        await register({ firstname, lastname, email, password, role });
-        setMessage({ text: "User registered successfully", type: "success" });
-        toast.success("Registered successfully");
-      } else {
-        try {
-          await login(email, password);
-        } catch (loginError: any) {
-          throw new Error("Invalid credentials");
-        }
+  try {
+    if (mode === "signup") {
+      const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
+      if (password.length < 8) {
+        setMessage({
+          text: "Password must be at least 8 characters long",
+          type: "error",
+        });
+        return;
       }
-      onClose();
-    } catch (err: any) {
-      setMessage({
-        text: err.message || err.response?.data?.message || "An error occurred",
-        type: "error",
-      });
+      if (!specialCharRegex.test(password)) {
+        setMessage({
+          text: "Password must contain at least one special character",
+          type: "error",
+        });
+        return;
+      }
+      await register({ firstname, lastname, email, password, role });
+      setMessage({ text: "User registered successfully", type: "success" });
+      toast.success("Registered successfully");
+    } else {
+      await login(email, password);
     }
-  };
+    onClose();
+  } catch (err: any) {
+    const errorMessage = err.message || err.response?.data?.message || "An error occurred";
+    setMessage({
+      text: errorMessage === "Please verify your email before logging in" 
+        ? errorMessage 
+        : "Invalid credentials",
+      type: "error",
+    });
+  }
+};
 
   const handleClose = () => {
     setIsVisible(false);

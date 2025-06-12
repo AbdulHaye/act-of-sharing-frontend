@@ -9,6 +9,7 @@ interface User {
   email: string;
   role: string;
   createdAt: string;
+  isEmailVerified?: boolean; // Optional field
 }
 
 interface AuthContextType {
@@ -41,6 +42,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
           setIsAuthenticated(true);
+          if (parsedUser.isEmailVerified === false) { // Only check if explicitly false
+            setIsAuthenticated(false);
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+          }
         } catch (err) {
           console.error('Error parsing stored user:', err);
           localStorage.removeItem('user');
@@ -91,33 +97,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await axiosInstance.post('/users/login', { email, password });
       const { token, user } = response.data;
+      console.log('Login response:', response.data); // Debug log
+      // Default isEmailVerified to true if not provided
+      const isVerified = user.isEmailVerified !== false; // Treat undefined as true
+      if (!isVerified) {
+        throw new Error('Please verify your email before logging in');
+      }
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      setUser(user);
+      localStorage.setItem('user', JSON.stringify({ ...user, isEmailVerified: isVerified }));
+      setUser({ ...user, isEmailVerified: isVerified });
       setIsAuthenticated(true);
       redirectToDashboard(user.role);
     } catch (error: any) {
       console.error('Login failed:', error.response?.data || error.message);
-      throw error;
+      throw error; // Re-throw to be caught by the caller
     }
   };
 
-const register = async (userData: { firstname: string; lastname: string; email: string; password: string; role: string }) => {
-  try {
-    const response = await axiosInstance.post('/users/register', userData);
-    const { message } = response.data; // Assuming backend returns a success message
-    console.log('Registration successful:', message);
-    return message; // Return success message to indicate success
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.message || 'An error occurred';
-    console.error('Registration failed:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: errorMessage,
-    });
-    throw new Error(errorMessage); // Throw the error to be caught by the caller
-  }
-};
+  const register = async (userData: { firstname: string; lastname: string; email: string; password: string; role: string }) => {
+    try {
+      const response = await axiosInstance.post('/users/register', userData);
+      const { message } = response.data;
+      console.log('Registration successful:', message);
+      return message;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'An error occurred';
+      console.error('Registration failed:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: errorMessage,
+      });
+      throw new Error(errorMessage);
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem('token');
