@@ -37,7 +37,7 @@ const stripePromise = loadStripe(
   "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
 );
 
-// Component to handle redirect base
+// Component to handle redirect bas
 const DashboardRedirect: React.FC = () => {
   const { user } = useAuth();
   if (!user) {
@@ -70,7 +70,7 @@ function App() {
                 <Route path="/checkout/:eventId" element={<CheckoutPage />} />
                 <Route path="/payment/:eventId" element={<DonationPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/verify-email" element={<VerifyEmail />} /> 
+                <Route path="/verify-email" element={<VerifyEmail />} />
 
                 <Route
                   element={<ProtectedRoute allowedRoles={["admin", "host"]} />}
