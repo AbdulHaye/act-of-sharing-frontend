@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -181,17 +180,18 @@ const StoriesPage: React.FC = () => {
     formData.append("amount", parseInt(addFormData.amount).toString());
     if (addFile) {
       formData.append("image", addFile);
+    } else {
+      console.warn("No image file selected, proceeding without image.");
     }
 
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication token not found");
 
-      console.log("Submitting story with payload:", Object.fromEntries(formData));
-
       const response = await axiosInstance.post(`/stories`, formData, {
         headers: {
           "x-auth-token": token,
+          "Content-Type": "multipart/form-data",
         },
       });
 
@@ -236,6 +236,7 @@ const StoriesPage: React.FC = () => {
       const response = await axiosInstance.put(`/stories/${selectedStory._id}`, formData, {
         headers: {
           "x-auth-token": token,
+          "Content-Type": "multipart/form-data",
         },
       });
 
@@ -345,6 +346,7 @@ const StoriesPage: React.FC = () => {
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "15%" }}>Location</th>
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "15%" }}>Category</th>
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Amount</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Image</th>
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Date</th>
                     {user?.role === "admin" && (
                       <th className="table-header px-4 py-2" style={{ width: "15%" }}>Actions</th>
@@ -354,7 +356,7 @@ const StoriesPage: React.FC = () => {
                 <tbody>
                   {stories.length === 0 ? (
                     <tr>
-                      <td colSpan={user?.role === "admin" ? 8 : 7} className="text-center py-5">
+                      <td colSpan={user?.role === "admin" ? 9 : 8} className="text-center py-5">
                         <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
                           <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
                           <circle cx="12" cy="12" r="3"/>
@@ -383,6 +385,17 @@ const StoriesPage: React.FC = () => {
                         </td>
                         <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
                           ${story.amount}
+                        </td>
+                        <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
+                          {story.image && story.image.id ? (
+                            <img
+                              src={`/uploads/${story.image.id}`} // Adjust the endpoint based on your backend
+                              alt={`${story.name}'s image`}
+                              style={{ maxWidth: "100px", maxHeight: "100px" }}
+                            />
+                          ) : (
+                            "No image"
+                          )}
                         </td>
                         <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
                           {formatDate(story.createdAt)}

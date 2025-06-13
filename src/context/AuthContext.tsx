@@ -112,6 +112,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Login failed:', error.response?.data || error.message);
       if (error.response?.status === 403) {
         throw new Error('Please verify your email before logging in');
+      } else if (error.response?.status === 400) {
+        throw new Error('Invalid credentials');
       }
       throw error; // Re-throw other errors
     }

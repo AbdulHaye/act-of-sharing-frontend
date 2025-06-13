@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -5,7 +6,7 @@ import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import { useAuth } from "../../../context/AuthContext";
 import axiosInstance from "../../../api/axiosInstance";
 import { toast } from "react-toastify";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, ChevronDown } from "lucide-react";
 
 interface DeleteConfirmationModalProps {
   show: boolean;
@@ -113,6 +114,7 @@ const ContactPage: React.FC = () => {
     totalContacts: 0,
     limit: 10,
   });
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   const fetchContacts = async (page: number = 1) => {
     setLoading(true);
@@ -133,12 +135,16 @@ const ContactPage: React.FC = () => {
       const data = Array.isArray(response.data.contacts) ? response.data.contacts : [];
       console.log("Fetched contacts data:", data);
 
-      const sortedContacts = data.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ).map(contact => ({
-        ...contact,
-        status: contact.status || "pending" // Default to "pending" if status is not provided
-      }));
+      const sortedContacts = data
+        .sort((a, b) =>
+          sortOrder === "desc"
+            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )
+        .map((contact) => ({
+          ...contact,
+          status: contact.status || "pending",
+        }));
       setContacts(sortedContacts);
       setPagination({
         currentPage: response.data.pagination.currentPage,
@@ -158,7 +164,7 @@ const ContactPage: React.FC = () => {
 
   useEffect(() => {
     fetchContacts(pagination.currentPage);
-  }, [pagination.currentPage]);
+  }, [pagination.currentPage, sortOrder]);
 
   const handleDelete = (contactId: string) => {
     console.log("Preparing to delete contact with ID:", contactId);
@@ -254,8 +260,9 @@ const ContactPage: React.FC = () => {
     <DashboardLayout>
       <div className="container-fluid p-4">
         <div className="card border-0 shadow-sm bg-white" style={{ width: "100%" }}>
-          <div className="card-header bg-white">
+          <div className="card-header bg-white flex justify-between items-center">
             <h5 className="card-title mb-0 text-lg font-semibold">Contact Us</h5>
+            
           </div>
           <div className="card-body p-0">
             <div className="table-responsive" style={{ width: "100%", maxHeight: "calc(100vh - 250px)" }}>
@@ -419,11 +426,11 @@ const ContactPage: React.FC = () => {
           color: white;
         }
         .status-pending {
-          color: #ff9800; /* Orange for Pending */
+          color: #ff9800;
           font-weight: bold;
         }
         .status-completed {
-          color: #4caf50; /* Green for Completed */
+          color: #4caf50;
           font-weight: bold;
         }
         @media (max-width: 640px) {

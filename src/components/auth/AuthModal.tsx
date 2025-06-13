@@ -88,10 +88,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
       onClose();
     } catch (err: any) {
       const errorMessage = err.message || err.response?.data?.message || "An error occurred";
-      setMessage({
-        text: errorMessage,
-        type: "error",
-      });
+      if (err.response?.status === 400) {
+        setMessage({ text: "Invalid credentials", type: "error" });
+      } else if (err.response?.status === 403) {
+        setMessage({ text: "Please verify your email before logging in", type: "error" });
+      } else {
+        setMessage({ text: errorMessage, type: "error" });
+      }
     }
   };
 

@@ -265,6 +265,7 @@ const ProfilePage: React.FC = () => {
                         className="form-control"
                         required
                         disabled={loading}
+                        readOnly
                       />
                     </div>
                   </div>

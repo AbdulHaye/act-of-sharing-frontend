@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import "../../styles/impact-stories.css";
-import axiosInstance from "../../api/axiosInstance"; // Adjust the path based on your project structure
+import axiosInstance from "../../api/axiosInstance";
 
 interface StoryProps {
-  image: string;
+  image: { id: string } | null; // Updated to reflect the image object structure
   quote: string;
   name: string;
   location: string;
@@ -12,7 +12,7 @@ interface StoryProps {
   need: string;
 }
 
-const ImpactStories: React.FC = () => {
+const ImpactStories = () => {
   const [stories, setStories] = useState<StoryProps[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -34,14 +34,17 @@ const ImpactStories: React.FC = () => {
           throw new Error("Invalid data format from the server");
         }
 
+        // const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
         const fetchedStories = response.data.stories.map((story: any) => ({
-          image: `http://localhost:5000/${story.image}`, // Construct full image URL
-          quote: story.quote,
-          name: story.name,
-          location: story.location,
-          amount: story.amount, // Amount is not in API response, using placeholder
-          need: story.category, // Map 'category' to 'need'
+          image: story.image || "",
+          quote: story.quote || "",
+          name: story.name || "",
+          location: story.location || "",
+          amount: story.amount || "0",
+          need: story.category || "",
         }));
+
+        console.log("Fetched stories:", fetchedStories);
         setStories(fetchedStories);
       } catch (err: any) {
         setError(err.message || "Failed to fetch stories");
@@ -53,30 +56,15 @@ const ImpactStories: React.FC = () => {
     fetchStories();
   }, []);
 
-  // Handle loading state
-  if (loading) {
-    return <div className="text-center py-5">Loading...</div>;
-  }
+   const baseUrl =
+    import.meta.env.VITE_BASE_URL;
 
-  // Handle error state
-  if (error) {
-    return <div className="alert alert-danger text-center">{error}</div>;
-  }
+  if (loading) return <div className="text-center py-5">Loading...</div>;
+  if (error) return <div className="alert alert-danger text-center">{error}</div>;
+  if (stories.length === 0) return <div className="text-center py-5">No stories available</div>;
 
-  // Handle empty state
-  if (stories.length === 0) {
-    return <div className="text-center py-5">No stories available</div>;
-  }
-
-  const nextStory = () => {
-    setActiveIndex((prevIndex) => (prevIndex + 1) % stories.length);
-  };
-
-  const prevStory = () => {
-    setActiveIndex(
-      (prevIndex) => (prevIndex - 1 + stories.length) % stories.length
-    );
-  };
+  const nextStory = () => setActiveIndex((prevIndex) => (prevIndex + 1) % stories.length);
+  const prevStory = () => setActiveIndex((prevIndex) => (prevIndex - 1 + stories.length) % stories.length);
 
   return (
     <section className="impact-stories py-5">
@@ -97,33 +85,25 @@ const ImpactStories: React.FC = () => {
                 <div className="row align-items-center">
                   <div className="col-md-5 mb-4 mb-md-0">
                     <div className="story-image-container">
-                      <img
-                        src={stories[activeIndex].image}
-                        alt={stories[activeIndex].name}
-                        className="story-image img-fluid"
-                      />
-                      <div className="story-amount">
-                        {stories[activeIndex].amount}
-                      </div>
+                        <img
+                          src={`${baseUrl}${stories[activeIndex].image}`}
+                          // src={`${import.meta.env.VITE_BASE_URL || "http://localhost:5000"}/uploads/${stories[activeIndex].image}`}
+                          alt={stories[activeIndex].name}
+                          className="story-image img-fluid"
+                        />
+                  
+                      <div className="story-amount">{stories[activeIndex].amount}</div>
                     </div>
                   </div>
                   <div className="col-md-7">
                     <div className="story-text">
-                      <div className="story-quote">
-                        "{stories[activeIndex].quote}"
-                      </div>
+                      <div className="story-quote">"{stories[activeIndex].quote}"</div>
                       <div className="story-meta">
-                        <div className="story-name">
-                          {stories[activeIndex].name}
-                        </div>
+                        <div className="story-name">{stories[activeIndex].name}</div>
                         <div className="story-details">
-                          <span className="story-location">
-                            {stories[activeIndex].location}
-                          </span>
+                          <span className="story-location">{stories[activeIndex].location}</span>
                           <span className="story-divider">•</span>
-                          <span className="story-need">
-                            {stories[activeIndex].need}
-                          </span>
+                          <span className="story-need">{stories[activeIndex].need}</span>
                         </div>
                       </div>
                     </div>
@@ -132,30 +112,20 @@ const ImpactStories: React.FC = () => {
               </div>
 
               <div className="story-navigation">
-                <button
-                  className="story-nav-btn"
-                  onClick={prevStory}
-                  aria-label="Previous story"
-                >
+                <button className="story-nav-btn" onClick={prevStory} aria-label="Previous story">
                   <ArrowLeft size={20} />
                 </button>
                 <div className="story-indicators">
                   {stories.map((_, index) => (
                     <button
                       key={index}
-                      className={`story-indicator ${
-                        activeIndex === index ? "active" : ""
-                      }`}
+                      className={`story-indicator ${activeIndex === index ? "active" : ""}`}
                       onClick={() => setActiveIndex(index)}
                       aria-label={`Go to story ${index + 1}`}
                     />
                   ))}
                 </div>
-                <button
-                  className="story-nav-btn"
-                  onClick={nextStory}
-                  aria-label="Next story"
-                >
+                <button className="story-nav-btn" onClick={nextStory} aria-label="Next story">
                   <ArrowRight size={20} />
                 </button>
               </div>
