@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Heart, Facebook, Twitter, Instagram, Mail } from "lucide-react";
 import "../../styles/footer.css";
 import { toast } from "react-toastify";
+import axiosInstance from "../../api/axiosInstance";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -16,7 +17,9 @@ const Footer: React.FC = () => {
   });
 
   // Handle input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -37,22 +40,22 @@ const Footer: React.FC = () => {
     }
 
     try {
-      const response = await fetch("https://commonchange-backend.onrender.com/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axiosInstance.post(
+        `${import.meta.env.VITE_API_URL}/contact`,
+        {
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+        }
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to send message");
+      // Check if the response status is in the 2xx range (success)
+      if (response.status >= 200 && response.status < 300) {
+        toast.success(response.data.message || "Message sent successfully!");
+        setFormData({ name: "", email: "", message: "" }); // Reset form
+      } else {
+        throw new Error(response.data.message || "Failed to send message");
       }
-
-      const data = await response.json();
-      toast.success(data.message || "Message sent successfully!");
-      setFormData({ name: "", email: "", message: "" }); // Reset form
     } catch (error: any) {
       console.error("Error submitting form:", error);
       toast.error(error.message || "Failed to send message. Please try again.");
@@ -72,16 +75,32 @@ const Footer: React.FC = () => {
               <span className="brand-text">COMMONCHANGE</span>
             </div>
             <p className="footer-tagline">
-              Bringing communities together to share meals and make a difference through collective giving.
+              Bringing communities together to share meals and make a difference
+              through collective giving.
             </p>
             <div className="social-icons">
-              <a href="https://www.facebook.com/CommonChange/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <a
+                href="https://www.facebook.com/CommonChange/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+              >
                 <Facebook size={18} />
               </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Twitter"
+              >
                 <Twitter size={18} />
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+              >
                 <Instagram size={18} />
               </a>
               <a href="mailto:Support@CommonChange.com" aria-label="Email">
@@ -94,7 +113,10 @@ const Footer: React.FC = () => {
             <h5 className="footer-heading">Contact</h5>
             <div className="contact-item">
               <span className="contact-label">Email:</span>
-              <a href="mailto:Support@CommonChange.com" className="contact-value">
+              <a
+                href="mailto:Support@CommonChange.com"
+                className="contact-value"
+              >
                 Support@CommonChange.com
               </a>
             </div>
@@ -157,7 +179,9 @@ const Footer: React.FC = () => {
 
         <div className="row footer-bottom">
           <div className="col-md-6 text-center text-md-start">
-            <p className="copyright">© {currentYear} COMMONCHANGE. All rights reserved.</p>
+            <p className="copyright">
+              © {currentYear} COMMONCHANGE. All rights reserved.
+            </p>
           </div>
           <div className="col-md-6 text-center text-md-end">
             <ul className="footer-legal">
