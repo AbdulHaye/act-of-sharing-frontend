@@ -79,16 +79,12 @@ const Footer: React.FC = () => {
               through collective giving.
             </p>
             <div className="social-icons">
-<<<<<<< HEAD
-              <a href="https://www.facebook.com/ActsofSharing/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-=======
               <a
                 href="https://www.facebook.com/CommonChange/"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
               >
->>>>>>> 2fb21b9a6d62448a9f575ac7bb80736140b29e30
                 <Facebook size={18} />
               </a>
               <a
@@ -117,16 +113,11 @@ const Footer: React.FC = () => {
             <h5 className="footer-heading">Contact</h5>
             <div className="contact-item">
               <span className="contact-label">Email:</span>
-<<<<<<< HEAD
-              <a href="mailto:Support@ActsofSharing.com" className="contact-value">
-                Support@ActsofSharing.com
-=======
               <a
                 href="mailto:Support@CommonChange.com"
                 className="contact-value"
               >
                 Support@CommonChange.com
->>>>>>> 2fb21b9a6d62448a9f575ac7bb80736140b29e30
               </a>
             </div>
             {/* <div className="contact-item">
@@ -188,13 +179,7 @@ const Footer: React.FC = () => {
 
         <div className="row footer-bottom">
           <div className="col-md-6 text-center text-md-start">
-<<<<<<< HEAD
             <p className="copyright">© {currentYear} Acts of Sharing. All rights reserved.</p>
-=======
-            <p className="copyright">
-              © {currentYear} COMMONCHANGE. All rights reserved.
-            </p>
->>>>>>> 2fb21b9a6d62448a9f575ac7bb80736140b29e30
           </div>
           <div className="col-md-6 text-center text-md-end">
             <ul className="footer-legal">
