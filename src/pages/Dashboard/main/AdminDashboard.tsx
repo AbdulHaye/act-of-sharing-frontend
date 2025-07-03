@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Users, DollarSign, Calendar, TrendingUp } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Users, DollarSign, Calendar } from "lucide-react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import { useEvent } from "../../../context/EventContext";
 import { useAuth } from "../../../context/AuthContext";
@@ -16,16 +16,11 @@ interface Stat {
   icon: React.ReactNode;
 }
 
-interface TotalGoalResponse {
-  totalGoalAmount: number;
-}
-
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { events, getEvents, loading: eventsLoading } = useEvent();
   const [users, setUsers] = React.useState<any[]>([]);
   const [totalRaised, setTotalRaised] = React.useState<number>(0);
-  const [totalGoalAmount, setTotalGoalAmount] = React.useState<number>(0);
   const [eventsPagination, setEventsPagination] = React.useState({
     currentPage: 1,
     totalPages: 1,
@@ -39,6 +34,15 @@ const AdminDashboard: React.FC = () => {
     limit: 10,
   });
   const [usersLoading, setUsersLoading] = React.useState<boolean>(false);
+  const location = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }, [location.pathname]);
 
   // Fetch users from the API
   const fetchUsers = async (page: number = 1) => {
@@ -54,7 +58,7 @@ const AdminDashboard: React.FC = () => {
       if (!response.data) {
         throw new Error("No data returned from the server");
       }
-      setUsers(response.data.users);
+      setUsers(response.data.users || []);
       setUsersPagination({
         currentPage: response.data.pagination.currentPage,
         totalPages: response.data.pagination.totalPages,
@@ -108,34 +112,12 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Fetch total goal amount for all events
-  const fetchTotalGoalAmount = async () => {
-    try {
-      const token = localStorage.getItem("token") || "";
-      console.log("Fetching total goal amount with token:", token);
-      const response = await axiosInstance.get<TotalGoalResponse>("/events/total-goal-amount", {
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": token,
-        },
-      });
-      console.log("Fetched total goal amount response:", response.data);
-      const totalGoal = Number(response.data.totalGoalAmount) || 0;
-      setTotalGoalAmount(totalGoal);
-    } catch (error: any) {
-      console.error("Error fetching total goal amount:", error);
-      toast.error(error.response?.data?.message || "Failed to fetch total goal amount");
-      setTotalGoalAmount(0);
-    }
-  };
-
   // Fetch data when the component mounts or pagination changes
   useEffect(() => {
     if (user) {
       fetchUsers(usersPagination.currentPage);
       fetchEvents(eventsPagination.currentPage);
       fetchTotalRaised();
-      fetchTotalGoalAmount();
     }
   }, [user, usersPagination.currentPage, eventsPagination.currentPage]);
 
@@ -177,18 +159,12 @@ const AdminDashboard: React.FC = () => {
       },
       {
         id: 3,
-        title: "Total Goal Amount",
-        value: `$${totalGoalAmount.toLocaleString()}`,
-        icon: <DollarSign size={24} />,
-      },
-      {
-        id: 4,
         title: "Total Donations",
         value: `$${totalRaised.toLocaleString()}`,
         icon: <DollarSign size={24} />,
       },
     ];
-  }, [eventsPagination.totalEvents, usersPagination.totalUsers, totalRaised, totalGoalAmount, users]);
+  }, [eventsPagination.totalEvents, usersPagination.totalUsers, totalRaised, users]);
 
   // Recent events (sorted by date, most recent first)
   const recentEvents = React.useMemo(() => {
@@ -197,11 +173,11 @@ const AdminDashboard: React.FC = () => {
       .map(event => ({
         id: event._id,
         name: event.title || "Unnamed Event",
-        location: event.location,
+        location: event.location || "N/A",
         date: new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        goalAmount: event.goalAmount,
+        goalAmount: Number(event.goalAmount) || 0, // Fallback to 0 if goalAmount is undefined
         guests: Number(event.guestCount) || 0,
-        status: event.status,
+        status: event.status || "N/A",
       }));
   }, [events]);
 
@@ -280,7 +256,7 @@ const AdminDashboard: React.FC = () => {
 
         <div className="row g-4 mb-4">
           {stats.map((stat) => (
-            <div key={stat.id} className="col-12 col-md-6 col-xl-3">
+            <div key={stat.id} className="col-12 col-md-6 col-xl-4">
               <div className="card h-100 border-0 shadow-sm bg-white">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center mb-3">
@@ -381,6 +357,7 @@ const AdminDashboard: React.FC = () => {
                           <button className="page-link px-3 py-1 border rounded" onClick={() => handleUsersPageChange(usersPagination.currentPage - 1)}>
                             Previous
                           </button>
+                       ぜひ
                         </li>
                         {Array.from({ length: usersPagination.totalPages }, (_, i) => (
                           <li key={i} className={`page-item ${usersPagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
@@ -402,63 +379,63 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      <style jsx>{`
-        .table-custom {
-          border-collapse: collapse;
-          width: 100%;
-        }
-        .table-header {
-          font-weight: 600;
-        }
-        .table-cell {
-          border-bottom: 1px solid #dee2e6;
-        }
-        .text-primary {
-          color: #5144A1;
-        }
-        .bg-primary {
-          background-color: #5144A1;
-        }
-        .text-muted {
-          color: #6c757d;
-        }
-        .badge {
-          display: inline-block;
-          font-size: 0.75rem;
-        }
-        @media (max-width: 640px) {
+        <style jsx>{`
           .table-custom {
+            border-collapse: collapse;
+            width: 100%;
+          }
+          .tableCurrent: .table-header {
+            font-weight: 600;
+          }
+          .table-cell {
+            border-bottom: 1px solid #dee2e6;
+          }
+          .text-primary {
+            color: #5144A1;
+          }
+          .bg-primary {
+            background-color: #5144A1;
+          }
+          .text-muted {
+            color: #6c757d;
+          }
+          .badge {
+            display: inline-block;
             font-size: 0.75rem;
           }
-          .table-header, .table-cell {
-            padding: 0.5rem;
+          @media (max-width: 640px) {
+            .table-custom {
+              font-size: 0.75rem;
+            }
+            .table-header, .table-cell {
+              padding: 0.5rem;
+            }
+            .pagination {
+              flex-wrap: wrap;
+              justify-content: center;
+            }
+            .page-link {
+              padding: 0.25rem 0.5rem;
+              font-size: 0.75rem;
+            }
+            .stat-value {
+              font-size: 1.25rem;
+            }
           }
-          .pagination {
-            flex-wrap: wrap;
-            justify-content: center;
+          @media (min-width: 641px) and (max-width: 1024px) {
+            .table-custom {
+              font-size: 0.875rem;
+            }
+            .table-header, .table-cell {
+              padding: 0.75rem;
+            }
+            .stat-value {
+              font-size: 1.5rem;
+            }
           }
-          .page-link {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-          }
-          .stat-value {
-            font-size: 1.25rem;
-          }
-        }
-        @media (min-width: 641px) and (max-width: 1024px) {
-          .table-custom {
-            font-size: 0.875rem;
-          }
-          .table-header, .table-cell {
-            padding: 0.75rem;
-          }
-          .stat-value {
-            font-size: 1.5rem;
-          }
-        }
-      `}</style>
+        `}</style>
+      </div>
     </DashboardLayout>
   );
 };

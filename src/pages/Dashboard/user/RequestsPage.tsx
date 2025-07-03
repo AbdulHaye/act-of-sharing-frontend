@@ -519,11 +519,11 @@ const RequestsPage: React.FC = () => {
           color: #6c757d;
         }
         .status-pending {
-          color: #ff9800; /* Orange for Pending */
+          color:rgb(216, 170, 101); /* Orange for Pending */
           font-weight: bold;
         }
         .status-completed {
-          color: #4caf50; /* Green for Completed */
+          color: #5144A1; /* Green for Completed */
           font-weight: bold;
         }
         @media (max-width: 640px) {

@@ -333,7 +333,7 @@ const HomePage: React.FC = () => {
                   Need Assistance? We're Here to Help.
                 </h2>
                 <p className="form-subtitle">
-                  CommonChange is committed to supporting those in need. If you
+                  Acts of Sharing is committed to supporting those in need. If you
                   or someone you know requires food, clothing, supplies, or
                   other assistance, please fill out the form below. Our team
                   will review your request and reach out as soon as possible.

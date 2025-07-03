@@ -52,7 +52,7 @@ const VerifyEmail = () => {
       <div className="p-8 bg-white rounded-lg shadow-md max-w-md w-full text-center">
         <div className="flex items-center justify-center mb-6">
           <span className="text-2xl font-bold text-purple-600">
-            <span className="inline-block mr-1">💜</span> CommonChange
+            <span className="inline-block mr-1">💜</span> Acts of Sharing
           </span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Email Verification</h1>

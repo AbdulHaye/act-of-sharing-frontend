@@ -415,22 +415,22 @@ const ContactPage: React.FC = () => {
           background-color: #5144A1;
         }
         .text-muted {
-          color: #6c757d;
+          color: #5144A1;
         }
         .btn-outline-success {
-          color: #28a745;
-          border-color: #28a745;
+          color: #5144A1;
+          border-color: #5144A1;
         }
         .btn-outline-success:hover {
-          background-color: #28a745;
+          background-color: #5144A1;
           color: white;
         }
         .status-pending {
-          color: #ff9800;
+          color:rgb(228, 171, 84);
           font-weight: bold;
         }
         .status-completed {
-          color: #4caf50;
+          color: #5144A1;
           font-weight: bold;
         }
         @media (max-width: 640px) {

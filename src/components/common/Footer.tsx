@@ -37,7 +37,7 @@ const Footer: React.FC = () => {
     }
 
     try {
-      const response = await fetch("https://commonchange-backend.onrender.com/api/contact", {
+      const response = await fetch("https://ActsofSharing-backend.onrender.com/api/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -69,13 +69,13 @@ const Footer: React.FC = () => {
           <div className="col-md-4 col-lg-3 mb-4 mb-md-0">
             <div className="footer-brand">
               <Heart size={24} className="heart-icon" />
-              <span className="brand-text">COMMONCHANGE</span>
+              <span className="brand-text">Acts of Sharing</span>
             </div>
             <p className="footer-tagline">
               Bringing communities together to share meals and make a difference through collective giving.
             </p>
             <div className="social-icons">
-              <a href="https://www.facebook.com/CommonChange/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <a href="https://www.facebook.com/ActsofSharing/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                 <Facebook size={18} />
               </a>
               <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
@@ -84,7 +84,7 @@ const Footer: React.FC = () => {
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                 <Instagram size={18} />
               </a>
-              <a href="mailto:Support@CommonChange.com" aria-label="Email">
+              <a href="mailto:Support@ActsofSharing.com" aria-label="Email">
                 <Mail size={18} />
               </a>
             </div>
@@ -94,8 +94,8 @@ const Footer: React.FC = () => {
             <h5 className="footer-heading">Contact</h5>
             <div className="contact-item">
               <span className="contact-label">Email:</span>
-              <a href="mailto:Support@CommonChange.com" className="contact-value">
-                Support@CommonChange.com
+              <a href="mailto:Support@ActsofSharing.com" className="contact-value">
+                Support@ActsofSharing.com
               </a>
             </div>
             {/* <div className="contact-item">
@@ -157,7 +157,7 @@ const Footer: React.FC = () => {
 
         <div className="row footer-bottom">
           <div className="col-md-6 text-center text-md-start">
-            <p className="copyright">© {currentYear} COMMONCHANGE. All rights reserved.</p>
+            <p className="copyright">© {currentYear} Acts of Sharing. All rights reserved.</p>
           </div>
           <div className="col-md-6 text-center text-md-end">
             <ul className="footer-legal">

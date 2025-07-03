@@ -3,7 +3,7 @@ export interface User {
     email: string;
     firstname: string;
     lastname: string;
-    role: 'Admin' | 'Host' | 'Guest';
+    role: 'admin' | 'Host' | 'Guest';
   }
   
   export interface AuthContextType {

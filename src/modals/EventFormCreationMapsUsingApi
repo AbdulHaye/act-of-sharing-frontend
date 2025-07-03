@@ -1,122 +1,215 @@
-import React, { useState, useEffect } from "react"
-import { Calendar, Clock, MapPin, Users, DollarSign, FileText, Image as ImageIcon } from "lucide-react"
-import { useEvent } from "../../../context/EventContext"
-import { useAuth } from "../../../context/AuthContext"
-import { toast } from "react-toastify"
+import React, { useState, useEffect, useRef } from "react";
+import { X, Calendar, Clock, MapPin, Users, DollarSign, FileText, Image } from "lucide-react";
+import { useEvent } from "../context/EventContext";
+import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 interface EventFormData {
-  title: string
-  date: string
-  time: string
-  location: string
-  guestCount: string
-  suggestedDonation: string
-  description: string
-  eventImage: File | null
-  isPublic: boolean
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+  guestCount: string;
+  suggestedDonation: string;
+  description: string;
+  eventImage: File | null;
+  isPublic: boolean;
 }
 
-interface EventEditModalProps {
-  show: boolean
-  onHide: () => void
-  event: {
-    _id: string
-    title: string
-    date: string
-    location: string
-    guestCount: number
-    goalAmount?: number
-    suggestedDonation?: number
-    description: string
-    imageUrl?: string | null
-    isPublic: boolean
-    isDraft?: boolean
-  } | null
+interface EventCreationFormProps {
+  onClose: () => void;
 }
 
-const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) => {
-  const { createEvent, updateEvent, loading } = useEvent()
-  const { user } = useAuth()
-  const [currentStep, setCurrentStep] = useState<number>(1)
-  const [isTermsChecked, setIsTermsChecked] = useState(false)
-  const [showImagePreview, setShowImagePreview] = useState<string | null>(null)
-  const [showDraftModal, setShowDraftModal] = useState(false)
-  const totalSteps = 2
+const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
+  const { createEvent, loading, error } = useEvent();
+  const { user } = useAuth();
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [isTermsChecked, setIsTermsChecked] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState<string | null>(null);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const totalSteps = 2;
+  const mapRef = useRef<HTMLDivElement>(null);
+  const autocompleteRef = useRef<HTMLInputElement>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
 
   const [formData, setFormData] = useState<EventFormData>({
     title: "",
     date: "",
     time: "",
     location: "",
+    latitude: null,
+    longitude: null,
     guestCount: "",
     suggestedDonation: "",
     description: "",
     eventImage: null,
     isPublic: false,
-  })
-
+  });
   const [previewUrls, setPreviewUrls] = useState<{ eventImage: string | null }>({
     eventImage: null,
-  })
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const MAX_GUESTS = 1000000
-  const MAX_DONATION = 100000000
+  const MAX_GUESTS = 1000000;
+  const MAX_DONATION = 100000000;
 
+  // Load Google Maps script dynamically
   useEffect(() => {
-    if (event) {
-      const eventDate = new Date(event.date)
-      setFormData({
-        title: event.title || "",
-        description: event.description || "",
-        date: eventDate.toISOString().split("T")[0] || "",
-        time: eventDate.toTimeString().slice(0, 5) || "",
-        location: event.location || "",
-        guestCount: event.guestCount?.toString() || "",
-        suggestedDonation: event.suggestedDonation?.toString() || "",
-        eventImage: null,
-        isPublic: event.isPublic || false,
-      })
-      setPreviewUrls({ eventImage: event.imageUrl || null })
-    } else {
-      setFormData({
-        title: "",
-        date: "",
-        time: "",
-        location: "",
-        guestCount: "",
-        suggestedDonation: "",
-        description: "",
-        eventImage: null,
-        isPublic: false,
-      })
-      setPreviewUrls({ eventImage: null })
-    }
-  }, [event])
-
-  useEffect(() => {
-    return () => {
-      if (previewUrls.eventImage && !event?.imageUrl) {
-        URL.revokeObjectURL(previewUrls.eventImage)
+    const loadGoogleMapsScript = () => {
+      if (window.google && window.google.maps) {
+        setIsGoogleMapsLoaded(true);
+        return;
       }
+
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,marker`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setIsGoogleMapsLoaded(true);
+      script.onerror = () => {
+        console.error("Failed to load Google Maps script");
+        toast.error("Failed to load map services");
+      };
+      document.head.appendChild(script);
+
+      return () => {
+        document.head.removeChild(script);
+      };
+    };
+
+    loadGoogleMapsScript();
+  }, []);
+
+  // Initialize Google Maps and Autocomplete
+  useEffect(() => {
+    if (!isGoogleMapsLoaded || !mapRef.current || !autocompleteRef.current) return;
+
+    const loadGoogleMaps = async () => {
+      try {
+        const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
+        const { Autocomplete } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
+
+        const mapInstance = new Map(mapRef.current, {
+          center: { lat: 0, lng: 0 },
+          zoom: 2,
+          mapId: "EVENT_CREATION_MAP",
+        });
+        setMap(mapInstance);
+
+        const autocomplete = new Autocomplete(autocompleteRef.current, {
+          fields: ["formatted_address", "geometry", "name"],
+          types: ["address"],
+        });
+
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          if (place.geometry && place.geometry.location) {
+            const location = place.formatted_address || place.name || "";
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+
+            setFormData((prev) => ({
+              ...prev,
+              location,
+              latitude: lat,
+              longitude: lng,
+            }));
+            setErrors((prev) => ({ ...prev, location: "" }));
+
+            mapInstance.setCenter({ lat, lng });
+            mapInstance.setZoom(15);
+
+            if (marker) {
+              marker.setMap(null);
+            }
+            const newMarker = new AdvancedMarkerElement({
+              map: mapInstance,
+              position: { lat, lng },
+            });
+            setMarker(newMarker);
+          }
+        });
+      } catch (err) {
+        console.error("Error loading Google Maps:", err);
+        toast.error("Failed to load map services");
+      }
+    };
+
+    loadGoogleMaps();
+
+    return () => {
+      if (marker) marker.setMap(null);
+    };
+  }, [isGoogleMapsLoaded]);
+
+  // Handle map click to select location
+  const handleMapClick = (event: google.maps.MapMouseEvent) => {
+    if (!map || !event.latLng) return;
+
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+
+    // Reverse geocoding to get address
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === "OK" && results && results[0]) {
+        setFormData((prev) => ({
+          ...prev,
+          location: results[0].formatted_address,
+          latitude: lat,
+          longitude: lng,
+        }));
+        setErrors((prev) => ({ ...prev, location: "" }));
+
+        if (autocompleteRef.current) {
+          autocompleteRef.current.value = results[0].formatted_address;
+        }
+
+        if (marker) {
+          marker.setMap(null);
+        }
+        const newMarker = new google.maps.Marker({
+          map,
+          position: { lat, lng },
+        });
+        setMarker(newMarker);
+        map.setCenter({ lat, lng });
+        map.setZoom(15);
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (map) {
+      map.addListener("click", handleMapClick);
     }
-  }, [previewUrls.eventImage, event?.imageUrl])
+    return () => {
+      if (map) {
+        google.maps.event.clearListeners(map, "click");
+      }
+    };
+  }, [map, marker]);
 
   const validateStep = (step: number): Record<string, string> => {
-    const errors: Record<string, string> = {}
+    const errors: Record<string, string> = {};
     if (step === 1) {
-      if (!formData.title) errors.title = "Event title is required"
-      if (!formData.date) errors.date = "Date is required"
-      if (!formData.time) errors.time = "Time is required"
-      if (!formData.location) errors.location = "Location is required"
+      if (!formData.title) errors.title = "Event title is required";
+      if (!formData.date) errors.date = "Date is required";
+      if (!formData.time) errors.time = "Time is required";
+      if (!formData.location) errors.location = "Location is required";
       if (!formData.guestCount) {
-        errors.guestCount = "Max guests is required"
+        errors.guestCount = "Max guests is required";
       } else if (
         isNaN(Number(formData.guestCount)) ||
         Number(formData.guestCount) < 2 ||
         Number(formData.guestCount) > MAX_GUESTS
       ) {
-        errors.guestCount = `Max guests must be between 2 and ${MAX_GUESTS.toLocaleString()}`
+        errors.guestCount = `Max guests must be between 2 and ${MAX_GUESTS.toLocaleString()}`;
       }
       if (formData.suggestedDonation) {
         if (
@@ -124,164 +217,158 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
           Number(formData.suggestedDonation) < 25 ||
           Number(formData.suggestedDonation) > MAX_DONATION
         ) {
-          errors.suggestedDonation = `Suggested donation must be between 25 and ${MAX_DONATION.toLocaleString()}`
+          errors.suggestedDonation = `Suggested donation must be between 25 and ${MAX_DONATION.toLocaleString()}`;
         }
       }
-      if (!formData.description) errors.description = "Description is required"
+      if (!formData.description) errors.description = "Description is required";
     }
-    return errors
-  }
+    return errors;
+  };
 
   const nextStep = () => {
-    const stepErrors = validateStep(currentStep)
+    const stepErrors = validateStep(currentStep);
     if (Object.keys(stepErrors).length > 0) {
-      setErrors(stepErrors)
+      setErrors(stepErrors);
     } else {
-      setErrors({})
+      setErrors({});
       if (currentStep < totalSteps) {
-        setCurrentStep(currentStep + 1)
-        window.scrollTo(0, 0)
+        setCurrentStep(currentStep + 1);
+        window.scrollTo(0, 0);
       }
     }
-  }
+  };
 
   const prevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
-      window.scrollTo(0, 0)
+      setCurrentStep(currentStep - 1);
+      window.scrollTo(0, 0);
     }
-  }
-
-  const skipStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1)
-      window.scrollTo(0, 0)
-    }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const step1Errors = validateStep(1)
-    if (Object.keys(step1Errors).length > 0) {
-      setErrors(step1Errors)
-      return
+    e.preventDefault();
+    const step1Errors = validateStep(1);
+    const allErrors = { ...step1Errors };
+    if (Object.keys(allErrors).length > 0) {
+      setErrors(allErrors);
+      return;
     }
-
     if (!isTermsChecked) {
-      setErrors((prev) => ({ ...prev, termsCheck: "Please check the box" }))
-      return
+      setErrors((prev) => ({ ...prev, termsCheck: "Please check the box" }));
+      return;
     }
 
     if (!user?.id) {
-      setErrors((prev) => ({ ...prev, submit: "User authentication required" }))
-      toast.error("Please log in to create or update an event")
-      return
+      setErrors((prev) => ({ ...prev, submit: "User authentication required" }));
+      toast.error("Please log in to create an event");
+      return;
     }
 
-    const eventData = new FormData()
-    eventData.append("title", formData.title)
-    eventData.append("description", formData.description)
-    eventData.append("date", formData.date)
-    eventData.append("time", formData.time)
-    eventData.append("location", formData.location)
-    eventData.append("guestCount", formData.guestCount)
-    eventData.append("suggestedDonation", formData.suggestedDonation || "0")
-    eventData.append("isPublic", formData.isPublic.toString())
-    eventData.append("isDraft", "false")
-    if (formData.eventImage) eventData.append("eventImage", formData.eventImage)
+    const eventData = new FormData();
+    eventData.append("title", formData.title);
+    eventData.append("description", formData.description);
+    eventData.append("date", formData.date);
+    eventData.append("time", formData.time);
+    eventData.append("location", formData.location);
+    eventData.append("latitude", formData.latitude ? formData.latitude.toString() : "");
+    eventData.append("longitude", formData.longitude ? formData.longitude.toString() : "");
+    eventData.append("guestCount", formData.guestCount);
+    eventData.append("suggestedDonation", formData.suggestedDonation || "0");
+    eventData.append("isPublic", formData.isPublic.toString());
+    eventData.append("isDraft", "false");
+    if (formData.eventImage) eventData.append("eventImage", formData.eventImage);
 
     try {
-      if (event) {
-        await updateEvent(event._id, eventData)
-        toast.success("Event updated successfully!")
-      } else {
-        await createEvent(eventData)
-        toast.success("Event created successfully!")
-      }
-      onHide()
+      await createEvent(eventData);
+      toast.success("Event created successfully!");
+      onClose();
     } catch (err) {
-      console.error("Error saving event:", err)
-      setErrors((prev) => ({ ...prev, submit: "Failed to save event" }))
-      toast.error("Failed to save event")
+      console.error("Error creating event:", err);
+      setErrors((prev) => ({ ...prev, submit: "Failed to create event" }));
+      toast.error("Failed to create event");
     }
-  }
+  };
 
   const handleSaveAsDraft = async () => {
     if (!user?.id) {
-      toast.error("Please log in to save a draft")
-      return
+      toast.error("Please log in to save a draft");
+      return;
     }
 
-    const eventData = new FormData()
-    eventData.append("title", formData.title || "Untitled Event")
-    eventData.append("description", formData.description || "")
-    eventData.append("date", formData.date || "")
-    eventData.append("time", formData.time || "")
-    eventData.append("location", formData.location || "")
-    eventData.append("guestCount", formData.guestCount || "")
-    eventData.append("suggestedDonation", formData.suggestedDonation || "0")
-    eventData.append("isPublic", formData.isPublic.toString())
-    eventData.append("isDraft", "true")
-    if (formData.eventImage) eventData.append("eventImage", formData.eventImage)
+    const eventData = new FormData();
+    eventData.append("title", formData.title || "Untitled Event");
+    eventData.append("description", formData.description || "");
+    eventData.append("date", formData.date || "");
+    eventData.append("time", formData.time || "");
+    eventData.append("location", formData.location || "");
+    eventData.append("latitude", formData.latitude ? formData.latitude.toString() : "");
+    eventData.append("longitude", formData.longitude ? formData.longitude.toString() : "");
+    eventData.append("guestCount", formData.guestCount || "");
+    eventData.append("suggestedDonation", formData.suggestedDonation || "0");
+    eventData.append("isPublic", formData.isPublic.toString());
+    eventData.append("isDraft", "true");
+    if (formData.eventImage) eventData.append("eventImage", formData.eventImage);
 
     try {
-      if (event) {
-        await updateEvent(event._id, eventData)
-        toast.success("Event updated as draft successfully!")
-      } else {
-        await createEvent(eventData)
-        toast.success("Event saved as draft successfully!")
-      }
-      onHide()
+      await createEvent(eventData);
+      toast.success("Event saved as draft successfully!");
+      onClose();
     } catch (err) {
-      console.error("Error saving draft:", err)
-      toast.error("Failed to save draft")
+      console.error("Error saving draft:", err);
+      toast.error("Failed to save draft");
     }
-  }
+  };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
-    }))
-    setErrors((prev) => ({ ...prev, [name]: "" }))
-  }
+    }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files ? e.target.files[0] : null
-    setFormData((prev) => ({ ...prev, eventImage: file }))
+    const file = e.target.files ? e.target.files[0] : null;
+    setFormData((prev) => ({ ...prev, eventImage: file }));
 
     if (file) {
-      const previewUrl = URL.createObjectURL(file)
+      const previewUrl = URL.createObjectURL(file);
       setPreviewUrls((prev) => {
-        if (prev.eventImage && prev.eventImage !== event?.imageUrl) {
-          URL.revokeObjectURL(prev.eventImage)
-        }
-        return { ...prev, eventImage: previewUrl }
-      })
+        if (prev.eventImage) URL.revokeObjectURL(prev.eventImage);
+        return { ...prev, eventImage: previewUrl };
+      });
     } else {
-      setPreviewUrls((prev) => ({
-        ...prev,
-        eventImage: event?.imageUrl || null,
-      }))
+      setPreviewUrls((prev) => {
+        if (prev.eventImage) URL.revokeObjectURL(prev.eventImage);
+        return { ...prev, eventImage: null };
+      });
     }
-  }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrls.eventImage) URL.revokeObjectURL(previewUrls.eventImage);
+    };
+  }, []);
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsTermsChecked(e.target.checked)
-    setErrors((prev) => ({
-      ...prev,
-      termsCheck: e.target.checked ? "" : "Please check the box",
-    }))
-  }
+    setIsTermsChecked(e.target.checked);
+    if (e.target.checked) {
+      setErrors((prev) => ({ ...prev, termsCheck: "" }));
+    } else {
+      setErrors((prev) => ({ ...prev, termsCheck: "Please check the box" }));
+    }
+  };
 
   const handleImagePreview = (imageUrl: string) => {
-    if (!imageUrl) return
-    setShowImagePreview(imageUrl)
-  }
+    if (!imageUrl) return;
+    setShowImagePreview(imageUrl);
+  };
 
-  const closeImagePreview = () => setShowImagePreview(null)
+  const closeImagePreview = () => setShowImagePreview(null);
 
   const handleCloseWithConfirmation = () => {
     if (
@@ -294,24 +381,51 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
       formData.description ||
       formData.eventImage
     ) {
-      setShowDraftModal(true)
+      setShowDraftModal(true);
     } else {
-      onHide()
+      onClose();
     }
-  }
+  };
 
   const handleDraftModalAction = (action: "save" | "cancel") => {
-    setShowDraftModal(false)
+    setShowDraftModal(false);
     if (action === "save") {
-      handleSaveAsDraft()
+      handleSaveAsDraft();
     } else {
-      onHide()
+      onClose();
     }
-  }
+  };
 
-  if (!show) return null
+  // Custom time handling
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("00");
+  const [ampm, setAmpm] = useState("AM");
 
-  const isHost = user?.role === "host"
+  const handleHourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setHour(e.target.value);
+    updateTime(e.target.value, minute, ampm);
+  };
+
+  const handleMinuteChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setMinute(e.target.value);
+    updateTime(hour, e.target.value, ampm);
+  };
+
+  const handleAmpmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setAmpm(e.target.value);
+    updateTime(hour, minute, e.target.value);
+  };
+
+  const updateTime = (newHour: string, newMinute: string, newAmpm: string) => {
+    if (newHour && newMinute && newAmpm) {
+      const timeString = `${newHour.padStart(2, "0")}:${newMinute} ${newAmpm}`;
+      setFormData((prev) => ({
+        ...prev,
+        time: timeString,
+      }));
+      setErrors((prev) => ({ ...prev, time: "" }));
+    }
+  };
 
   return (
     <>
@@ -320,7 +434,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         tabIndex={-1}
         style={{
           display: "block",
-          backgroundColor: "rgba(0,0,0,0.5)",
+          backgroundColor: " personally, rgba(0,0,0,0.5)",
           position: "fixed",
           top: 0,
           left: 0,
@@ -329,31 +443,20 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
           zIndex: 1050,
         }}
       >
-        <div className="modal-dialog modal-lg modal-dialog-centered" style={{ maxWidth: "800px" }}>
-          <div className="modal-content" style={{ maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
-            <div
-              className="modal-header"
-              style={{ background: "#ffffff", color: "#000000", borderBottom: "1px solid #dee2e6" }}
-            >
-              <h5 className="modal-title">{event ? "Edit Event" : "Create New Event"}</h5>
+        <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header" style={{ background: "#ffffff", color: "#000000", borderBottom: "1px solid #dee2e6" }}>
+              <h5 className="modal-title">Create New Event</h5>
               <button
                 type="button"
                 className="btn-close btn-close-black"
-                onClick={isHost ? handleCloseWithConfirmation : onHide}
+                onClick={handleCloseWithConfirmation}
                 disabled={loading}
                 style={{ filter: "none" }}
               ></button>
             </div>
-
             <form onSubmit={handleSubmit}>
-              <div
-                className="modal-body"
-                style={{
-                  maxHeight: "65vh",
-                  overflowY: "auto",
-                  padding: "1.5rem",
-                }}
-              >
+              <div className="modal-body">
                 <div className="form-progress mb-4 d-flex justify-content-between align-items-center">
                   {[...Array(totalSteps)].map((_, index) => (
                     <div
@@ -370,7 +473,11 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           height: "30px",
                           borderRadius: "50%",
                           backgroundColor:
-                            currentStep > index + 1 ? "#5144A1" : currentStep === index + 1 ? "#5144A1" : "#dee2e6",
+                            currentStep > index + 1
+                              ? "#5144A1"
+                              : currentStep === index + 1
+                              ? "#5144A1"
+                              : "#dee2e6",
                           color: currentStep >= index + 1 ? "white" : "#6c757d",
                           display: "flex",
                           alignItems: "center",
@@ -380,19 +487,23 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                       >
                         {index + 1}
                       </div>
-                      <div className="progress-label mt-2" style={{ fontSize: "12px" }}>
+                      <div
+                        className="progress-label mt-2"
+                        style={{ fontSize: "12px" }}
+                      >
                         {index === 0 ? "Event Details" : "Review"}
                       </div>
                       {index < totalSteps - 1 && (
                         <div
-                          className="progress-line"
+ clinician:                         className="progress-line"
                           style={{
                             position: "absolute",
                             top: "15px",
                             left: "50%",
                             width: "50%",
                             height: "2px",
-                            backgroundColor: currentStep > index + 1 ? "#5144A1" : "#dee2e6",
+                            backgroundColor:
+                              currentStep > index + 1 ? "#5144A1" : "#dee2e6",
                           }}
                         ></div>
                       )}
@@ -405,7 +516,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     <div className="form-step">
                       <h2 className="h4 mb-2">Event Details</h2>
                       <p className="text-muted mb-4">
-                        Let's set up your meal gathering. Provide details about when and where you'll host.
+                        Let's set up your meal gathering. Provide details about
+                        when and where you'll host.
                       </p>
 
                       <div className="mb-3">
@@ -428,7 +540,9 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                             disabled={loading}
                           />
                         </div>
-                        {errors.title && <div className="text-danger mt-1">{errors.title}</div>}
+                        {errors.title && (
+                          <div className="text-danger mt-1">{errors.title}</div>
+                        )}
                       </div>
 
                       <div className="row">
@@ -452,7 +566,9 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                               min={new Date().toISOString().split("T")[0]}
                             />
                           </div>
-                          {errors.date && <div className="text-danger mt-1">{errors.date}</div>}
+                          {errors.date && (
+                            <div className="text-danger mt-1">{errors.date}</div>
+                          )}
                         </div>
                         <div className="col-md-6 mb-3">
                           <label htmlFor="time" className="form-label">
@@ -462,18 +578,50 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                             <span className="input-group-text">
                               <Clock size={18} />
                             </span>
-                            <input
-                              type="time"
-                              id="time"
-                              name="time"
-                              value={formData.time}
-                              onChange={handleInputChange}
-                              className="form-control"
+                            <select
+                              id="hour"
+                              value={hour}
+                              onChange={handleHourChange}
+                              className="form-control me-2"
+                              style={{ width: "80px" }}
                               required
                               disabled={loading}
-                            />
+                            >
+                              <option value="">Hour</option>
+                              {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                                <option key={h} value={h}>{h}</option>
+                              ))}
+                            </select>
+                            <select
+                              id="minute"
+                              value={minute}
+                              onChange={handleMinuteChange}
+                              className="form-control me-2"
+                              style={{ width: "80px" }}
+                              required
+                              disabled={loading}
+                            >
+                              <option value="00">00</option>
+                              <option value="15">15</option>
+                              <option value="30">30</option>
+                              <option value="45">45</option>
+                            </select>
+                            <select
+                              id="ampm"
+                              value={ampm}
+                              onChange={handleAmpmChange}
+                              className="form-control"
+                              style={{ width: "80px" }}
+                              required
+                              disabled={loading}
+                            >
+                              <option value="AM">AM</option>
+                              <option value="PM">PM</option>
+                            </select>
                           </div>
-                          {errors.time && <div className="text-danger mt-1">{errors.time}</div>}
+                          {errors.time && (
+                            <div className="text-danger mt-1">{errors.time}</div>
+                          )}
                         </div>
                       </div>
 
@@ -489,18 +637,49 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                             type="text"
                             id="location"
                             name="location"
+                            ref={autocompleteRef}
                             value={formData.location}
                             onChange={handleInputChange}
                             className="form-control"
-                            placeholder="Address or virtual link"
+                            placeholder="Enter address or click on map"
                             required
-                            disabled={loading}
+                            disabled={loading || !isGoogleMapsLoaded}
                           />
                         </div>
-                        {errors.location && <div className="text-danger mt-1">{errors.location}</div>}
+                        {errors.location && (
+                          <div className="text-danger mt-1">{errors.location}</div>
+                        )}
+                        <div
+                          ref={mapRef}
+                          style={{
+                            height: "300px",
+                            width: "100%",
+                            marginTop: "10px",
+                            borderRadius: "4px",
+                            border: "1px solid #dee2e6",
+                            backgroundColor: isGoogleMapsLoaded ? "transparent" : "#f8f9fa",
+                          }}
+                        >
+                          {!isGoogleMapsLoaded && (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                height: "100%",
+                                color: "#6c757d",
+                              }}
+                            >
+                              Loading map...
+                            </div>
+                          )}
+                        </div>
+                        <small className="text-muted d-block mt-1">
+                          Type an address or click on the map to select a location.
+                        </small>
                       </div>
 
-                      <div className="row align-items-end">
+                      <div className="row">
                         <div className="col-md-6 mb-3">
                           <label htmlFor="guestCount" className="form-label">
                             Max Guests <span style={{ color: "red" }}>*</span>
@@ -523,7 +702,9 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                               disabled={loading}
                             />
                           </div>
-                          {errors.guestCount && <div className="text-danger mt-1">{errors.guestCount}</div>}
+                          {errors.guestCount && (
+                            <div className="text-danger mt-1">{errors.guestCount}</div>
+                          )}
                         </div>
                         <div className="col-md-6 mb-3">
                           <label htmlFor="suggestedDonation" className="form-label">
@@ -567,7 +748,9 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           required
                           disabled={loading}
                         ></textarea>
-                        {errors.description && <div className="text-danger mt-1">{errors.description}</div>}
+                        {errors.description && (
+                          <div className="text-danger mt-1">{errors.description}</div>
+                        )}
                       </div>
 
                       <div className="mb-3">
@@ -576,7 +759,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                         </label>
                         <div className="input-group" style={{ height: "50px" }}>
                           <span className="input-group-text" style={{ height: "100%" }}>
-                            <ImageIcon size={18} />
+                            <Image size={18} />
                           </span>
                           <input
                             type="file"
@@ -588,10 +771,10 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                             style={{ height: "100%" }}
                             disabled={loading}
                           />
-                          {(previewUrls.eventImage || event?.imageUrl) && (
+                          {previewUrls.eventImage && (
                             <span className="input-group-text" style={{ height: "100%" }}>
                               <img
-                                src={previewUrls.eventImage || event?.imageUrl || "/placeholder.svg"}
+                                src={previewUrls.eventImage}
                                 alt="Event preview"
                                 style={{
                                   maxWidth: "60px",
@@ -600,14 +783,14 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                                   cursor: "pointer",
                                   marginLeft: "10px",
                                 }}
-                                onClick={() => handleImagePreview(previewUrls.eventImage || event?.imageUrl || "")}
+                                onClick={() => handleImagePreview(previewUrls.eventImage!)}
                               />
                             </span>
                           )}
                         </div>
                         <small className="text-muted d-block mt-1">
-                          Upload an image that represents your meal gathering. Recommended size: 1200x800px.
-                          {event?.imageUrl && " Current image will be replaced if a new one is uploaded."}
+                          Upload an image that represents your meal gathering.
+                          Recommended size: 1200x800px.
                         </small>
                       </div>
 
@@ -648,11 +831,11 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                     <div className="form-step">
                       <h2 className="h4 mb-2">Review Your Event</h2>
                       <p className="text-muted mb-4">
-                        Please review all details before {event ? "updating" : "creating"} your event.
+                        Please review all details before creating your event.
                       </p>
 
                       <div className="review-section mb-4">
-                        {event?.isDraft && isHost && (
+                        {formData.isDraft && (
                           <div
                             className="draft-banner mb-3"
                             style={{
@@ -684,25 +867,20 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           <span className="ms-2">{formData.location}</span>
                         </div>
                         <div className="mb-2">
+                          <span className="fw-bold">Coordinates:</span>
+                          <span className="ms-2">
+                            {formData.latitude && formData.longitude
+                              ? `${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)}`
+                              : "Not specified"}
+                          </span>
+                        </div>
+                        <div className="mb-2">
                           <span className="fw-bold">Max Guests:</span>
                           <span className="ms-2">{formData.guestCount}</span>
                         </div>
                         <div className="mb-2">
                           <span className="fw-bold">Suggested Donation Amount (Per Person):</span>
-                          <span
-                            className="ms-2"
-                            style={{
-                              maxWidth: "150px",
-                              display: "inline-block",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              verticalAlign: "middle",
-                            }}
-                            title={formData.suggestedDonation ? `$${formData.suggestedDonation}` : "Not specified"}
-                          >
-                            {formData.suggestedDonation ? `$${formData.suggestedDonation}` : "Not specified"}
-                          </span>
+                          <span className="ms-2">{formData.suggestedDonation ? `$${formData.suggestedDonation}` : "Not specified"}</span>
                         </div>
                         <div className="mb-2">
                           <span className="fw-bold">Visibility:</span>
@@ -712,13 +890,13 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           <span className="fw-bold">Description:</span>
                           <span className="ms-2">{formData.description}</span>
                         </div>
-                        {(previewUrls.eventImage || event?.imageUrl) && (
+                        {previewUrls.eventImage && (
                           <div className="mb-2">
                             <span className="fw-bold">Event Image:</span>
                             <span
                               className="ms-2 text-primary"
                               style={{ cursor: "pointer" }}
-                              onClick={() => handleImagePreview(previewUrls.eventImage || event?.imageUrl || "")}
+                              onClick={() => handleImagePreview(previewUrls.eventImage!)}
                             >
                               View Event Image
                             </span>
@@ -739,71 +917,46 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                         <label className="form-check-label" htmlFor="termsCheck">
                           I confirm that all information is accurate.
                         </label>
-                        {errors.termsCheck && <div className="text-danger mt-2">{errors.termsCheck}</div>}
+                        {errors.termsCheck && (
+                          <div className="text-danger mt-2">{errors.termsCheck}</div>
+                        )}
                       </div>
-
-                      {errors.submit && <div className="text-danger mt-2">{errors.submit}</div>}
+                      {errors.submit && (
+                        <div className="text-danger mt-2">{errors.submit}</div>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
-
-              <div className="modal-footer" style={{ borderTop: "none", justifyContent: "space-between" }}>
-                <div>
-                  {isHost && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary me-2"
-                      onClick={handleSaveAsDraft}
-                      disabled={loading}
-                      style={{ cursor: loading ? "not-allowed" : "pointer", padding: "0.375rem 0.75rem", fontSize: "0.875rem" }}
-                    >
-                      Save as Draft
-                    </button>
-                  )}
+              <div className="modal-footer">
+                {currentStep > 1 && (
                   <button
                     type="button"
-                    className="btn btn-outline-secondary"
-                    onClick={skipStep}
+                    className="btn btn-outline-primary"
+                    onClick={prevStep}
                     disabled={loading}
-                    style={{ cursor: loading ? "not-allowed" : "pointer", padding: "0.375rem 0.75rem", fontSize: "0.875rem" }}
                   >
-                    Skip
+                    Back
                   </button>
-                </div>
-                <div>
-                  {currentStep > 1 && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-primary me-2"
-                      onClick={prevStep}
-                      disabled={loading}
-                      style={{ cursor: loading ? "not-allowed" : "pointer" }}
-                    >
-                      Back
-                    </button>
-                  )}
-                  {currentStep < totalSteps ? (
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={nextStep}
-                      disabled={loading}
-                      style={{ cursor: loading ? "not-allowed" : "pointer" }}
-                    >
-                      Continue
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={loading || !isTermsChecked}
-                      style={{ cursor: loading || !isTermsChecked ? "not-allowed" : "pointer" }}
-                    >
-                      {loading ? (event ? (event.isDraft ? "Saving..." : "Updating...") : "Creating...") : (event ? (event.isDraft ? "Save" : "Update Event") : "Create Event")}
-                    </button>
-                  )}
-                </div>
+                )}
+                {currentStep < totalSteps ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={nextStep}
+                    disabled={loading}
+                  >
+                    Continue
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading || !isTermsChecked}
+                  >
+                    {loading ? "Creating..." : "Create Event"}
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -825,7 +978,10 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
           }}
           onClick={closeImagePreview}
         >
-          <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-dialog modal-lg modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-content" style={{ background: "transparent", border: "none" }}>
               <div className="modal-header" style={{ border: "none", position: "relative" }}>
                 <button
@@ -837,7 +993,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
               </div>
               <div className="modal-body d-flex justify-content-center align-items-center">
                 <img
-                  src={showImagePreview || "/placeholder.svg"}
+                  src={showImagePreview}
                   alt="Preview"
                   style={{
                     maxWidth: "90%",
@@ -852,7 +1008,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         </div>
       )}
 
-      {showDraftModal && isHost && (
+      {showDraftModal && (
         <div
           className="modal"
           style={{
@@ -867,16 +1023,12 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
           }}
           onClick={() => setShowDraftModal(false)}
         >
-          <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-content">
-              <div
-                className="modal-header"
-                style={{
-                  background: "linear-gradient(135deg, #5144A1 0%, #6B5CE7 100%)",
-                  color: "white",
-                  borderBottom: "none",
-                }}
-              >
+              <div className="modal-header" style={{ background: "linear-gradient(135deg, #5144A1 0%, #6B5CE7 100%)", color: "white", borderBottom: "none" }}>
                 <h5 className="modal-title">Save Draft</h5>
                 <button
                   type="button"
@@ -891,10 +1043,9 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
               <div className="modal-footer" style={{ borderTop: "none", justifyContent: "center" }}>
                 <button
                   type="button"
-                  className="btn btn-primary me-2"
+                  className="btn btn-primary"
                   onClick={() => handleDraftModalAction("save")}
                   disabled={loading}
-                  style={{ cursor: loading ? "not-allowed" : "pointer" }}
                 >
                   Save as Draft
                 </button>
@@ -903,7 +1054,6 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                   className="btn btn-outline-secondary"
                   onClick={() => handleDraftModalAction("cancel")}
                   disabled={loading}
-                  style={{ cursor: loading ? "not-allowed" : "pointer" }}
                 >
                   Cancel
                 </button>
@@ -914,8 +1064,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
       )}
 
       <style jsx>{`
-        .text-primary { color: #5144a1 !important; }
-        .bg-primary { background-color: #5144a1 !important; }
+        .text-primary { color: #5144A1 !important; }
+        .bg-primary { background-color: #5144A1 !important; }
         .text-danger { color: #dc3545 !important; }
         .text-muted { color: #6c757d !important; }
         .form-progress { position: relative; }
@@ -924,7 +1074,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         .progress-line { z-index: 0; }
         .progress-label { color: #6c757d; }
         .progress-step.active .progress-label,
-        .progress-step.completed .progress-label { color: #5144a1; }
+        .progress-step.completed .progress-label { color: #5144A1; }
         .review-section-title { border-bottom: 1px solid #dee2e6; padding-bottom: 0.5rem; }
         .review-label { font-weight: 500; color: #495057; }
         .review-value { color: #6c757d; }
@@ -934,25 +1084,9 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         .input-group-text { height: 100% !important; padding: 0.375rem 0.75rem !important; }
         .form-control { height: 100% !important; padding: 0.375rem 0.75rem !important; }
         .input-group img { max-width: 60px !important; max-height: 60px !important; }
-        .modal-body::-webkit-scrollbar {
-          width: 8px;
-        }
-        .modal-body::-webkit-scrollbar-track {
-          background: #f1f1f1;
-        }
-        .modal-body::-webkit-scrollbar-thumb {
-          background: #888;
-          border-radius: 4px;
-        }
-        .modal-body::-webkit-scrollbar-thumb:hover {
-          background: #555;
-        }
-        .modal-dialog { width: 800px !important; max-width: 90% !important; }
-        .row { margin-left: -15px; margin-right: -15px; }
-        .col-md-6 { padding-left: 15px; padding-right: 15px; }
       `}</style>
     </>
-  )
-}
+  );
+};
 
-export default EventEditModal
+export default EventCreationForm;

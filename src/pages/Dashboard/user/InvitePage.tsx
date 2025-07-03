@@ -36,7 +36,11 @@ const InvitePage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await sendInvitation(email, selectedEventId);
+      await sendInvitation({
+        from: user?.email || "",
+        to: email,
+        eventId: selectedEventId,
+      });
       toast.success("Invitation sent successfully");
       setEmail("");
       setSelectedEventId("");

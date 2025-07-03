@@ -43,13 +43,21 @@ const Navbar: React.FC = () => {
     setIsModalOpen(true)
   }
 
+  // Function to scroll to the top of the page
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth", // Smooth scrolling for better UX
+    })
+  }
+
   return (
     <>
       <nav className={`navbar navbar-expand-lg fixed-top ${isScrolled ? "bg-white shadow-sm" : "bg-transparent"}`}>
         <div className="container">
-          <Link to="/" className="navbar-brand d-flex align-items-center">
+          <Link to="/" className="navbar-brand d-flex align-items-center" onClick={scrollToTop}>
             <Heart size={28} className="me-2 text-primary" />
-            <span className="fw-semibold">COMMONCHANGE</span>
+            <span className="fw-semibold">Acts of Sharing</span>
           </Link>
 
           <button
@@ -67,7 +75,11 @@ const Navbar: React.FC = () => {
             <div className="ms-auto d-flex align-items-center gap-3">
               <ul className="navbar-nav mb-2 mb-lg-0">
                 <li className="nav-item">
-                  <Link to="/" className={`nav-link ${location.pathname === "/" ? "active" : ""}`}>
+                  <Link
+                    to="/"
+                    className={`nav-link ${location.pathname === "/" ? "active" : ""}`}
+                    onClick={scrollToTop}
+                  >
                     Home
                   </Link>
                 </li>
@@ -75,12 +87,17 @@ const Navbar: React.FC = () => {
                   <Link
                     to="/how-it-works"
                     className={`nav-link ${location.pathname === "/how-it-works" ? "active" : ""}`}
+                    onClick={scrollToTop}
                   >
                     How It Works
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link to="/about" className={`nav-link ${location.pathname === "/about" ? "active" : ""}`}>
+                  <Link
+                    to="/about"
+                    className={`nav-link ${location.pathname === "/about" ? "active" : ""}`}
+                    onClick={scrollToTop}
+                  >
                     About Us
                   </Link>
                 </li>
@@ -92,7 +109,7 @@ const Navbar: React.FC = () => {
                     <button className="btn btn-outline-primary" onClick={logout} style={{ minWidth: "80px" }}>
                       Logout
                     </button>
-                    <Link to="/dashboard" className="btn btn-primary" style={{ minWidth: "80px" }}>
+                    <Link to="/dashboard" className="btn btn-primary" style={{ minWidth: "80px" }} onClick={scrollToTop}>
                       Dashboard
                     </Link>
                   </>

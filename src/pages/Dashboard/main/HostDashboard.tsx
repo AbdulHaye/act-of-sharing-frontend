@@ -10,13 +10,12 @@ import { useAuth } from "../../../context/AuthContext";
 import axiosInstance from "../../../api/axiosInstance";
 import { toast } from "react-toastify";
 
-// Interfaces for type safety
 interface Event {
   _id: string;
   title: string;
   location: string;
   date: string;
-  goalAmount: number;
+  suggestedDonation: number | null;
   guestCount: number;
   status: string;
   createdAt: string;
@@ -42,7 +41,7 @@ interface Pagination {
 interface Stat {
   id: number;
   title: string;
-  value: string;
+  value: string | number;
   icon: React.ReactNode;
 }
 
@@ -53,14 +52,13 @@ interface User {
 }
 
 interface TotalGoalResponse {
-  totalGoalAmount: number;
+  totalSuggestedDonation: number;
 }
 
 const HostDashboard: React.FC = () => {
-  // State declarations
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [totalRaised, setTotalRaised] = useState<number>(0);
-  const [totalGoalAmount, setTotalGoalAmount] = useState<number>(0);
+  const [totalSuggestedDonation, setTotalSuggestedDonation] = useState<number>(0);
   const [pagination, setPagination] = useState<Pagination>({
     currentPage: 1,
     totalPages: 1,
@@ -69,18 +67,15 @@ const HostDashboard: React.FC = () => {
   });
   const [eventsLoading, setEventsLoading] = useState<boolean>(false);
 
-  // Context and navigation
   const { user } = useAuth();
   const { events, getHostSpecificEvents } = useEvent();
   const navigate = useNavigate();
 
-  // Fetch host-specific events
   const fetchEvents = async (page: number = 1): Promise<void> => {
     if (!user?._id) return;
     setEventsLoading(true);
     try {
       const response = await getHostSpecificEvents(page, pagination.limit);
-      console.log("Fetched events response:", response);
       const paginationData = response.pagination || {};
       setPagination({
         currentPage: paginationData.currentPage || 1,
@@ -96,15 +91,12 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-  // Fetch host-specific total raised from external contributions
   const fetchHostTotalRaised = async (): Promise<void> => {
-    console.log("Fetching host external total raised...");
     try {
       const token: string = localStorage.getItem("token") || "";
       const response = await axiosInstance.get(`/contributions/total-funds`, {
         headers: { "Content-Type": "application/json", "x-auth-token": token },
       });
-      console.log("Fetched host external total raised response:", response.data);
       const totalFunds = Number(response.data.totalFunds) || 0;
       setTotalRaised(totalFunds);
     } catch (error: any) {
@@ -114,33 +106,29 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-  // Fetch total goal amount
-  const fetchTotalGoalAmount = async (): Promise<void> => {
+  const fetchTotalSuggestedDonation = async (): Promise<void> => {
     try {
       const token: string = localStorage.getItem("token") || "";
-      console.log("Fetching total goal amount with token:", token);
-      const response = await axiosInstance.get<TotalGoalResponse>("/events/total-goal-amount", {
+      const response = await axiosInstance.get<TotalGoalResponse>("/events/total-suggested-donation", {
         headers: { "Content-Type": "application/json", "x-auth-token": token },
       });
-      console.log("Fetched total goal amount response:", response.data);
-      const totalGoal = Number(response.data.totalGoalAmount) || 0;
-      setTotalGoalAmount(totalGoal);
+      const totalSuggested = Number(response.data.totalSuggestedDonation) || 0;
+      setTotalSuggestedDonation(totalSuggested);
     } catch (error: any) {
-      console.error("Error fetching total goal amount:", error);
-      setTotalGoalAmount(0);
+      console.error("Error fetching total suggested donation:", error);
+      setTotalSuggestedDonation(0);
     }
   };
 
-  // Fetch data on mount or pagination change
   useEffect(() => {
+    console.log("HostDashboard mounted, user:", user);
     if (user) {
       fetchHostTotalRaised();
       fetchEvents(pagination.currentPage);
-      fetchTotalGoalAmount();
+      fetchTotalSuggestedDonation();
     }
   }, [user, pagination.currentPage]);
 
-  // Compute upcoming events
   const upcomingEvents = useMemo(() => {
     if (!events?.length) return [];
     return events
@@ -155,13 +143,12 @@ const HostDashboard: React.FC = () => {
           day: "numeric",
           year: "numeric",
         }),
-        goalAmount: Number(event.goalAmount) || 0,
+        suggestedDonation: event.suggestedDonation !== null ? Number(event.suggestedDonation) : null,
         guests: Number(event.guestCount) || 0,
         status: event.status,
       }));
   }, [events]);
 
-  // Update pagination based on upcomingEvents length
   useEffect(() => {
     const totalItems = upcomingEvents.length;
     const totalPages = Math.ceil(totalItems / pagination.limit);
@@ -173,50 +160,44 @@ const HostDashboard: React.FC = () => {
     }));
   }, [upcomingEvents, pagination.limit]);
 
-  // Paginate the upcoming events
   const paginatedEvents = upcomingEvents.slice(
     (pagination.currentPage - 1) * pagination.limit,
     pagination.currentPage * pagination.limit
   );
 
-  // Handle page change
   const handlePageChange = (page: number): void => {
     if (page >= 1 && page <= pagination.totalPages) {
       setPagination((prev) => ({ ...prev, currentPage: page }));
     }
   };
 
-  // Compute stats
   const stats: Stat[] = useMemo(() => {
-    const totalEvents = events.length || 0;
+    const totalEvents = events?.length || 0;
     const totalGuests = events?.length
       ? events.reduce((sum: number, event: Event) => sum + (Number(event.guestCount) || 0), 0)
       : 0;
-    const totalIndividualGoals = events?.length
-      ? events.reduce((sum: number, event: Event) => sum + (Number(event.goalAmount) || 0), 0)
+    const totalIndividualSuggestedDonations = events?.length
+      ? events.reduce((sum: number, event: Event) => sum + (event.suggestedDonation !== null ? Number(event.suggestedDonation) : 0), 0)
       : 0;
 
     return [
-      { id: 1, title: "Total Events", value: totalEvents.toString(), icon: <Calendar size={24} /> },
-      { id: 2, title: "Total Guests", value: totalGuests.toString(), icon: <Users size={24} /> },
-      { id: 5, title: "Total Goal Amount", value: `$${totalIndividualGoals.toLocaleString()}`, icon: <DollarSign size={24} /> },
+      { id: 1, title: "Total Events", value: totalEvents, icon: <Calendar size={24} /> },
+      { id: 2, title: "Total Guests", value: totalGuests, icon: <Users size={24} /> },
       { id: 3, title: "Total Donations", value: `$${totalRaised.toLocaleString()}`, icon: <DollarSign size={24} /> },
+      { id: 4, title: "Total Suggested Donations", value: `$${totalIndividualSuggestedDonations.toLocaleString()}`, icon: <DollarSign size={24} /> },
     ];
-  }, [events, totalRaised, totalGoalAmount]);
+  }, [events, totalRaised, totalSuggestedDonation]);
 
-  // Get user name
   const getUserName = (): string => {
     return user?.firstname && user?.lastname ? `${user.firstname} ${user.lastname}` : "Host";
   };
   const userName: string = getUserName();
 
-  // Handle modal close
   const handleModalClose = (): void => {
     setIsModalOpen(false);
     fetchEvents(pagination.currentPage);
   };
 
-  // Render table rows using paginated events
   const renderTableRows = (): JSX.Element => {
     if (eventsLoading) {
       return (
@@ -236,10 +217,12 @@ const HostDashboard: React.FC = () => {
             <Calendar size={48} className="text-muted mb-3" />
             <h5 className="text-muted">No Upcoming Events</h5>
             <p className="text-muted">You don't have any events scheduled.</p>
-            <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
-              <Plus size={18} className="me-2" />
-              Host New Event
-            </button>
+            <div className="d-flex flex-column gap-2 align-items-center">
+              {/* <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+                <Plus size={18} className="me-2" />
+                Host New Event
+              </button> */}
+            </div>
           </td>
         </tr>
       );
@@ -251,7 +234,9 @@ const HostDashboard: React.FC = () => {
             <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{event.name}</td>
             <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{event.location}</td>
             <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{event.date}</td>
-            <td className="table-cell px-4 py-2" style={{ width: "15%" }}>${event.goalAmount.toLocaleString()}</td>
+            <td className="table-cell px-4 py-2" style={{ width: "15%" }}>
+              {event.suggestedDonation !== null ? `$${event.suggestedDonation.toLocaleString()}` : "Not specified"}
+            </td>
             <td className="table-cell px-4 py-2" style={{ width: "15%" }}>{event.guests}</td>
             <td className="table-cell px-4 py-2" style={{ width: "10%" }}>{event.status}</td>
           </tr>
@@ -273,7 +258,7 @@ const HostDashboard: React.FC = () => {
                   <strong>${totalRaised.toLocaleString()}</strong> from external contributions for charitable causes.
                 </p>
               </div>
-              <div className="text-md-end">
+              <div className="text-md-end d-flex flex-column gap-2">
                 <button onClick={() => setIsModalOpen(true)} className="btn btn-light">
                   <Plus size={18} className="me-2" />
                   Host New Event
@@ -302,10 +287,12 @@ const HostDashboard: React.FC = () => {
         <div className="card border-0 shadow-sm mb-4 bg-white">
           <div className="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-center">
             <h5 className="card-title mb-0 text-lg font-semibold">Upcoming Events</h5>
-            <button onClick={() => setIsModalOpen(true)} className="btn btn-sm btn-primary mt-2 mt-md-0">
-              <Plus size={16} className="me-1" />
-              New Event
-            </button>
+            <div className="d-flex gap-2 mt-2 mt-md-0">
+              {/* <button onClick={() => setIsModalOpen(true)} className="btn btn-sm btn-primary">
+                <Plus size={16} className="me-1" />
+                New Event
+              </button> */}
+            </div>
           </div>
           <div className="card-body p-0">
             <div className="table-responsive" style={{ maxHeight: "calc(100vh - 360px)" }}>
@@ -315,7 +302,7 @@ const HostDashboard: React.FC = () => {
                     <th className="table-header px-4 py-2" style={{ width: "20%" }}>Event Name</th>
                     <th className="table-header px-4 py-2" style={{ width: "20%" }}>Location</th>
                     <th className="table-header px-4 py-2" style={{ width: "20%" }}>Date</th>
-                    <th className="table-header px-4 py-2" style={{ width: "15%" }}>Amount</th>
+                    <th className="table-header px-4 py-2" style={{ width: "15%" }}>Suggested Donation</th>
                     <th className="table-header px-4 py-2" style={{ width: "15%" }}>Guests</th>
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Status</th>
                   </tr>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type ReactNode, useRef, useEffect } from "react";
+import React, { type ReactNode, useRef, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Heart,
@@ -18,7 +18,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { useEvent } from "../../context/EventContext";
+import axiosInstance from "../../api/axiosInstance";
 import "../../styles/dashboard.css";
 
 interface DashboardLayoutProps {
@@ -28,18 +28,50 @@ interface DashboardLayoutProps {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
-
-  const { getHostSpecificEvents } = useEvent();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [dropdownOpen, setDropdownOpen] = React.useState(false);
-  const [notificationsOpen, setNotificationsOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [draftCount, setDraftCount] = useState(0);
 
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notificationsDropdownRef = useRef<HTMLDivElement>(null);
+  const baseUrl = import.meta.env.VITE_API_URL;
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }, [location.pathname]);
+
+  // Fetch draft count using /events/drafts API
+  useEffect(() => {
+    const fetchDraftCount = async () => {
+      if (user?.id) {
+        try {
+          const token = localStorage.getItem("token") || "";
+          const params = user.role?.toLowerCase() === "host" ? { hostId: user.id } : {};
+          const response = await axiosInstance.get(`${baseUrl}/events/drafts`, {
+            headers: { "x-auth-token": token },
+            params: { page: 1, limit: 50, ...params },
+          });
+          const draftEvents = response.data.events || [];
+          setDraftCount(draftEvents.length);
+        } catch (err) {
+          console.error("Error fetching draft count:", err);
+          setDraftCount(0);
+        }
+      }
+    };
+
+    fetchDraftCount();
+  }, [user?.id, user?.role, baseUrl]);
+
+  // Handle click outside for dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -77,7 +109,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         path: "/dashboard/my-events",
         icon: <Calendar size={20} />,
         label:
-          user.role === "guest" || user.role === "admin"
+          userRole === "guest" || userRole === "admin"
             ? "Events"
             : "My Events",
       },
@@ -99,21 +131,29 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         { path: "/dashboard/users", icon: <Users size={20} />, label: "Users" },
         { path: "/dashboard/request-assistance", icon: <Users size={20} />, label: "Request Assistance" },
         { path: "/dashboard/contactus", icon: <Users size={20} />, label: "Contact Us" },
-        { path: "/dashboard/stories", icon: <Users size={20} />, label: "Stories" }, // Added Stories tab for admins
+        { path: "/dashboard/stories", icon: <Users size={20} />, label: "Stories" },
+        // { path: "/dashboard/draft-events", icon: <Calendar size={20} />, label: `Draft Events (${draftCount})` },
       ];
     } else if (userRole === "host") {
       return [
         ...commonItems,
-        { path: "/dashboard/invite", icon: <Users size={20} />, label: "Invite" },
+        { path: "/dashboard/draft-events", icon: <Calendar size={20} />, label: `Draft Events (${draftCount})` },
+        // { path: "/dashboard/invite", icon: <Users size={20} />, label: "Invite" },
       ];
     } else {
-      return [
-        ...commonItems,
-      ];
+      return [...commonItems];
     }
   };
 
   const navItems = getNavItems();
+
+  // Function to scroll to the top of the page
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   const notifications = [
     {
@@ -131,9 +171,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
       <div className={`dashboard-sidebar ${sidebarOpen ? "show" : ""}`}>
         <div className="sidebar-header">
-          <Link to="/" className="sidebar-brand">
+          <Link to="/" className="sidebar-brand" onClick={scrollToTop}>
             <Heart size={24} className="text-primary me-2" />
-            <span>COMMONCHANGE</span>
+            <span>Acts of Sharing</span>
           </Link>
           <button className="sidebar-close d-lg-none" onClick={closeSidebar}>
             <X size={20} />
@@ -141,8 +181,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
 
         <div className="sidebar-user">
-          <div className="user-avatar">{userName.charAt(0).toUpperCase()}</div>
-          <div className="user-info">
+          <div className="user-avatar">{userName.charAt(0).toUpperCase()}</div>          <div className="user-info">
             <h6 className="mb-0">{userName}</h6>
             <span className="user-role">
               {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
@@ -158,7 +197,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 className={`sidebar-link ${
                   location.pathname === item.path ? "active" : ""
                 }`}
-                onClick={closeSidebar}
+                onClick={() => {
+                  closeSidebar();
+                  scrollToTop();
+                }}
               >
                 {item.icon}
                 <span>{item.label}</span>
@@ -170,7 +212,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               to="/"
               className="sidebar-link text-danger"
               onClick={() => {
-                closeSidebar(), logout();
+                closeSidebar();
+                logout();
+                scatterToTop();
               }}
             >
               <LogOut size={20} />
@@ -187,8 +231,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               <Menu size={24} />
             </button>
             <h1 className="header-title">
-              {navItems.find((item) => item.path === location.pathname)
-                ?.label || "Dashboard"}
+              {navItems.find((item) => item.path === location.pathname)?.label || "Dashboard"}
             </h1>
           </div>
 
@@ -215,7 +258,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   <span>Signed in as</span>
                   <h6 className="mb-0">{userName}</h6>
                 </div>
-                <Link to="/dashboard/profile" className="dropdown-item">
+                <Link
+                  to="/dashboard/profile"
+                  className="dropdown-item"
+                  onClick={scrollToTop}
+                >
                   <User size={16} className="me-2" />
                   <span>Profile</span>
                 </Link>
@@ -223,7 +270,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <Link
                   to="/"
                   className="dropdown-item text-danger"
-                  onClick={logout}
+                  onClick={() => {
+                    logout();
+                    scrollToTop();
+                  }}
                 >
                   <LogOut size={16} className="me-2" />
                   <span>Logout</span>

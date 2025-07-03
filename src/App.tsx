@@ -12,6 +12,7 @@ import HostDashboard from "./pages/Dashboard/main/HostDashboard";
 import GuestDashboard from "./pages/Dashboard/main/GuestDashboard";
 import ProfilePage from "./pages/Dashboard/user/ProfilePage";
 import MyEventsPage from "./pages/Dashboard/events/MyEventsPage";
+import DraftEventsPage from "./pages/Dashboard/events/DraftEventsPage";
 import ProtectedRoute from "./middleware/ProtectedRoute";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastContainer } from "react-toastify";
@@ -31,13 +32,15 @@ import RequestsPage from "./pages/Dashboard/user/RequestsPage";
 import ContactPage from "./pages/Dashboard/user/ContanctPage";
 import StoriesPage from "./pages/Dashboard/user/StoriesPage";
 import ResetPasswordPage from "./pages/Dashboard/user/ResetPasswordPage";
-import VerifyEmail from "./components/auth/email-verify"; // Added import for VerifyEmail
+import VerifyEmail from "./components/auth/email-verify";
+import StoryCapturePage from "./pages/Dashboard/user/StoryCapturePage";
+import StartVotingPage from "./pages/Dashboard/user/StartVotingPage";
+import VotingResultsPage from "./pages/Dashboard/user/VotingResultsPage";
 
 const stripePromise = loadStripe(
-  "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
+  "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr/4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
 );
 
-// Component to handle redirect bas
 const DashboardRedirect: React.FC = () => {
   const { user } = useAuth();
   if (!user) {
@@ -49,11 +52,13 @@ const DashboardRedirect: React.FC = () => {
 
 function App() {
   const location = useLocation();
-  const hideNavbarAndFooter =
-    location.pathname.startsWith("/payment/") ||
-    location.pathname.startsWith("/dashboard") ||
-    location.pathname.startsWith("/checkout") ||
-    location.pathname.startsWith("/verify-email"); // Added verify-email to hide Navbar and Footer
+  const hideNavbarAndFooter = location.pathname.startsWith("/payment/") ||
+    location.pathname.startsWith("/dashboard/") ||
+    location.pathname.startsWith("/checkout/") ||
+    location.pathname.startsWith("/verify-email") ||
+    location.pathname === "/story-capture" ||
+    location.pathname === "/start-voting" ||
+    location.pathname === "/voting-result";
 
   return (
     <Elements stripe={stripePromise}>
@@ -71,19 +76,14 @@ function App() {
                 <Route path="/payment/:eventId" element={<DonationPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
-
-                <Route
-                  element={<ProtectedRoute allowedRoles={["admin", "host"]} />}
-                >
+                
+                <Route element={<ProtectedRoute allowedRoles={["admin", "host"]} />}>
                   <Route path="/create-event" element={<CreateEventPage />} />
                   <Route path="/dashboard/invite" element={<InvitePage />} />
+                  <Route path="/dashboard/draft-events" element={<DraftEventsPage />} />
                 </Route>
 
-                <Route
-                  element={
-                    <ProtectedRoute allowedRoles={["admin", "host", "guest"]} />
-                  }
-                >
+                <Route element={<ProtectedRoute allowedRoles={["admin", "host", "guest"]} />}>
                   <Route path="/dashboard" element={<DashboardPage />}>
                     <Route index element={<DashboardRedirect />} />
                     <Route path="admin" element={<AdminDashboard />} />
@@ -91,24 +91,19 @@ function App() {
                     <Route path="guest" element={<GuestDashboard />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="my-events" element={<MyEventsPage />} />
-                    <Route
-                      path="contributions"
-                      element={<ContributionsPage />}
-                    />
+                    <Route path="contributions" element={<ContributionsPage />} />
                     <Route path="users" element={<UsersPage />} />
-                    <Route
-                      path="request-assistance"
-                      element={<RequestsPage />}
-                    />
+                    <Route path="request-assistance" element={<RequestsPage />} />
                     <Route path="contactus" element={<ContactPage />} />
                     <Route path="stories" element={<StoriesPage />} />
                   </Route>
+                  <Route path="/story-capture" element={<StoryCapturePage />} />
+                  <Route path="/start-voting" element={<StartVotingPage />} />
+                  <Route path="/voting-result" element={<VotingResultsPage />} />
                 </Route>
               </Routes>
             </main>
-
             {!hideNavbarAndFooter && <Footer />}
-
             <ToastContainer
               position="top-center"
               autoClose={1000}
