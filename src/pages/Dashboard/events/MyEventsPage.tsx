@@ -1,54 +1,54 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import axiosInstance from "../../../api/axiosInstance"
-import { Calendar, MapPin, Users, DollarSign, Edit, Trash2, Info, UserPlus, Eye, Vote, BarChart3 } from "lucide-react"
-import { useEvent } from "../../../context/EventContext"
-import { useAuth } from "../../../context/AuthContext"
-import DashboardLayout from "../../../components/dashboard/DashboardLayout"
-import EventEditModal from "../modals/EventEditModal"
-import { toast } from "react-toastify"
+import type React from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../../api/axiosInstance";
+import { Calendar, MapPin, Users, DollarSign, Edit, Trash2, Info, UserPlus, Eye, Vote, BarChart3 } from "lucide-react";
+import { useEvent } from "../../../context/EventContext";
+import { useAuth } from "../../../context/AuthContext";
+import DashboardLayout from "../../../components/dashboard/DashboardLayout";
+import EventEditModal from "../modals/EventEditModal";
+import { toast } from "react-toastify";
 
 interface Event {
-  _id: string
-  title: string
-  location: string
-  date: string
-  time: string
-  guestCount: number
-  goalAmount: number
-  suggestedDonation: number
-  imageUrl?: string
-  isPublic: boolean
-  createdAt: string
-  hostId: string | { _id: string }
-  status?: string
-  isDraft?: boolean
+  _id: string;
+  title: string;
+  location: string;
+  date: string;
+  time: string;
+  guestCount: number;
+  goalAmount: number;
+  suggestedDonation: number;
+  imageUrl?: string;
+  isPublic: boolean;
+  createdAt: string;
+  hostId: string | { _id: string };
+  status?: string;
+  isDraft?: boolean;
 }
 
 interface DeleteConfirmationModalProps {
-  show: boolean
-  onHide: () => void
-  onConfirm: () => void
+  show: boolean;
+  onHide: () => void;
+  onConfirm: () => void;
 }
 
 interface InviteModalProps {
-  show: boolean
-  onHide: () => void
-  event: Event | null
+  show: boolean;
+  onHide: () => void;
+  event: Event | null;
 }
 
 interface Pagination {
-  currentPage: number
-  totalPages: number
-  totalEvents: number
-  limit: number
+  currentPage: number;
+  totalPages: number;
+  totalEvents: number;
+  limit: number;
 }
 
 const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ show, onHide, onConfirm }) => {
-  if (!show) return null
+  if (!show) return null;
 
   return (
     <div className="modal-backdrop">
@@ -69,24 +69,24 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ show,
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
-  const [guestEmail, setGuestEmail] = useState("")
-  const baseUrl = import.meta.env.VITE_API_URL
-  const { user } = useAuth()
+  const [guestEmail, setGuestEmail] = useState("");
+  const baseUrl = import.meta.env.VITE_BASE_URL; // Consistent with homepage
+  const { user } = useAuth();
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.(com|org|net|edu|gov)$/i
-    return emailRegex.test(email)
-  }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.(com|org|net|edu|gov)$/i;
+    return emailRegex.test(email);
+  };
 
   const handleSendInvitation = async () => {
     if (event && guestEmail && user?.email) {
       if (!validateEmail(guestEmail)) {
-        toast.error("Please enter a valid email address (e.g., user@domain.com).")
-        return
+        toast.error("Please enter a valid email address (e.g., user@domain.com).");
+        return;
       }
 
       try {
@@ -94,32 +94,32 @@ const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
           from: user.email,
           eventId: event._id,
           to: guestEmail,
-        })
-        toast.success("Invitation sent successfully!")
-        setGuestEmail("")
-        onHide()
+        });
+        toast.success("Invitation sent successfully!");
+        setGuestEmail("");
+        onHide();
       } catch (error) {
-        console.error("Error sending invitation:", error)
-        const message = error.response?.data?.message || "An error occurred while sending the invitation."
-        toast.error(`Failed to send invitation: ${message}`)
+        console.error("Error sending invitation:", error);
+        const message = error.response?.data?.message || "An error occurred while sending the invitation.";
+        toast.error(`Failed to send invitation: ${message}`);
       }
     } else {
-      toast.error("Please enter a valid email address or check user authentication.")
+      toast.error("Please enter a valid email address or check user authentication.");
     }
-  }
+  };
 
   const handleClear = () => {
-    setGuestEmail("")
-  }
+    setGuestEmail("");
+  };
 
-  if (!show || !event) return null
+  if (!show || !event) return null;
 
   return (
     <div
       className="modal-backdrop"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
-          onHide()
+          onHide();
         }
       }}
     >
@@ -167,121 +167,125 @@ const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const MyEventsPage: React.FC = () => {
-  const { events, loading, error, getHostSpecificEvents, deleteEvent } = useEvent()
-  const { user } = useAuth()
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [eventIdToDelete, setEventIdToDelete] = useState<string | null>(null)
-  const [isDeleting, setIsDeleting] = useState<string | null>(null)
-  const [showInviteModal, setShowInviteModal] = useState(false)
-  const navigate = useNavigate()
-  const baseUrl = import.meta.env.VITE_API_URL
+  const { events, loading, error, getHostSpecificEvents, deleteEvent } = useEvent();
+  const { user } = useAuth();
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [eventIdToDelete, setEventIdToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const navigate = useNavigate();
+  const baseUrl = import.meta.env.VITE_BASE_URL; // Consistent with homepage
   const [pagination, setPagination] = useState<Pagination>({
     currentPage: 1,
     totalPages: 1,
     totalEvents: 0,
     limit: 10,
-  })
+  });
+
+  // Debug: Log the base URL
+  console.log("Base URL in MyEventsPage:", baseUrl);
 
   const fetchEvents = async (page: number = 1) => {
-    if (!user?.id) return
+    if (!user?.id) return;
     try {
-      const response = await getHostSpecificEvents(page, pagination.limit, false)
-      console.log("Host-specific events fetched in component:", response.events)
+      const response = await getHostSpecificEvents(page, pagination.limit, false);
+      console.log("Host-specific events fetched:", response.events);
       setPagination({
         currentPage: response.pagination?.currentPage || 1,
         totalPages: response.pagination?.totalPages || 1,
         totalEvents: response.pagination?.totalEvents || 0,
         limit: response.pagination?.limit || 10,
-      })
+      });
     } catch (err) {
-      console.error("Error fetching host-specific events:", err)
-      toast.error("Failed to fetch events")
+      console.error("Error fetching host-specific events:", err);
+      toast.error("Failed to fetch events");
     }
-  }
+  };
 
   useEffect(() => {
     if (user?.id) {
-      fetchEvents(pagination.currentPage)
+      fetchEvents(pagination.currentPage);
     }
-  }, [user?.id, pagination.currentPage])
+  }, [user?.id, pagination.currentPage]);
 
   const handleEditEvent = (event: Event) => {
-    setSelectedEvent(event)
-    setShowEditModal(true)
-  }
+    setSelectedEvent(event);
+    setShowEditModal(true);
+  };
 
   const handleDeleteEvent = (eventId: string) => {
-    setEventIdToDelete(eventId)
-    setShowDeleteModal(true)
-  }
+    setEventIdToDelete(eventId);
+    setShowDeleteModal(true);
+  };
 
   const handleInvite = (event: Event) => {
-    setSelectedEvent(event)
-    setShowInviteModal(true)
-  }
+    setSelectedEvent(event);
+    setShowInviteModal(true);
+  };
 
   const confirmDeleteEvent = async () => {
-    if (!eventIdToDelete) return
+    if (!eventIdToDelete) return;
 
-    setIsDeleting(eventIdToDelete)
-    setShowDeleteModal(false)
+    setIsDeleting(eventIdToDelete);
+    setShowDeleteModal(false);
 
     try {
-      await deleteEvent(eventIdToDelete)
-      toast.success("Event deleted successfully")
-      fetchEvents(pagination.currentPage)
+      await deleteEvent(eventIdToDelete);
+      toast.success("Event deleted successfully");
+      fetchEvents(pagination.currentPage);
     } catch (err) {
-      console.error("Failed to delete event:", err)
-      toast.error("Failed to delete event")
+      console.error("Failed to delete event:", err);
+      toast.error("Failed to delete event");
     } finally {
-      setIsDeleting(null)
-      setEventIdToDelete(null)
+      setIsDeleting(null);
+      setEventIdToDelete(null);
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return isNaN(date.getTime())
       ? "N/A"
       : date.toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",
           day: "numeric",
-        })
-  }
+        });
+  };
 
   const isUpcoming = (dateString: string) => {
-    const eventDate = new Date(dateString)
-    return eventDate > new Date()
-  }
+    const eventDate = new Date(dateString);
+    return eventDate > new Date();
+  };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.style.display = "none"
-    e.currentTarget.nextElementSibling!.style.display = "flex"
-  }
+    console.error("Image failed to load:", e.currentTarget.src);
+    e.currentTarget.style.display = "none";
+    e.currentTarget.nextElementSibling!.style.display = "flex";
+  };
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= pagination.totalPages) {
-      setPagination((prev) => ({ ...prev, currentPage: page }))
+      setPagination((prev) => ({ ...prev, currentPage: page }));
     }
-  }
+  };
 
   if (!user) {
-    return null
+    return null;
   }
 
-  const userName = `${user.firstname || "User"} ${user.lastname || ""}`
-  const userRole = user.role || "host"
+  const userName = `${user.firstname || "User"} ${user.lastname || ""}`;
+  const userRole = user.role || "host";
 
   const sortedEvents = [...events]
     .filter((event) => !event.isDraft)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <DashboardLayout userRole={userRole as "admin" | "host" | "guest"} userName={userName}>
@@ -311,110 +315,116 @@ const MyEventsPage: React.FC = () => {
             </div>
           ) : (
             <div className="events-grid">
-              {sortedEvents.map((event) => (
-                <div key={event._id} className={`event-card ${!isUpcoming(event.date) ? "past-event" : ""}`}>
-                  <div className="card-header">
-                    <div className="image-container">
-                      {event.imageUrl ? (
-                        <img
-                          src={`${baseUrl}${event.imageUrl}`}
-                          alt={event.title}
-                          className="event-image"
-                          onError={handleImageError}
-                        />
-                      ) : (
-                        <div className="placeholder-image">
-                          <Calendar size={32} />
+              {sortedEvents.map((event) => {
+                const imageUrl = event.imageUrl ? `${baseUrl}${event.imageUrl}` : null;
+                // Debug: Log each image URL
+                console.log("Event Image URL:", imageUrl);
+
+                return (
+                  <div key={event._id} className={`event-card ${!isUpcoming(event.date) ? "past-event" : ""}`}>
+                    <div className="card-header">
+                      <div className="image-container">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={event.title}
+                            className="event-image"
+                            onError={handleImageError}
+                          />
+                        ) : (
+                          <div className="placeholder-image">
+                            <Calendar size={32} />
+                          </div>
+                        )}
+                        {!isUpcoming(event.date) && <div className="event-status">Past Event</div>}
+                      </div>
+                    </div>
+
+                    <div className="card-body">
+                      <div className="event-title-section">
+                        <h3 className="event-title">{event.title}</h3>
+                      </div>
+
+                      <div className="event-details">
+                        <div className="detail-item">
+                          <Calendar size={16} />
+                          <span>{formatDate(event.date)}</span>
+                        </div>
+                        <div className="detail-item">
+                          <MapPin size={16} />
+                          <span>{event.location || "N/A"}</span>
+                        </div>
+                        <div className="detail-item">
+                          <Users size={16} />
+                          <span>Max Guests: {event.guestCount || 0}</span>
+                        </div>
+                        <div className="detail-item">
+                          <DollarSign size={16} />
+                          <span>Suggested: ${event.suggestedDonation || "0"}</span>
+                        </div>
+                        <div className="detail-item">
+                          <Info size={16} />
+                          <span>{event.isPublic ? "Public" : "Private"}</span>
+                        </div>
+                      </div>
+
+                      {(user.role === "admin" || (user.role === "host" && isUpcoming(event.date))) && (
+                        <div className="action-buttons">
+                          <div className="edit-delete-actions">
+                            <button
+                              className="btn btn-outline"
+                              onClick={() => handleEditEvent(event)}
+                              disabled={isDeleting === event._id}
+                            >
+                              <Edit size={16} />
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-outline"
+                              onClick={() => handleDeleteEvent(event._id)}
+                              disabled={isDeleting === event._id}
+                            >
+                              <Trash2 size={16} />
+                              {isDeleting === event._id ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
+
+                          <div className="primary-actions">
+                            <button
+                              className="btn btn-primary"
+                              onClick={() => navigate("/story-capture", { state: { eventId: event._id } })}
+                            >
+                              <Eye size={16} />
+                              Story Capture
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => handleInvite(event)}>
+                              <UserPlus size={16} />
+                              Invite
+                            </button>
+                          </div>
+
+                          <div className="secondary-actions">
+                            <button
+                              className="btn btn-outline"
+                              onClick={() => navigate("/start-voting", { state: { eventId: event._id } })}
+                            >
+                              <Vote size={16} />
+                              Start Voting
+                            </button>
+                            <button
+                              className="btn btn-outline"
+                              onClick={() => navigate("/voting-result", { state: { eventId: event._id } })}
+                            >
+                              <BarChart3 size={16} />
+                              Results
+                            </button>
+                          </div>
                         </div>
                       )}
-                      {!isUpcoming(event.date) && <div className="event-status">Past Event</div>}
                     </div>
                   </div>
-
-                  <div className="card-body">
-                    <div className="event-title-section">
-                      <h3 className="event-title">{event.title}</h3>
-                    </div>
-
-                    <div className="event-details">
-                      <div className="detail-item">
-                        <Calendar size={16} />
-                        <span>{formatDate(event.date)}</span>
-                      </div>
-                      <div className="detail-item">
-                        <MapPin size={16} />
-                        <span>{event.location || "N/A"}</span>
-                      </div>
-                      <div className="detail-item">
-                        <Users size={16} />
-                        <span>Max Guests: {event.guestCount || 0}</span>
-                      </div>
-                      <div className="detail-item">
-                        <DollarSign size={16} />
-                        <span>Suggested: ${event.suggestedDonation || "0"}</span>
-                      </div>
-                      <div className="detail-item">
-                        <Info size={16} />
-                        <span>{event.isPublic ? "Public" : "Private"}</span>
-                      </div>
-                    </div>
-
-                    {(user.role === "admin" || (user.role === "host" && isUpcoming(event.date))) && (
-                      <div className="action-buttons">
-                        <div className="edit-delete-actions">
-                          <button
-                            className="btn btn-outline"
-                            onClick={() => handleEditEvent(event)}
-                            disabled={isDeleting === event._id}
-                          >
-                            <Edit size={16} />
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-outline"
-                            onClick={() => handleDeleteEvent(event._id)}
-                            disabled={isDeleting === event._id}
-                          >
-                            <Trash2 size={16} />
-                            {isDeleting === event._id ? "Deleting..." : "Delete"}
-                          </button>
-                        </div>
-
-                        <div className="primary-actions">
-                          <button
-                            className="btn btn-primary"
-                            onClick={() => navigate("/story-capture", { state: { eventId: event._id } })}
-                          >
-                            <Eye size={16} />
-                            Story Capture
-                          </button>
-                          <button className="btn btn-secondary" onClick={() => handleInvite(event)}>
-                            <UserPlus size={16} />
-                            Invite
-                          </button>
-                        </div>
-
-                        <div className="secondary-actions">
-                          <button
-                            className="btn btn-outline"
-                            onClick={() => navigate("/start-voting", { state: { eventId: event._id } })}
-                          >
-                            <Vote size={16} />
-                            Start Voting
-                          </button>
-                          <button
-                            className="btn btn-outline"
-                            onClick={() => navigate("/voting-result", { state: { eventId: event._id } })}
-                          >
-                            <BarChart3 size={16} />
-                            Results
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           {sortedEvents.length > 0 && (
@@ -451,8 +461,8 @@ const MyEventsPage: React.FC = () => {
         <EventEditModal
           show={showEditModal}
           onHide={() => {
-            setShowEditModal(false)
-            setSelectedEvent(null)
+            setShowEditModal(false);
+            setSelectedEvent(null);
           }}
           event={selectedEvent}
         />
@@ -460,8 +470,8 @@ const MyEventsPage: React.FC = () => {
         <DeleteConfirmationModal
           show={showDeleteModal}
           onHide={() => {
-            setShowDeleteModal(false)
-            setEventIdToDelete(null)
+            setShowDeleteModal(false);
+            setEventIdToDelete(null);
           }}
           onConfirm={confirmDeleteEvent}
         />
@@ -789,7 +799,7 @@ const MyEventsPage: React.FC = () => {
           margin: 0;
           font-size: 1.25rem;
           font-weight: 600;
-          color:rgb(151, 153, 156);
+          color: rgb(151, 153, 156);
         }
 
         .modal-body {
@@ -982,7 +992,7 @@ const MyEventsPage: React.FC = () => {
         }
       `}</style>
     </DashboardLayout>
-  )
-}
+  );
+};
 
-export default MyEventsPage
+export default MyEventsPage;

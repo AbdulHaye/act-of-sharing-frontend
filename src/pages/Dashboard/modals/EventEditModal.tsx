@@ -52,6 +52,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
   const [marker, setMarker] = useState<google.maps.Marker | null>(null)
   const [lastSelectedLocation, setLastSelectedLocation] = useState("")
   const totalSteps = 2
+  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([])
+  const [autocompleteService, setAutocompleteService] = useState<google.maps.places.AutocompleteService | null>(null)
 
   const [formData, setFormData] = useState<EventFormData>({
     title: "",
@@ -112,7 +114,9 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
       try {
         const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary
         const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary
-        const { Autocomplete } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary
+        const { Autocomplete, AutocompleteService } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary
+        const autoService = new AutocompleteService()
+        setAutocompleteService(autoService)
 
         const mapInstance = new Map(mapRef.current, {
           center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
@@ -141,6 +145,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
             }))
             setErrors((prev) => ({ ...prev, location: "" }))
             setLastSelectedLocation(location)
+            setSuggestions([])
 
             mapInstance.setCenter({ lat, lng })
             mapInstance.setZoom(15)
@@ -211,6 +216,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
           }))
           setErrors((prev) => ({ ...prev, location: "" }))
           setLastSelectedLocation(formattedAddress)
+          setSuggestions([])
 
           if (autocompleteRef.current) {
             autocompleteRef.current.value = formattedAddress
@@ -254,6 +260,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
             longitude: lng,
           }))
           setLastSelectedLocation(formattedAddress)
+          setSuggestions([])
 
           if (map) {
             if (results[0].geometry.viewport) {
@@ -274,6 +281,63 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
           setMarker(newMarker)
         } else {
           toast.error("Unable to find the location. Please try again.")
+        }
+      })
+    }
+  }
+
+  // Fetch location suggestions as user types
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setFormData((prev) => ({ ...prev, location: value }))
+    setErrors((prev) => ({ ...prev, location: "" }))
+
+    if (autocompleteService && value) {
+      autocompleteService.getPlacePredictions(
+        { input: value, types: ["address"] },
+        (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            setSuggestions(predictions)
+          } else {
+            setSuggestions([])
+          }
+        }
+      )
+    } else {
+      setSuggestions([])
+    }
+  }
+
+  // Select a suggestion
+  const handleSuggestionSelect = (placeId: string) => {
+    if (map) {
+      const geocoder = new google.maps.Geocoder()
+      geocoder.geocode({ placeId }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          const location = results[0].formatted_address || ""
+          const lat = results[0].geometry.location.lat()
+          const lng = results[0].geometry.location.lng()
+
+          setFormData((prev) => ({
+            ...prev,
+            location,
+            latitude: lat,
+            longitude: lng,
+          }))
+          setLastSelectedLocation(location)
+          setSuggestions([])
+
+          if (autocompleteRef.current) autocompleteRef.current.value = location
+
+          map.setCenter({ lat, lng })
+          map.setZoom(15)
+
+          if (marker) marker.setMap(null)
+          const newMarker = new google.maps.Marker({
+            map,
+            position: { lat, lng },
+          })
+          setMarker(newMarker)
         }
       })
     }
@@ -704,7 +768,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                         </div>
                       </div>
 
-                      <div className="mb-3">
+                      <div className="mb-3 position-relative">
                         <label htmlFor="location" className="form-label">
                           Location <span style={{ color: "red" }}>*</span>
                         </label>
@@ -718,7 +782,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                             name="location"
                             ref={autocompleteRef}
                             value={formData.location}
-                            onChange={handleInputChange}
+                            onChange={handleLocationChange}
                             onBlur={handleLocationBlur}
                             className="form-control"
                             placeholder="Enter address or click on map"
@@ -729,6 +793,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                         {errors.location && <div className="text-danger mt-1">{errors.location}</div>}
                         <div
                           ref={mapRef}
+                          className="position-relative"
                           style={{
                             height: "300px",
                             width: "100%",
@@ -750,6 +815,44 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                             >
                               Loading map...
                             </div>
+                          )}
+                          {suggestions.length > 0 && (
+                            <ul
+                              className="suggestions-dropdown"
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: "rgba(255, 255, 255, 0.9)",
+                                border: "1px solid #dee2e6",
+                                borderRadius: "4px",
+                                maxHeight: "100%",
+                                overflowY: "auto",
+                                zIndex: 1000,
+                                listStyle: "none",
+                                padding: "10px",
+                                margin: 0,
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                              }}
+                            >
+                              {suggestions.map((suggestion) => (
+                                <li
+                                  key={suggestion.place_id}
+                                  onClick={() => handleSuggestionSelect(suggestion.place_id)}
+                                  style={{
+                                    padding: "8px 12px",
+                                    cursor: "pointer",
+                                    borderBottom: "1px solid #eee",
+                                    background: "white",
+                                  }}
+                                  onMouseDown={(e) => e.preventDefault()} // Prevent input blur
+                                >
+                                  {suggestion.description}
+                                </li>
+                              ))}
+                            </ul>
                           )}
                         </div>
                         <small className="text-muted d-block mt-1">
@@ -1216,6 +1319,32 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         .modal-dialog { width: 800px !important; max-width: 90% !important; }
         .row { margin-left: -15px; margin-right: -15px; }
         .col-md-6 { padding-left: 15px; padding-right: 15px; }
+        .suggestions-dropdown {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: rgba(255, 255, 255, 0.9) !important;
+          border: 1px solid #dee2e6 !important;
+          border-radius: 4px !important;
+          max-height: 100% !important;
+          overflow-y: auto !important;
+          z-index: 1000 !important;
+          list-style: none !important;
+          padding: 10px !important;
+          margin: 0 !important;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+        .suggestions-dropdown li {
+          padding: 8px 12px !important;
+          cursor: pointer !important;
+          border-bottom: 1px solid #eee !important;
+          background: white !important;
+        }
+        .suggestions-dropdown li:hover {
+          background-color: #f8f9fa !important;
+        }
       `}</style>
     </>
   )

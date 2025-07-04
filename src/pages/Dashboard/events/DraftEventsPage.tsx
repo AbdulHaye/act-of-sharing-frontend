@@ -89,7 +89,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 
 const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
   const [guestEmail, setGuestEmail] = useState("");
-  const baseUrl = import.meta.env.VITE_API_URL;
+  const baseUrl = import.meta.env.VITE_BASE_URL; // Ensure this matches your server
   const { user } = useAuth();
 
   const validateEmail = (email: string) => {
@@ -204,16 +204,19 @@ const DraftEventsPage: React.FC = () => {
     limit: 10,
   });
 
-  const baseUrl = import.meta.env.VITE_API_URL;
+  const baseUrl = import.meta.env.VITE_BASE_URL; // Ensure this matches your server
+
+  // Debug: Log the base URL and request details
+  console.log("Base URL in DraftEventsPage:", baseUrl);
 
   const fetchDraftEvents = async (page: number = 1) => {
     if (!user?.id) return;
     setLoading(true);
     try {
       const token = localStorage.getItem("token") || "";
-      // Always filter by hostId to ensure only the creator's drafts are shown
       const params = { hostId: user.id, page, limit: pagination.limit };
-      const response = await axiosInstance.get(`${baseUrl}/events/drafts`, {
+      console.log("Fetching draft events from:", `${baseUrl}/api/events/drafts`, "with params:", params); // Debug log
+      const response = await axiosInstance.get(`${baseUrl}/api/events/drafts`, {
         headers: { "x-auth-token": token },
         params,
       });
@@ -290,6 +293,7 @@ const DraftEventsPage: React.FC = () => {
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error("Image failed to load:", e.currentTarget.src); // Debug log
     e.currentTarget.style.display = "none";
     e.currentTarget.nextElementSibling!.style.display = "flex";
   };
@@ -322,6 +326,7 @@ const DraftEventsPage: React.FC = () => {
             <h1 className="page-title">Draft Events</h1>
             <p className="page-subtitle">Manage your draft events</p>
           </div>
+          
         </div>
 
         {error && <div className="alert alert-danger">{error}</div>}
@@ -342,113 +347,115 @@ const DraftEventsPage: React.FC = () => {
             </div>
           ) : (
             <div className="events-grid">
-              {draftEvents.map((event) => (
-                <div key={event._id} className={`event-card ${!isUpcoming(event.date) ? "past-event" : ""}`}>
-                  <div className="card-header">
-                    <div className="image-container">
-                      {event.imageUrl ? (
-                        <img
-                          src={`${baseUrl}${event.imageUrl}`}
-                          alt={event.title}
-                          className="event-image"
-                          onError={handleImageError}
-                        />
-                      ) : (
-                        <div className="placeholder-image">
-                          <Calendar size={32} />
+              {draftEvents.map((event) => {
+                const imageUrl = event.imageUrl ? `${baseUrl}${event.imageUrl}` : null;
+                console.log("Draft Event Image URL:", imageUrl); // Debug log
+                return (
+                  <div key={event._id} className={`event-card ${!isUpcoming(event.date) ? "past-event" : ""}`}>
+                    <div className="card-header">
+                      <div className="image-container">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={event.title}
+                            className="event-image"
+                            onError={handleImageError}
+                          />
+                        ) : (
+                          <div className="placeholder-image">
+                            <Calendar size={32} />
+                          </div>
+                        )}
+                        {!isUpcoming(event.date) && <div className="event-status">Past Event</div>}
+                        {event.isDraft && <div className="event-status draft-status">Draft</div>}
+                      </div>
+                    </div>
+
+                    <div className="card-body">
+                      <div className="event-title-section">
+                        <h3 className="event-title">{event.title}</h3>
+                      </div>
+
+                      <div className="event-details">
+                        <div className="detail-item">
+                          <Calendar size={16} />
+                          <span>{formatDate(event.date)}</span>
                         </div>
-                      )}
-                      {!isUpcoming(event.date) && <div className="event-status">Past Event</div>}
-                      {event.isDraft && (
-                        <div className="event-status draft-status">Draft</div>
+                        <div className="detail-item">
+                          <MapPin size={16} />
+                          <span>{event.location || "N/A"}</span>
+                        </div>
+                        <div className="detail-item">
+                          <Users size={16} />
+                          <span>Max Guests: {event.guestCount || 0}</span>
+                        </div>
+                        <div className="detail-item">
+                          <DollarSign size={16} />
+                          <span>Suggested: ${event.suggestedDonation || "0"}</span>
+                        </div>
+                        <div className="detail-item">
+                          <Info size={16} />
+                          <span>{event.isPublic ? "Public" : "Private"}</span>
+                        </div>
+                      </div>
+
+                      {(user.role === "host" && isUpcoming(event.date)) && (
+                        <div className="action-buttons">
+                          <div className="edit-delete-actions">
+                            <button
+                              className="btn btn-outline"
+                              onClick={() => handleEditEvent(event)}
+                              disabled={isDeleting === event._id}
+                            >
+                              <Edit size={16} />
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-outline"
+                              onClick={() => handleDeleteEvent(event._id)}
+                              disabled={isDeleting === event._id}
+                            >
+                              <Trash2 size={16} />
+                              {isDeleting === event._id ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
+
+                          <div className="primary-actions">
+                            <button
+                              className="btn btn-primary"
+                              onClick={() => navigate("/story-capture", { state: { eventId: event._id } })}
+                            >
+                              <Eye size={16} />
+                              Story Capture
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => handleInvite(event)}>
+                              <UserPlus size={16} />
+                              Invite
+                            </button>
+                          </div>
+
+                          <div className="secondary-actions">
+                            <button
+                              className="btn btn-outline"
+                              onClick={() => navigate("/start-voting", { state: { eventId: event._id } })}
+                            >
+                              <Vote size={16} />
+                              Start Voting
+                            </button>
+                            <button
+                              className="btn btn-outline"
+                              onClick={() => navigate("/voting-result", { state: { eventId: event._id } })}
+                            >
+                              <BarChart3 size={16} />
+                              Results
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
-
-                  <div className="card-body">
-                    <div className="event-title-section">
-                      <h3 className="event-title">{event.title}</h3>
-                    </div>
-
-                    <div className="event-details">
-                      <div className="detail-item">
-                        <Calendar size={16} />
-                        <span>{formatDate(event.date)}</span>
-                      </div>
-                      <div className="detail-item">
-                        <MapPin size={16} />
-                        <span>{event.location || "N/A"}</span>
-                      </div>
-                      <div className="detail-item">
-                        <Users size={16} />
-                        <span>Max Guests: {event.guestCount || 0}</span>
-                      </div>
-                      <div className="detail-item">
-                        <DollarSign size={16} />
-                        <span>Suggested: ${event.suggestedDonation || "0"}</span>
-                      </div>
-                      <div className="detail-item">
-                        <Info size={16} />
-                        <span>{event.isPublic ? "Public" : "Private"}</span>
-                      </div>
-                    </div>
-
-                    {(user.role === "host" && isUpcoming(event.date)) && (
-                      <div className="action-buttons">
-                        <div className="edit-delete-actions">
-                          <button
-                            className="btn btn-outline"
-                            onClick={() => handleEditEvent(event)}
-                            disabled={isDeleting === event._id}
-                          >
-                            <Edit size={16} />
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-outline"
-                            onClick={() => handleDeleteEvent(event._id)}
-                            disabled={isDeleting === event._id}
-                          >
-                            <Trash2 size={16} />
-                            {isDeleting === event._id ? "Deleting..." : "Delete"}
-                          </button>
-                        </div>
-
-                        <div className="primary-actions">
-                          {/* <button
-                            className="btn btn-primary"
-                            onClick={() => navigate("/story-capture", { state: { eventId: event._id } })}
-                          >
-                            <Eye size={16} />
-                            Story Capture
-                          </button>
-                          <button className="btn btn-secondary" onClick={() => handleInvite(event)}>
-                            <UserPlus size={16} />
-                            Invite
-                          </button> */}
-                        </div>
-
-                        <div className="secondary-actions">
-                          {/* <button
-                            className="btn btn-outline"
-                            onClick={() => navigate("/start-voting", { state: { eventId: event._id } })}
-                          >
-                            <Vote size={16} />
-                            Start Voting
-                          </button>
-                          <button
-                            className="btn btn-outline"
-                            onClick={() => navigate("/voting-result", { state: { eventId: event._id } })}
-                          >
-                            <BarChart3 size={16} />
-                            Results
-                          </button> */}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           {draftEvents.length > 0 && (
@@ -806,8 +813,7 @@ const DraftEventsPage: React.FC = () => {
           display: flex;
           justify-content: center;
           align-items: center;
-          z-index:  gola
-1050;
+          z-index: 1050;
           backdrop-filter: blur(4px);
         }
 

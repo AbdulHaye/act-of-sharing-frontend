@@ -36,6 +36,9 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
   const [lastSelectedLocation, setLastSelectedLocation] = useState("");
+  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [autocompleteService, setAutocompleteService] = useState<google.maps.places.AutocompleteService | null>(null);
+  const [placesService, setPlacesService] = useState<google.maps.places.PlacesService | null>(null);
 
   const [formData, setFormData] = useState<EventFormData>({
     title: "",
@@ -85,7 +88,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     loadGoogleMapsScript();
   }, []);
 
-  // Initialize Google Maps and Autocomplete
+  // Initialize Google Maps, Autocomplete, and Services
   useEffect(() => {
     if (!isGoogleMapsLoaded || !mapRef.current || !autocompleteRef.current) return;
 
@@ -93,7 +96,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       try {
         const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
         const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
-        const { Autocomplete } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
+        const { Autocomplete, AutocompleteService, PlacesService } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
 
         const mapInstance = new Map(mapRef.current, {
           center: { lat: 0, lng: 0 },
@@ -106,6 +109,11 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
           fields: ["formatted_address", "geometry", "name"],
           types: ["address"],
         });
+
+        const autoService = new AutocompleteService();
+        const placeService = new PlacesService(mapInstance);
+        setAutocompleteService(autoService);
+        setPlacesService(placeService);
 
         autocomplete.addListener("place_changed", () => {
           const place = autocomplete.getPlace();
@@ -121,14 +129,13 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
               longitude: lng,
             }));
             setErrors((prev) => ({ ...prev, location: "" }));
-            setLastSelectedLocation(location); // Set the last selected location
+            setLastSelectedLocation(location);
+            setSuggestions([]);
 
             mapInstance.setCenter({ lat, lng });
             mapInstance.setZoom(15);
 
-            if (marker) {
-              marker.setMap(null);
-            }
+            if (marker) marker.setMap(null);
             const newMarker = new AdvancedMarkerElement({
               map: mapInstance,
               position: { lat, lng },
@@ -156,7 +163,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     const lat = event.latLng.lat();
     const lng = event.latLng.lng();
 
-    // Reverse geocoding to get address
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode({ location: { lat, lng } }, (results, status) => {
       if (status === "OK" && results && results[0]) {
@@ -168,15 +174,12 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
           longitude: lng,
         }));
         setErrors((prev) => ({ ...prev, location: "" }));
-        setLastSelectedLocation(formattedAddress); // Set the last selected location
+        setLastSelectedLocation(formattedAddress);
+        setSuggestions([]);
 
-        if (autocompleteRef.current) {
-          autocompleteRef.current.value = formattedAddress;
-        }
+        if (autocompleteRef.current) autocompleteRef.current.value = formattedAddress;
 
-        if (marker) {
-          marker.setMap(null);
-        }
+        if (marker) marker.setMap(null);
         const newMarker = new AdvancedMarkerElement({
           map,
           position: { lat, lng },
@@ -188,43 +191,57 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     });
   };
 
-  // Handle manual location input on blur
-  const handleLocationBlur = () => {
-    if (formData.location && formData.location !== lastSelectedLocation) {
-      const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ address: formData.location }, (results, status) => {
-        if (status === "OK" && results && results[0]) {
-          const lat = results[0].geometry.location.lat();
-          const lng = results[0].geometry.location.lng();
-          const formattedAddress = results[0].formatted_address;
+  // Fetch location suggestions as user types
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, location: value }));
+    setErrors((prev) => ({ ...prev, location: "" }));
+
+    if (autocompleteService && value) {
+      autocompleteService.getPlacePredictions(
+        { input: value, types: ["address"] },
+        (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            setSuggestions(predictions);
+          } else {
+            setSuggestions([]);
+          }
+        }
+      );
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  // Select a suggestion
+  const handleSuggestionSelect = (placeId: string) => {
+    if (placesService && map) {
+      placesService.getDetails({ placeId, fields: ["formatted_address", "geometry"] }, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+          const location = place.formatted_address || "";
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
 
           setFormData((prev) => ({
             ...prev,
-            location: formattedAddress,
+            location,
             latitude: lat,
             longitude: lng,
           }));
-          setLastSelectedLocation(formattedAddress);
+          setLastSelectedLocation(location);
+          setSuggestions([]);
 
-          if (map) {
-            if (results[0].geometry.viewport) {
-              map.fitBounds(results[0].geometry.viewport);
-            } else {
-              map.setCenter({ lat, lng });
-              map.setZoom(15);
-            }
-          }
+          if (autocompleteRef.current) autocompleteRef.current.value = location;
 
-          if (marker) {
-            marker.setMap(null);
-          }
+          map.setCenter({ lat, lng });
+          map.setZoom(15);
+
+          if (marker) marker.setMap(null);
           const newMarker = new AdvancedMarkerElement({
             map,
             position: { lat, lng },
           });
           setMarker(newMarker);
-        } else {
-          toast.error("Unable to find the location. Please try again.");
         }
       });
     }
@@ -235,9 +252,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       map.addListener("click", handleMapClick);
     }
     return () => {
-      if (map) {
-        google.maps.event.clearListeners(map, "click");
-      }
+      if (map) google.maps.event.clearListeners(map, "click");
     };
   }, [map, marker]);
 
@@ -671,7 +686,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         </div>
                       </div>
 
-                      <div className="mb-3">
+                      <div className="mb-3 position-relative">
                         <label htmlFor="location" className="form-label">
                           Location <span style={{ color: "red" }}>*</span>
                         </label>
@@ -685,12 +700,12 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             name="location"
                             ref={autocompleteRef}
                             value={formData.location}
-                            onChange={handleInputChange}
-                            onBlur={handleLocationBlur}
+                            onChange={handleLocationChange}
                             className="form-control"
                             placeholder="Enter address or click on map"
                             required
                             disabled={loading || !isGoogleMapsLoaded}
+                            autoComplete="off"
                           />
                         </div>
                         {errors.location && (
@@ -698,6 +713,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         )}
                         <div
                           ref={mapRef}
+                          className="position-relative"
                           style={{
                             height: "300px",
                             width: "100%",
@@ -719,6 +735,44 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             >
                               Loading map...
                             </div>
+                          )}
+                          {suggestions.length > 0 && (
+                            <ul
+                              className="suggestions-dropdown"
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: "rgba(255, 255, 255, 0.9)",
+                                border: "1px solid #dee2e6",
+                                borderRadius: "4px",
+                                maxHeight: "100%",
+                                overflowY: "auto",
+                                zIndex: 1000,
+                                listStyle: "none",
+                                padding: "10px",
+                                margin: 0,
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                              }}
+                            >
+                              {suggestions.map((suggestion) => (
+                                <li
+                                  key={suggestion.place_id}
+                                  onClick={() => handleSuggestionSelect(suggestion.place_id)}
+                                  style={{
+                                    padding: "8px 12px",
+                                    cursor: "pointer",
+                                    borderBottom: "1px solid #eee",
+                                    background: "white",
+                                  }}
+                                  onMouseDown={(e) => e.preventDefault()} // Prevent input blur
+                                >
+                                  {suggestion.description}
+                                </li>
+                              ))}
+                            </ul>
                           )}
                         </div>
                         <small className="text-muted d-block mt-1">
@@ -1137,6 +1191,32 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
         .input-group-text { height: 100% !important; padding: 0.375rem 0.75rem !important; }
         .form-control { height: 100% !important; padding: 0.375rem 0.75rem !important; }
         .input-group img { max-width: 60px !important; max-height: 60px !important; }
+        .suggestions-dropdown {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: rgba(255, 255, 255, 0.9) !important;
+          border: 1px solid #dee2e6 !important;
+          border-radius: 4px !important;
+          max-height: 100% !important;
+          overflow-y: auto !important;
+          z-index: 1000 !important;
+          list-style: none !important;
+          padding: 10px !important;
+          margin: 0 !important;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+        .suggestions-dropdown li {
+          padding: 8px 12px !important;
+          cursor: pointer !important;
+          border-bottom: 1px solid #eee !important;
+          background: white !important;
+        }
+        .suggestions-dropdown li:hover {
+          background-color: #f8f9fa !important;
+        }
       `}</style>
     </>
   );
