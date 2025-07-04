@@ -67,7 +67,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       }
 
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&loading=async&libraries=places&callback=initAutocomplete`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,marker`;
       script.async = true;
       script.defer = true;
       script.onload = () => setIsGoogleMapsLoaded(true);
@@ -89,102 +89,104 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
   useEffect(() => {
     if (!isGoogleMapsLoaded || !mapRef.current || !autocompleteRef.current) return;
 
-    const initMap = () => {
-      const { Map } = google.maps;
-      const mapInstance = new Map(mapRef.current, {
-        center: { lat: -34.397, lng: 150.644 }, // Default center (e.g., Sydney)
-        zoom: 10,
-        mapId: "EVENT_CREATION_MAP",
-      });
-      setMap(mapInstance);
+    const loadGoogleMaps = async () => {
+      try {
+        const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
+        const { Autocomplete } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
 
-      // Add click listener for map selection
-      mapInstance.addListener("click", (event: google.maps.MapMouseEvent) => {
-        if (!event.latLng) return;
+        const mapInstance = new Map(mapRef.current, {
+          center: { lat: 0, lng: 0 },
+          zoom: 2,
+          mapId: "EVENT_CREATION_MAP",
+        });
+        setMap(mapInstance);
 
-        const lat = event.latLng.lat();
-        const lng = event.latLng.lng();
+        const autocomplete = new Autocomplete(autocompleteRef.current, {
+          fields: ["formatted_address", "geometry", "name"],
+          types: ["address"],
+        });
 
-        const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-          if (status === "OK" && results && results[0]) {
-            const formattedAddress = results[0].formatted_address;
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          if (place.geometry && place.geometry.location) {
+            const location = place.formatted_address || place.name || "";
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+
             setFormData((prev) => ({
               ...prev,
-              location: formattedAddress,
+              location,
               latitude: lat,
               longitude: lng,
             }));
             setErrors((prev) => ({ ...prev, location: "" }));
-            setLastSelectedLocation(formattedAddress);
+            setLastSelectedLocation(location); // Set the last selected location
 
-            if (autocompleteRef.current) {
-              autocompleteRef.current.value = formattedAddress;
-            }
+            mapInstance.setCenter({ lat, lng });
+            mapInstance.setZoom(15);
 
             if (marker) {
               marker.setMap(null);
             }
-            const newMarker = new google.maps.Marker({
+            const newMarker = new AdvancedMarkerElement({
               map: mapInstance,
               position: { lat, lng },
             });
             setMarker(newMarker);
-            mapInstance.setCenter({ lat, lng });
-            mapInstance.setZoom(15);
           }
         });
-      });
+      } catch (err) {
+        console.error("Error loading Google Maps:", err);
+        toast.error("Failed to load map services");
+      }
     };
 
-    const initAutocomplete = () => {
-      if (!autocompleteRef.current) return;
+    loadGoogleMaps();
 
-      const { Autocomplete } = google.maps.places;
-      const autocomplete = new Autocomplete(autocompleteRef.current, {
-        fields: ["formatted_address", "geometry", "name"],
-        types: ["address"],
-      });
-
-      autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry && place.geometry.location) {
-          const location = place.formatted_address || place.name || "";
-          const lat = place.geometry.location.lat();
-          const lng = place.geometry.location.lng();
-
-          setFormData((prev) => ({
-            ...prev,
-            location,
-            latitude: lat,
-            longitude: lng,
-          }));
-          setErrors((prev) => ({ ...prev, location: "" }));
-          setLastSelectedLocation(location);
-
-          if (map) {
-            map.setCenter({ lat, lng });
-            map.setZoom(15);
-
-            if (marker) {
-              marker.setMap(null);
-            }
-            const newMarker = new google.maps.Marker({
-              map,
-              position: { lat, lng },
-            });
-            setMarker(newMarker);
-          }
-        }
-      });
-
-      initMap();
+    return () => {
+      if (marker) marker.setMap(null);
     };
-
-    if (window.google) {
-      initAutocomplete();
-    }
   }, [isGoogleMapsLoaded]);
+
+  // Handle map click to select location
+  const handleMapClick = (event: google.maps.MapMouseEvent) => {
+    if (!map || !event.latLng) return;
+
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+
+    // Reverse geocoding to get address
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === "OK" && results && results[0]) {
+        const formattedAddress = results[0].formatted_address;
+        setFormData((prev) => ({
+          ...prev,
+          location: formattedAddress,
+          latitude: lat,
+          longitude: lng,
+        }));
+        setErrors((prev) => ({ ...prev, location: "" }));
+        setLastSelectedLocation(formattedAddress); // Set the last selected location
+
+        if (autocompleteRef.current) {
+          autocompleteRef.current.value = formattedAddress;
+        }
+
+        if (marker) {
+          marker.setMap(null);
+        }
+        const newMarker = new AdvancedMarkerElement({
+          map,
+          position: { lat, lng },
+        });
+        setMarker(newMarker);
+        map.setCenter({ lat, lng });
+        map.setZoom(15);
+      }
+    });
+  };
 
   // Handle manual location input on blur
   const handleLocationBlur = () => {
@@ -216,7 +218,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
           if (marker) {
             marker.setMap(null);
           }
-          const newMarker = new google.maps.Marker({
+          const newMarker = new AdvancedMarkerElement({
             map,
             position: { lat, lng },
           });
@@ -227,6 +229,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       });
     }
   };
+
+  useEffect(() => {
+    if (map) {
+      map.addListener("click", handleMapClick);
+    }
+    return () => {
+      if (map) {
+        google.maps.event.clearListeners(map, "click");
+      }
+    };
+  }, [map, marker]);
 
   const validateStep = (step: number): Record<string, string> => {
     const errors: Record<string, string> = {};
