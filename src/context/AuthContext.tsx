@@ -7,20 +7,21 @@ interface User {
   firstname: string;
   lastname: string;
   email: string;
-  role: string;
+  role: 'admin' | 'host' | 'Participant';
   createdAt: string;
-  isEmailVerified?: boolean; // Optional field
+  isEmailVerified?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: { firstname: string; lastname: string; email: string; password: string; role: string }) => Promise<void>;
+  register: (userData: { firstname: string; lastname: string; email: string; password: string; role: 'host' | 'Participant' }) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   refreshToken: () => Promise<string>;
   setUser: (user: User | null) => void;
   loading: boolean;
+  resendVerificationEmail: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,9 +41,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (storedUser && token) {
         try {
           const parsedUser = JSON.parse(storedUser);
+          if (!['admin', 'host', 'Participant'].includes(parsedUser.role)) {
+            throw new Error('Invalid role');
+          }
           setUser(parsedUser);
           setIsAuthenticated(true);
-          if (parsedUser.isEmailVerified === false) { // Only check if explicitly false
+          if (parsedUser.isEmailVerified === false) {
             setIsAuthenticated(false);
             localStorage.removeItem('user');
             localStorage.removeItem('token');
@@ -70,8 +74,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       case 'host':
         navigate('/dashboard/host');
         break;
-      case 'guest':
-        navigate('/dashboard/guest');
+      case 'Participant':
+        navigate('/dashboard/Participant');
         break;
       default:
         navigate('/dashboard');
@@ -97,11 +101,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await axiosInstance.post('/users/login', { email, password });
       const { token, user } = response.data;
-      console.log('Login response:', response.data); // Debug log
-      // Default isEmailVerified to true if not provided
-      const isVerified = user.isEmailVerified !== false; // Treat undefined as true
+      console.log('Login response:', response.data);
+      const isVerified = user.isEmailVerified !== false;
       if (!isVerified) {
         throw new Error('Please verify your email before logging in');
+      }
+      if (!['admin', 'host', 'Participant'].includes(user.role)) {
+        throw new Error('Invalid role');
       }
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify({ ...user, isEmailVerified: isVerified }));
@@ -113,14 +119,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (error.response?.status === 403) {
         throw new Error('Please verify your email before logging in');
       } else if (error.response?.status === 400) {
-        throw new Error('Invalid credentials');
+        throw new Error('Invalid Email or Password');
       }
-      throw error; // Re-throw other errors
+      throw error;
     }
   };
 
-  const register = async (userData: { firstname: string; lastname: string; email: string; password: string; role: string }) => {
+  const register = async (userData: { firstname: string; lastname: string; email: string; password: string; role: 'host' | 'Participant' }) => {
     try {
+      if (!['host', 'Participant'].includes(userData.role)) {
+        throw new Error('Invalid role. Please select either Host or Participant.');
+      }
       const response = await axiosInstance.post('/users/register', userData);
       const { message } = response.data;
       console.log('Registration successful:', message);
@@ -136,6 +145,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const resendVerificationEmail = async (email: string) => {
+    try {
+      const response = await axiosInstance.post('/users/resend-verification-email', { email });
+      const { message } = response.data;
+      console.log('Resend verification email successful:', message);
+      return message;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to resend verification email';
+      console.error('Resend verification failed:', errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -146,7 +168,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, logout, isAuthenticated, refreshToken, setUser, loading }}
+      value={{ user, login, register, logout, isAuthenticated, refreshToken, setUser, loading, resendVerificationEmail }}
     >
       {children}
     </AuthContext.Provider>

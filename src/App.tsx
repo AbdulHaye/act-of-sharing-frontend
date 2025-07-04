@@ -83,12 +83,12 @@ function App() {
                   <Route path="/dashboard/draft-events" element={<DraftEventsPage />} />
                 </Route>
 
-                <Route element={<ProtectedRoute allowedRoles={["admin", "host", "guest"]} />}>
+                <Route element={<ProtectedRoute allowedRoles={["admin", "host", "Participant"]} />}>
                   <Route path="/dashboard" element={<DashboardPage />}>
                     <Route index element={<DashboardRedirect />} />
                     <Route path="admin" element={<AdminDashboard />} />
                     <Route path="host" element={<HostDashboard />} />
-                    <Route path="guest" element={<GuestDashboard />} />
+                    <Route path="Participant" element={<GuestDashboard />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="my-events" element={<MyEventsPage />} />
                     <Route path="contributions" element={<ContributionsPage />} />

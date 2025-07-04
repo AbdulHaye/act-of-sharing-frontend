@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Calendar, Clock, MapPin, Users, DollarSign, FileText, Image as ImageIcon } from "lucide-react"
 import { useEvent } from "../../../context/EventContext"
 import { useAuth } from "../../../context/AuthContext"
@@ -9,6 +9,8 @@ interface EventFormData {
   date: string
   time: string
   location: string
+  latitude: number | null
+  longitude: number | null
   guestCount: string
   suggestedDonation: string
   description: string
@@ -24,6 +26,8 @@ interface EventEditModalProps {
     title: string
     date: string
     location: string
+    latitude?: number
+    longitude?: number
     guestCount: number
     goalAmount?: number
     suggestedDonation?: number
@@ -41,6 +45,12 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
   const [isTermsChecked, setIsTermsChecked] = useState(false)
   const [showImagePreview, setShowImagePreview] = useState<string | null>(null)
   const [showDraftModal, setShowDraftModal] = useState(false)
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false)
+  const mapRef = useRef<HTMLDivElement>(null)
+  const autocompleteRef = useRef<HTMLInputElement>(null)
+  const [map, setMap] = useState<google.maps.Map | null>(null)
+  const [marker, setMarker] = useState<google.maps.Marker | null>(null)
+  const [lastSelectedLocation, setLastSelectedLocation] = useState("")
   const totalSteps = 2
 
   const [formData, setFormData] = useState<EventFormData>({
@@ -48,6 +58,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     date: "",
     time: "",
     location: "",
+    latitude: null,
+    longitude: null,
     guestCount: "",
     suggestedDonation: "",
     description: "",
@@ -63,6 +75,210 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
   const MAX_GUESTS = 1000000
   const MAX_DONATION = 100000000
 
+  // Load Google Maps script dynamically
+  useEffect(() => {
+    const loadGoogleMapsScript = () => {
+      if (window.google && window.google.maps) {
+        setIsGoogleMapsLoaded(true)
+        return
+      }
+
+      const script = document.createElement("script")
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,marker`
+      script.async = true
+      script.defer = true
+      script.onload = () => setIsGoogleMapsLoaded(true)
+      script.onerror = () => {
+        console.error("Failed to load Google Maps script")
+        toast.error("Failed to load map services")
+      }
+      document.head.appendChild(script)
+
+      return () => {
+        document.head.removeChild(script)
+      }
+    }
+
+    if (show) {
+      loadGoogleMapsScript()
+    }
+  }, [show])
+
+  // Initialize Google Maps and Autocomplete when modal is shown
+  useEffect(() => {
+    if (!show || !isGoogleMapsLoaded || !mapRef.current || !autocompleteRef.current || map) return
+
+    const loadGoogleMaps = async () => {
+      try {
+        const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary
+        const { Autocomplete } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary
+
+        const mapInstance = new Map(mapRef.current, {
+          center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
+          zoom: 10,
+          mapId: "EVENT_EDIT_MAP",
+        })
+        setMap(mapInstance)
+
+        const autocomplete = new Autocomplete(autocompleteRef.current, {
+          fields: ["formatted_address", "geometry", "name"],
+          types: ["address"],
+        })
+
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace()
+          if (place.geometry && place.geometry.location) {
+            const location = place.formatted_address || place.name || ""
+            const lat = place.geometry.location.lat()
+            const lng = place.geometry.location.lng()
+
+            setFormData((prev) => ({
+              ...prev,
+              location,
+              latitude: lat,
+              longitude: lng,
+            }))
+            setErrors((prev) => ({ ...prev, location: "" }))
+            setLastSelectedLocation(location)
+
+            mapInstance.setCenter({ lat, lng })
+            mapInstance.setZoom(15)
+
+            if (marker) {
+              marker.setMap(null)
+            }
+            const newMarker = new AdvancedMarkerElement({
+              map: mapInstance,
+              position: { lat, lng },
+            })
+            setMarker(newMarker)
+          }
+        })
+
+        // Set initial location if event data exists
+        if (event?.latitude && event?.longitude) {
+          mapInstance.setCenter({ lat: event.latitude, lng: event.longitude })
+          mapInstance.setZoom(15)
+          if (marker) {
+            marker.setMap(null)
+          }
+          const newMarker = new AdvancedMarkerElement({
+            map: mapInstance,
+            position: { lat: event.latitude, lng: event.longitude },
+          })
+          setMarker(newMarker)
+        }
+      } catch (err) {
+        console.error("Error loading Google Maps:", err)
+        toast.error("Failed to load map services")
+      }
+    }
+
+    loadGoogleMaps()
+
+    return () => {
+      if (map) {
+        map.unbindAll()
+        setMap(null)
+      }
+      if (marker) {
+        marker.setMap(null)
+        setMarker(null)
+      }
+    }
+  }, [show, isGoogleMapsLoaded, event, marker])
+
+  // Handle map click to select location
+  useEffect(() => {
+    if (!map) return
+
+    const handleMapClick = (event: google.maps.MapMouseEvent) => {
+      if (!event.latLng) return
+
+      const lat = event.latLng.lat()
+      const lng = event.latLng.lng()
+
+      const geocoder = new google.maps.Geocoder()
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          const formattedAddress = results[0].formatted_address
+          setFormData((prev) => ({
+            ...prev,
+            location: formattedAddress,
+            latitude: lat,
+            longitude: lng,
+          }))
+          setErrors((prev) => ({ ...prev, location: "" }))
+          setLastSelectedLocation(formattedAddress)
+
+          if (autocompleteRef.current) {
+            autocompleteRef.current.value = formattedAddress
+          }
+
+          if (marker) {
+            marker.setMap(null)
+          }
+          const newMarker = new google.maps.Marker({
+            map,
+            position: { lat, lng },
+          })
+          setMarker(newMarker)
+          map.setCenter({ lat, lng })
+          map.setZoom(15)
+        }
+      })
+    }
+
+    map.addListener("click", handleMapClick)
+
+    return () => {
+      google.maps.event.clearListeners(map, "click")
+    }
+  }, [map, marker])
+
+  // Handle manual location input on blur
+  const handleLocationBlur = () => {
+    if (formData.location && formData.location !== lastSelectedLocation) {
+      const geocoder = new google.maps.Geocoder()
+      geocoder.geocode({ address: formData.location }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          const lat = results[0].geometry.location.lat()
+          const lng = results[0].geometry.location.lng()
+          const formattedAddress = results[0].formatted_address
+
+          setFormData((prev) => ({
+            ...prev,
+            location: formattedAddress,
+            latitude: lat,
+            longitude: lng,
+          }))
+          setLastSelectedLocation(formattedAddress)
+
+          if (map) {
+            if (results[0].geometry.viewport) {
+              map.fitBounds(results[0].geometry.viewport)
+            } else {
+              map.setCenter({ lat, lng })
+              map.setZoom(15)
+            }
+          }
+
+          if (marker) {
+            marker.setMap(null)
+          }
+          const newMarker = new google.maps.Marker({
+            map,
+            position: { lat, lng },
+          })
+          setMarker(newMarker)
+        } else {
+          toast.error("Unable to find the location. Please try again.")
+        }
+      })
+    }
+  }
+
   useEffect(() => {
     if (event) {
       const eventDate = new Date(event.date)
@@ -72,18 +288,23 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         date: eventDate.toISOString().split("T")[0] || "",
         time: eventDate.toTimeString().slice(0, 5) || "",
         location: event.location || "",
+        latitude: event.latitude || null,
+        longitude: event.longitude || null,
         guestCount: event.guestCount?.toString() || "",
         suggestedDonation: event.suggestedDonation?.toString() || "",
         eventImage: null,
         isPublic: event.isPublic || false,
       })
       setPreviewUrls({ eventImage: event.imageUrl || null })
+      setLastSelectedLocation(event.location || "")
     } else {
       setFormData({
         title: "",
         date: "",
         time: "",
         location: "",
+        latitude: null,
+        longitude: null,
         guestCount: "",
         suggestedDonation: "",
         description: "",
@@ -91,6 +312,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         isPublic: false,
       })
       setPreviewUrls({ eventImage: null })
+      setLastSelectedLocation("")
     }
   }, [event])
 
@@ -99,8 +321,9 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
       if (previewUrls.eventImage && !event?.imageUrl) {
         URL.revokeObjectURL(previewUrls.eventImage)
       }
+      if (marker) marker.setMap(null)
     }
-  }, [previewUrls.eventImage, event?.imageUrl])
+  }, [previewUrls.eventImage, event?.imageUrl, marker])
 
   const validateStep = (step: number): Record<string, string> => {
     const errors: Record<string, string> = {}
@@ -184,6 +407,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     eventData.append("date", formData.date)
     eventData.append("time", formData.time)
     eventData.append("location", formData.location)
+    eventData.append("latitude", formData.latitude ? formData.latitude.toString() : "")
+    eventData.append("longitude", formData.longitude ? formData.longitude.toString() : "")
     eventData.append("guestCount", formData.guestCount)
     eventData.append("suggestedDonation", formData.suggestedDonation || "0")
     eventData.append("isPublic", formData.isPublic.toString())
@@ -218,6 +443,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
     eventData.append("date", formData.date || "")
     eventData.append("time", formData.time || "")
     eventData.append("location", formData.location || "")
+    eventData.append("latitude", formData.latitude ? formData.latitude.toString() : "")
+    eventData.append("longitude", formData.longitude ? formData.longitude.toString() : "")
     eventData.append("guestCount", formData.guestCount || "")
     eventData.append("suggestedDonation", formData.suggestedDonation || "0")
     eventData.append("isPublic", formData.isPublic.toString())
@@ -489,15 +716,45 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                             type="text"
                             id="location"
                             name="location"
+                            ref={autocompleteRef}
                             value={formData.location}
                             onChange={handleInputChange}
+                            onBlur={handleLocationBlur}
                             className="form-control"
-                            placeholder="Address or virtual link"
+                            placeholder="Enter address or click on map"
                             required
-                            disabled={loading}
+                            disabled={loading || !isGoogleMapsLoaded}
                           />
                         </div>
                         {errors.location && <div className="text-danger mt-1">{errors.location}</div>}
+                        <div
+                          ref={mapRef}
+                          style={{
+                            height: "300px",
+                            width: "100%",
+                            marginTop: "10px",
+                            borderRadius: "4px",
+                            border: "1px solid #dee2e6",
+                            backgroundColor: isGoogleMapsLoaded && map ? "transparent" : "#f8f9fa",
+                          }}
+                        >
+                          {!isGoogleMapsLoaded && (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                height: "100%",
+                                color: "#6c757d",
+                              }}
+                            >
+                              Loading map...
+                            </div>
+                          )}
+                        </div>
+                        <small className="text-muted d-block mt-1">
+                          Type an address or click on the map to select a location.
+                        </small>
                       </div>
 
                       <div className="row align-items-end">
@@ -682,6 +939,14 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                         <div className="mb-2">
                           <span className="fw-bold">Location:</span>
                           <span className="ms-2">{formData.location}</span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="fw-bold">Coordinates:</span>
+                          <span className="ms-2">
+                            {formData.latitude && formData.longitude
+                              ? `${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)}`
+                              : "Not specified"}
+                          </span>
                         </div>
                         <div className="mb-2">
                           <span className="fw-bold">Max Guests:</span>
@@ -934,6 +1199,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
         .input-group-text { height: 100% !important; padding: 0.375rem 0.75rem !important; }
         .form-control { height: 100% !important; padding: 0.375rem 0.75rem !important; }
         .input-group img { max-width: 60px !important; max-height: 60px !important; }
+        
         .modal-body::-webkit-scrollbar {
           width: 8px;
         }

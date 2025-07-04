@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Calendar, Clock, MapPin, Users, DollarSign, FileText, Image } from "lucide-react";
 import { useEvent } from "../context/EventContext";
 import { useAuth } from "../context/AuthContext";
@@ -9,8 +9,6 @@ interface EventFormData {
   date: string;
   time: string;
   location: string;
-  latitude: number | null;
-  longitude: number | null;
   guestCount: string;
   suggestedDonation: string;
   description: string;
@@ -28,21 +26,12 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isTermsChecked, setIsTermsChecked] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState<string | null>(null);
-  const [showDraftModal, setShowDraftModal] = useState(false);
-  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const totalSteps = 2;
-  const mapRef = useRef<HTMLDivElement>(null);
-  const autocompleteRef = useRef<HTMLInputElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
-
   const [formData, setFormData] = useState<EventFormData>({
     title: "",
     date: "",
     time: "",
     location: "",
-    latitude: null,
-    longitude: null,
     guestCount: "",
     suggestedDonation: "",
     description: "",
@@ -53,147 +42,10 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     eventImage: null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showDraftModal, setShowDraftModal] = useState(false);
 
   const MAX_GUESTS = 1000000;
   const MAX_DONATION = 100000000;
-
-  // Load Google Maps script dynamically
-  useEffect(() => {
-    const loadGoogleMapsScript = () => {
-      if (window.google && window.google.maps) {
-        setIsGoogleMapsLoaded(true);
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,marker`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setIsGoogleMapsLoaded(true);
-      script.onerror = () => {
-        console.error("Failed to load Google Maps script");
-        toast.error("Failed to load map services");
-      };
-      document.head.appendChild(script);
-
-      return () => {
-        document.head.removeChild(script);
-      };
-    };
-
-    loadGoogleMapsScript();
-  }, []);
-
-  // Initialize Google Maps and Autocomplete
-  useEffect(() => {
-    if (!isGoogleMapsLoaded || !mapRef.current || !autocompleteRef.current) return;
-
-    const loadGoogleMaps = async () => {
-      try {
-        const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
-        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
-        const { Autocomplete } = await google.maps.importLibrary("places") as google.maps.PlacesLibrary;
-
-        const mapInstance = new Map(mapRef.current, {
-          center: { lat: 0, lng: 0 },
-          zoom: 2,
-          mapId: "EVENT_CREATION_MAP",
-        });
-        setMap(mapInstance);
-
-        const autocomplete = new Autocomplete(autocompleteRef.current, {
-          fields: ["formatted_address", "geometry", "name"],
-          types: ["address"],
-        });
-
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          if (place.geometry && place.geometry.location) {
-            const location = place.formatted_address || place.name || "";
-            const lat = place.geometry.location.lat();
-            const lng = place.geometry.location.lng();
-
-            setFormData((prev) => ({
-              ...prev,
-              location,
-              latitude: lat,
-              longitude: lng,
-            }));
-            setErrors((prev) => ({ ...prev, location: "" }));
-
-            mapInstance.setCenter({ lat, lng });
-            mapInstance.setZoom(15);
-
-            if (marker) {
-              marker.setMap(null);
-            }
-            const newMarker = new AdvancedMarkerElement({
-              map: mapInstance,
-              position: { lat, lng },
-            });
-            setMarker(newMarker);
-          }
-        });
-      } catch (err) {
-        console.error("Error loading Google Maps:", err);
-        toast.error("Failed to load map services");
-      }
-    };
-
-    loadGoogleMaps();
-
-    return () => {
-      if (marker) marker.setMap(null);
-    };
-  }, [isGoogleMapsLoaded]);
-
-  // Handle map click to select location
-  const handleMapClick = (event: google.maps.MapMouseEvent) => {
-    if (!map || !event.latLng) return;
-
-    const lat = event.latLng.lat();
-    const lng = event.latLng.lng();
-
-    // Reverse geocoding to get address
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-      if (status === "OK" && results && results[0]) {
-        setFormData((prev) => ({
-          ...prev,
-          location: results[0].formatted_address,
-          latitude: lat,
-          longitude: lng,
-        }));
-        setErrors((prev) => ({ ...prev, location: "" }));
-
-        if (autocompleteRef.current) {
-          autocompleteRef.current.value = results[0].formatted_address;
-        }
-
-        if (marker) {
-          marker.setMap(null);
-        }
-        const newMarker = new google.maps.Marker({
-          map,
-          position: { lat, lng },
-        });
-        setMarker(newMarker);
-        map.setCenter({ lat, lng });
-        map.setZoom(15);
-      }
-    });
-  };
-
-  useEffect(() => {
-    if (map) {
-      map.addListener("click", handleMapClick);
-    }
-    return () => {
-      if (map) {
-        google.maps.event.clearListeners(map, "click");
-      }
-    };
-  }, [map, marker]);
 
   const validateStep = (step: number): Record<string, string> => {
     const errors: Record<string, string> = {};
@@ -270,12 +122,10 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     eventData.append("date", formData.date);
     eventData.append("time", formData.time);
     eventData.append("location", formData.location);
-    eventData.append("latitude", formData.latitude ? formData.latitude.toString() : "");
-    eventData.append("longitude", formData.longitude ? formData.longitude.toString() : "");
     eventData.append("guestCount", formData.guestCount);
     eventData.append("suggestedDonation", formData.suggestedDonation || "0");
     eventData.append("isPublic", formData.isPublic.toString());
-    eventData.append("isDraft", "false");
+    eventData.append("isDraft", "false"); // Explicitly set to false for final submission
     if (formData.eventImage) eventData.append("eventImage", formData.eventImage);
 
     try {
@@ -301,8 +151,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     eventData.append("date", formData.date || "");
     eventData.append("time", formData.time || "");
     eventData.append("location", formData.location || "");
-    eventData.append("latitude", formData.latitude ? formData.latitude.toString() : "");
-    eventData.append("longitude", formData.longitude ? formData.longitude.toString() : "");
     eventData.append("guestCount", formData.guestCount || "");
     eventData.append("suggestedDonation", formData.suggestedDonation || "0");
     eventData.append("isPublic", formData.isPublic.toString());
@@ -418,7 +266,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
 
   const updateTime = (newHour: string, newMinute: string, newAmpm: string) => {
     if (newHour && newMinute && newAmpm) {
-      const timeString = `${newHour.padStart(2, "0")}:${newMinute} ${newAmpm}`;
+      const timeString = `${newHour.padStart(2, '0')}:${newMinute} ${newAmpm}`;
       setFormData((prev) => ({
         ...prev,
         time: timeString,
@@ -434,7 +282,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
         tabIndex={-1}
         style={{
           display: "block",
-          backgroundColor: " personally, rgba(0,0,0,0.5)",
+          backgroundColor: "rgba(0,0,0,0.5)",
           position: "fixed",
           top: 0,
           left: 0,
@@ -495,7 +343,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                       </div>
                       {index < totalSteps - 1 && (
                         <div
- clinician:                         className="progress-line"
+                          className="progress-line"
                           style={{
                             position: "absolute",
                             top: "15px",
@@ -637,46 +485,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             type="text"
                             id="location"
                             name="location"
-                            ref={autocompleteRef}
                             value={formData.location}
                             onChange={handleInputChange}
                             className="form-control"
-                            placeholder="Enter address or click on map"
+                            placeholder="Address or virtual link"
                             required
-                            disabled={loading || !isGoogleMapsLoaded}
+                            disabled={loading}
                           />
                         </div>
                         {errors.location && (
                           <div className="text-danger mt-1">{errors.location}</div>
                         )}
-                        <div
-                          ref={mapRef}
-                          style={{
-                            height: "300px",
-                            width: "100%",
-                            marginTop: "10px",
-                            borderRadius: "4px",
-                            border: "1px solid #dee2e6",
-                            backgroundColor: isGoogleMapsLoaded ? "transparent" : "#f8f9fa",
-                          }}
-                        >
-                          {!isGoogleMapsLoaded && (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                height: "100%",
-                                color: "#6c757d",
-                              }}
-                            >
-                              Loading map...
-                            </div>
-                          )}
-                        </div>
-                        <small className="text-muted d-block mt-1">
-                          Type an address or click on the map to select a location.
-                        </small>
                       </div>
 
                       <div className="row">
@@ -865,14 +684,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         <div className="mb-2">
                           <span className="fw-bold">Location:</span>
                           <span className="ms-2">{formData.location}</span>
-                        </div>
-                        <div className="mb-2">
-                          <span className="fw-bold">Coordinates:</span>
-                          <span className="ms-2">
-                            {formData.latitude && formData.longitude
-                              ? `${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)}`
-                              : "Not specified"}
-                          </span>
                         </div>
                         <div className="mb-2">
                           <span className="fw-bold">Max Guests:</span>
@@ -1064,17 +875,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       )}
 
       <style jsx>{`
-        .text-primary { color: #5144A1 !important; }
-        .bg-primary { background-color: #5144A1 !important; }
-        .text-danger { color: #dc3545 !important; }
+        .text-primary { color: #5144a1 !important; }
+        .bg-primary { background-color: #5144a1 !important; }
+        .text-danger { color:rgb(193, 65, 78) !important; }
         .text-muted { color: #6c757d !important; }
         .form-progress { position: relative; }
-        .progress-step { position: relative; }
+        .progress-step { position: "relative"; }
         .progress-circle { transition: background-color 0.3s; }
         .progress-line { z-index: 0; }
         .progress-label { color: #6c757d; }
         .progress-step.active .progress-label,
-        .progress-step.completed .progress-label { color: #5144A1; }
+        .progress-step.completed .progress-label { color: #5144a1; }
         .review-section-title { border-bottom: 1px solid #dee2e6; padding-bottom: 0.5rem; }
         .review-label { font-weight: 500; color: #495057; }
         .review-value { color: #6c757d; }

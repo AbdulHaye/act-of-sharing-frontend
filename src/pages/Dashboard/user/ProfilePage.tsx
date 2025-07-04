@@ -163,7 +163,7 @@ const ProfilePage: React.FC = () => {
   const userRole = user.role || "host";
 
   return (
-    <DashboardLayout userRole={userRole as "admin" | "host" | "guest"} userName={userName}>
+    <DashboardLayout userRole={userRole as "admin" | "host" | "Participant"} userName={userName}>
       <div className="container-fluid p-4">
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
           <div className="mb-3 mb-md-0">

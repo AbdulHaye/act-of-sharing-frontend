@@ -21,7 +21,16 @@ body {
   overflow-x: hidden;
   position: relative;
 }
-
+.badge-purple {
+  background-color: #5144A1;
+  color: white;
+  padding: 0.25em 0.5em;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  display: inline-block;
+  vertical-align: middle;
+}
 /* Sidebar */
 .dashboard-sidebar {
   width: 280px;

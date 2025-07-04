@@ -7,7 +7,7 @@ import DashboardLayout from "../../../components/dashboard/DashboardLayout"
 const stats = [
   { id: 1, title: "Events Attended", value: "8", icon: <Calendar size={24} /> },
   { id: 2, title: "Total Donated", value: "$650", icon: <DollarSign size={24} /> },
-  { id: 3, title: "Impact Made", value: "4 Families", icon: <Users size={24} /> },
+  // { id: 3, title: "Impact Made", value: "4 Families", icon: <Users size={24} /> },
 ]
 
 const upcomingEvents = [
@@ -68,14 +68,14 @@ const pastEvents = [
 
 const GuestDashboard: React.FC = () => {
   return (
-    <DashboardLayout userRole="guest" userName="Jane Guest">
+    <DashboardLayout userRole="Participant" userName="Jane Participant">
       <div className="container-fluid p-4">
         {/* Welcome Banner */}
         <div className="card border-0 bg-primary text-white mb-4 shadow-sm">
           <div className="card-body p-4">
             <div className="row align-items-center">
               <div className="col-12 col-md-8">
-                <h2 className="mb-2">Welcome back, Jane!</h2>
+                <h2 className="mb-2" style={{ color: 'white' }}>Welcome back, Jane!</h2>
                 <p className="mb-md-0">
                   You have <strong>2 upcoming events</strong> to attend. Your donations have helped{" "}
                   <strong>4 families</strong> so far.

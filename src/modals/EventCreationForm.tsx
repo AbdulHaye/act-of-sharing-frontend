@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Calendar, Clock, MapPin, Users, DollarSign, FileText, Image } from "lucide-react";
 import { useEvent } from "../context/EventContext";
 import { useAuth } from "../context/AuthContext";
@@ -9,6 +9,8 @@ interface EventFormData {
   date: string;
   time: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   guestCount: string;
   suggestedDonation: string;
   description: string;
@@ -26,12 +28,22 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isTermsChecked, setIsTermsChecked] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState<string | null>(null);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const totalSteps = 2;
+  const mapRef = useRef<HTMLDivElement>(null);
+  const autocompleteRef = useRef<HTMLInputElement>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const [lastSelectedLocation, setLastSelectedLocation] = useState("");
+
   const [formData, setFormData] = useState<EventFormData>({
     title: "",
     date: "",
     time: "",
     location: "",
+    latitude: null,
+    longitude: null,
     guestCount: "",
     suggestedDonation: "",
     description: "",
@@ -42,10 +54,179 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     eventImage: null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showDraftModal, setShowDraftModal] = useState(false);
 
   const MAX_GUESTS = 1000000;
   const MAX_DONATION = 100000000;
+
+  // Load Google Maps script dynamically
+  useEffect(() => {
+    const loadGoogleMapsScript = () => {
+      if (window.google && window.google.maps) {
+        setIsGoogleMapsLoaded(true);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&loading=async&libraries=places&callback=initAutocomplete`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setIsGoogleMapsLoaded(true);
+      script.onerror = () => {
+        console.error("Failed to load Google Maps script");
+        toast.error("Failed to load map services");
+      };
+      document.head.appendChild(script);
+
+      return () => {
+        document.head.removeChild(script);
+      };
+    };
+
+    loadGoogleMapsScript();
+  }, []);
+
+  // Initialize Google Maps and Autocomplete
+  useEffect(() => {
+    if (!isGoogleMapsLoaded || !mapRef.current || !autocompleteRef.current) return;
+
+    const initMap = () => {
+      const { Map } = google.maps;
+      const mapInstance = new Map(mapRef.current, {
+        center: { lat: -34.397, lng: 150.644 }, // Default center (e.g., Sydney)
+        zoom: 10,
+        mapId: "EVENT_CREATION_MAP",
+      });
+      setMap(mapInstance);
+
+      // Add click listener for map selection
+      mapInstance.addListener("click", (event: google.maps.MapMouseEvent) => {
+        if (!event.latLng) return;
+
+        const lat = event.latLng.lat();
+        const lng = event.latLng.lng();
+
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          if (status === "OK" && results && results[0]) {
+            const formattedAddress = results[0].formatted_address;
+            setFormData((prev) => ({
+              ...prev,
+              location: formattedAddress,
+              latitude: lat,
+              longitude: lng,
+            }));
+            setErrors((prev) => ({ ...prev, location: "" }));
+            setLastSelectedLocation(formattedAddress);
+
+            if (autocompleteRef.current) {
+              autocompleteRef.current.value = formattedAddress;
+            }
+
+            if (marker) {
+              marker.setMap(null);
+            }
+            const newMarker = new google.maps.Marker({
+              map: mapInstance,
+              position: { lat, lng },
+            });
+            setMarker(newMarker);
+            mapInstance.setCenter({ lat, lng });
+            mapInstance.setZoom(15);
+          }
+        });
+      });
+    };
+
+    const initAutocomplete = () => {
+      if (!autocompleteRef.current) return;
+
+      const { Autocomplete } = google.maps.places;
+      const autocomplete = new Autocomplete(autocompleteRef.current, {
+        fields: ["formatted_address", "geometry", "name"],
+        types: ["address"],
+      });
+
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (place.geometry && place.geometry.location) {
+          const location = place.formatted_address || place.name || "";
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+
+          setFormData((prev) => ({
+            ...prev,
+            location,
+            latitude: lat,
+            longitude: lng,
+          }));
+          setErrors((prev) => ({ ...prev, location: "" }));
+          setLastSelectedLocation(location);
+
+          if (map) {
+            map.setCenter({ lat, lng });
+            map.setZoom(15);
+
+            if (marker) {
+              marker.setMap(null);
+            }
+            const newMarker = new google.maps.Marker({
+              map,
+              position: { lat, lng },
+            });
+            setMarker(newMarker);
+          }
+        }
+      });
+
+      initMap();
+    };
+
+    if (window.google) {
+      initAutocomplete();
+    }
+  }, [isGoogleMapsLoaded]);
+
+  // Handle manual location input on blur
+  const handleLocationBlur = () => {
+    if (formData.location && formData.location !== lastSelectedLocation) {
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ address: formData.location }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          const lat = results[0].geometry.location.lat();
+          const lng = results[0].geometry.location.lng();
+          const formattedAddress = results[0].formatted_address;
+
+          setFormData((prev) => ({
+            ...prev,
+            location: formattedAddress,
+            latitude: lat,
+            longitude: lng,
+          }));
+          setLastSelectedLocation(formattedAddress);
+
+          if (map) {
+            if (results[0].geometry.viewport) {
+              map.fitBounds(results[0].geometry.viewport);
+            } else {
+              map.setCenter({ lat, lng });
+              map.setZoom(15);
+            }
+          }
+
+          if (marker) {
+            marker.setMap(null);
+          }
+          const newMarker = new google.maps.Marker({
+            map,
+            position: { lat, lng },
+          });
+          setMarker(newMarker);
+        } else {
+          toast.error("Unable to find the location. Please try again.");
+        }
+      });
+    }
+  };
 
   const validateStep = (step: number): Record<string, string> => {
     const errors: Record<string, string> = {};
@@ -122,10 +303,12 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     eventData.append("date", formData.date);
     eventData.append("time", formData.time);
     eventData.append("location", formData.location);
+    eventData.append("latitude", formData.latitude ? formData.latitude.toString() : "");
+    eventData.append("longitude", formData.longitude ? formData.longitude.toString() : "");
     eventData.append("guestCount", formData.guestCount);
     eventData.append("suggestedDonation", formData.suggestedDonation || "0");
     eventData.append("isPublic", formData.isPublic.toString());
-    eventData.append("isDraft", "false"); // Explicitly set to false for final submission
+    eventData.append("isDraft", "false");
     if (formData.eventImage) eventData.append("eventImage", formData.eventImage);
 
     try {
@@ -151,6 +334,8 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     eventData.append("date", formData.date || "");
     eventData.append("time", formData.time || "");
     eventData.append("location", formData.location || "");
+    eventData.append("latitude", formData.latitude ? formData.latitude.toString() : "");
+    eventData.append("longitude", formData.longitude ? formData.longitude.toString() : "");
     eventData.append("guestCount", formData.guestCount || "");
     eventData.append("suggestedDonation", formData.suggestedDonation || "0");
     eventData.append("isPublic", formData.isPublic.toString());
@@ -266,7 +451,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
 
   const updateTime = (newHour: string, newMinute: string, newAmpm: string) => {
     if (newHour && newMinute && newAmpm) {
-      const timeString = `${newHour.padStart(2, '0')}:${newMinute} ${newAmpm}`;
+      const timeString = `${newHour.padStart(2, "0")}:${newMinute} ${newAmpm}`;
       setFormData((prev) => ({
         ...prev,
         time: timeString,
@@ -485,17 +670,47 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                             type="text"
                             id="location"
                             name="location"
+                            ref={autocompleteRef}
                             value={formData.location}
                             onChange={handleInputChange}
+                            onBlur={handleLocationBlur}
                             className="form-control"
-                            placeholder="Address or virtual link"
+                            placeholder="Enter address or click on map"
                             required
-                            disabled={loading}
+                            disabled={loading || !isGoogleMapsLoaded}
                           />
                         </div>
                         {errors.location && (
                           <div className="text-danger mt-1">{errors.location}</div>
                         )}
+                        <div
+                          ref={mapRef}
+                          style={{
+                            height: "300px",
+                            width: "100%",
+                            marginTop: "10px",
+                            borderRadius: "4px",
+                            border: "1px solid #dee2e6",
+                            backgroundColor: isGoogleMapsLoaded ? "transparent" : "#f8f9fa",
+                          }}
+                        >
+                          {!isGoogleMapsLoaded && (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                height: "100%",
+                                color: "#6c757d",
+                              }}
+                            >
+                              Loading map...
+                            </div>
+                          )}
+                        </div>
+                        <small className="text-muted d-block mt-1">
+                          Type an address or click on the map to select a location.
+                        </small>
                       </div>
 
                       <div className="row">
@@ -686,6 +901,14 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                           <span className="ms-2">{formData.location}</span>
                         </div>
                         <div className="mb-2">
+                          <span className="fw-bold">Coordinates:</span>
+                          <span className="ms-2">
+                            {formData.latitude && formData.longitude
+                              ? `${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)}`
+                              : "Not specified"}
+                          </span>
+                        </div>
+                        <div className="mb-2">
                           <span className="fw-bold">Max Guests:</span>
                           <span className="ms-2">{formData.guestCount}</span>
                         </div>
@@ -765,7 +988,13 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                     className="btn btn-primary"
                     disabled={loading || !isTermsChecked}
                   >
-                    {loading ? "Creating..." : "Create Event"}
+                    {loading ? (
+                      <div className="spinner-border spinner-border-sm text-light" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                    ) : (
+                      "Create Event"
+                    )}
                   </button>
                 )}
               </div>
@@ -875,17 +1104,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       )}
 
       <style jsx>{`
-        .text-primary { color: #5144a1 !important; }
-        .bg-primary { background-color: #5144a1 !important; }
-        .text-danger { color:rgb(193, 65, 78) !important; }
+        .text-primary { color: #5144A1 !important; }
+        .bg-primary { background-color: #5144A1 !important; }
+        .text-danger { color: #dc3545 !important; }
         .text-muted { color: #6c757d !important; }
         .form-progress { position: relative; }
-        .progress-step { position: "relative"; }
+        .progress-step { position: relative; }
         .progress-circle { transition: background-color 0.3s; }
         .progress-line { z-index: 0; }
         .progress-label { color: #6c757d; }
         .progress-step.active .progress-label,
-        .progress-step.completed .progress-label { color: #5144a1; }
+        .progress-step.completed .progress-label { color: #5144A1; }
         .review-section-title { border-bottom: 1px solid #dee2e6; padding-bottom: 0.5rem; }
         .review-label { font-weight: 500; color: #495057; }
         .review-value { color: #6c757d; }

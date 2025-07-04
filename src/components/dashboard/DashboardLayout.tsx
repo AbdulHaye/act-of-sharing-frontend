@@ -96,7 +96,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       ? `${user.firstname} ${user.lastname}`
       : "User";
   const userRole =
-    (user?.role?.toLowerCase() as "admin" | "host" | "guest") || "host";
+    (user?.role?.toLowerCase() as "admin" | "host" | "participant") || "host";
 
   const getNavItems = () => {
     const commonItems = [
@@ -109,7 +109,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         path: "/dashboard/my-events",
         icon: <Calendar size={20} />,
         label:
-          userRole === "guest" || userRole === "admin"
+          userRole === "participant" || userRole === "admin"
             ? "Events"
             : "My Events",
       },
@@ -123,7 +123,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         icon: <DollarSign size={20} />,
         label: "Contributions",
       },
-    ];
+    ].filter(item => userRole !== "participant" || item.label !== "Contributions");
 
     if (userRole === "admin") {
       return [
@@ -132,13 +132,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         { path: "/dashboard/request-assistance", icon: <Users size={20} />, label: "Request Assistance" },
         { path: "/dashboard/contactus", icon: <Users size={20} />, label: "Contact Us" },
         { path: "/dashboard/stories", icon: <Users size={20} />, label: "Stories" },
-        // { path: "/dashboard/draft-events", icon: <Calendar size={20} />, label: `Draft Events (${draftCount})` },
       ];
     } else if (userRole === "host") {
       return [
         ...commonItems,
-        { path: "/dashboard/draft-events", icon: <Calendar size={20} />, label: `Draft Events (${draftCount})` },
-        // { path: "/dashboard/invite", icon: <Users size={20} />, label: "Invite" },
+        { path: "/dashboard/draft-events", icon: <Calendar size={20} />, label: `Draft Events`, badge: draftCount },
       ];
     } else {
       return [...commonItems];
@@ -181,7 +179,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
 
         <div className="sidebar-user">
-          <div className="user-avatar">{userName.charAt(0).toUpperCase()}</div>          <div className="user-info">
+          <div className="user-avatar">{userName.charAt(0).toUpperCase()}</div>
+          <div className="user-info">
             <h6 className="mb-0">{userName}</h6>
             <span className="user-role">
               {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
@@ -204,6 +203,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               >
                 {item.icon}
                 <span>{item.label}</span>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="badge badge-purple ms-2">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             </li>
           ))}
@@ -214,7 +218,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               onClick={() => {
                 closeSidebar();
                 logout();
-                scatterToTop();
+                scrollToTop();
               }}
             >
               <LogOut size={20} />

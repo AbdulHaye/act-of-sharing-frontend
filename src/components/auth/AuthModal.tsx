@@ -60,7 +60,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
 
     if (!validateEmail(email)) {
       setMessage({
-        text: "Please enter a valid email address",
+        text: "Please provide a valid email address",
         type: "error",
       });
       setIsLoading(false);
@@ -86,29 +86,45 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
           setIsLoading(false);
           return;
         }
-        await register({ firstname, lastname, email, password, role });
+        const res = await register({ firstname, lastname, email, password, role });
         setShowVerificationModal(true);
         toast.success("Registration successful! Please check your email to verify.");
       } else {
         await login(email, password);
+        setMessage({ text: "Login successful", type: "success" });
         onClose();
       }
     } catch (err: any) {
-      const errorMessage = err.message || err.response?.data?.message || "An error occurred";
-      if (err.response?.status === 400) {
-        setMessage({ text: "Invalid credentials", type: "error" });
-      } else if (err.response?.status === 403) {
-        setMessage({ text: "Please verify your email before logging in", type: "error" });
-      } else {
-        setMessage({ text: errorMessage, type: "error" });
+      let errorMessage = "An unexpected error occurred";
+      if (err.response) {
+        switch (err.response.status) {
+          case 400:
+            errorMessage = err.response.data?.message || "Invalid email or password. Please try again.";
+            break;
+          case 401:
+            errorMessage = "Incorrect email or password. Please try again.";
+            break;
+          case 403:
+            errorMessage = "Your email address is not verified. Please verify your email to log in.";
+            setShowVerificationModal(true);
+            break;
+          case 404:
+            errorMessage = "No user with this email. Please create an account then login.";
+            break;
+          default:
+            errorMessage = "An unexpected server error occurred. Please try again later.";
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
       }
-    } finally {
+      setMessage({ text: errorMessage, type: "error" });
       setIsLoading(false);
+      console.error("Error during authentication:", err);
     }
   };
 
   const handleResendEmail = async () => {
-    setIsLoading(true); // Start loading
+    setIsLoading(true);
     try {
       const response = await fetch("http://localhost:5000/api/users/resend-verification-email", {
         method: "POST",
@@ -125,9 +141,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
       }
     } catch (err: any) {
       const errorMessage = err.message || "Failed to resend verification email";
-      toast.error(errorMessage);
+      if (err.response?.status === 404) {
+        toast.error("No account found with this email. Please sign up.");
+      } else if (err.response?.status === 400) {
+        toast.error(errorMessage);
+      } else {
+        toast.error("An unexpected server error occurred. Please try again later.");
+      }
     } finally {
-      setIsLoading(false); // Stop loading
+      setIsLoading(false);
     }
   };
 
@@ -194,7 +216,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
                 onClick={handleResendEmail}
                 disabled={isLoading}
               >
-                Resend Verification Email
+                {isLoading ? (
+                  <div
+                    className="spinner-border spinner-border-sm text-primary"
+                    role="status"
+                  >
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                ) : (
+                  "Resend Verification Email"
+                )}
               </button>
             </div>
           </div>
@@ -231,34 +262,50 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
           )}
 
           {mode === "signup" && (
-            <div className="auth-form-row">
-              <div className="auth-form-group">
-                <label htmlFor="firstname">First Name</label>
-                <input
-                  id="firstname"
-                  type="text"
-                  value={firstname}
-                  onChange={(e) => setFirstname(e.target.value)}
-                  required
-                  className="auth-input"
-                  placeholder="Enter your first name"
-                  disabled={isLoading}
-                />
+            <>
+              <div className="auth-form-row">
+                <div className="auth-form-group">
+                  <label htmlFor="firstname">First Name</label>
+                  <input
+                    id="firstname"
+                    type="text"
+                    value={firstname}
+                    onChange={(e) => setFirstname(e.target.value)}
+                    required
+                    className="auth-input"
+                    placeholder="Enter your first name"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="auth-form-group">
+                  <label htmlFor="lastname">Last Name</label>
+                  <input
+                    id="lastname"
+                    type="text"
+                    value={lastname}
+                    onChange={(e) => setLastname(e.target.value)}
+                    required
+                    className="auth-input"
+                    placeholder="Enter your last name"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
               <div className="auth-form-group">
-                <label htmlFor="lastname">Last Name</label>
-                <input
-                  id="lastname"
-                  type="text"
-                  value={lastname}
-                  onChange={(e) => setLastname(e.target.value)}
+                <label htmlFor="role">Role</label>
+                <select
+                  id="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
                   required
                   className="auth-input"
-                  placeholder="Enter your last name"
                   disabled={isLoading}
-                />
+                >
+                  <option value="host">Host</option>
+                  <option value="Participant">Participant</option>
+                </select>
               </div>
-            </div>
+            </>
           )}
 
           <div className="auth-form-group">

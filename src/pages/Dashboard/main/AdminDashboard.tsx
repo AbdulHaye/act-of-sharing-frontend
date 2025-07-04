@@ -189,7 +189,7 @@ const AdminDashboard: React.FC = () => {
         id: user._id,
         name: `${user.firstName || "User"} ${user.lastName || ""}`.trim(),
         email: user.email || "N/A",
-        role: user.role || "Guest",
+        role: user.role || "Participant",
         joined: new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
       }));
   }, [users]);

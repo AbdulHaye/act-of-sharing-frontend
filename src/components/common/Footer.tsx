@@ -16,6 +16,9 @@ const Footer: React.FC = () => {
     message: "",
   });
 
+  // Loading state for the submit button
+  const [isLoading, setIsLoading] = useState(false);
+
   // Handle input changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -39,6 +42,8 @@ const Footer: React.FC = () => {
       return;
     }
 
+    setIsLoading(true); // Start loading
+
     try {
       const response = await axiosInstance.post(
         `${import.meta.env.VITE_API_URL}/contact`,
@@ -59,6 +64,8 @@ const Footer: React.FC = () => {
     } catch (error: any) {
       console.error("Error submitting form:", error);
       toast.error(error.message || "Failed to send message. Please try again.");
+    } finally {
+      setIsLoading(false); // Stop loading
     }
   };
 
@@ -120,12 +127,6 @@ const Footer: React.FC = () => {
                 Support@CommonChange.com
               </a>
             </div>
-            {/* <div className="contact-item">
-              <span className="contact-label">Phone:</span>
-              <a href="tel:4073600777" className="contact-value">
-                (407) 360-0778
-              </a>
-            </div> */}
           </div>
 
           <div className="col-md-5 col-lg-6">
@@ -141,6 +142,7 @@ const Footer: React.FC = () => {
                     value={formData.name}
                     onChange={handleChange}
                     aria-label="Name"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="form-group">
@@ -152,6 +154,7 @@ const Footer: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                     aria-label="Email Address"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -164,10 +167,24 @@ const Footer: React.FC = () => {
                   onChange={handleChange}
                   rows={3}
                   aria-label="Message"
+                  disabled={isLoading}
                 ></textarea>
               </div>
-              <button type="submit" className="btn btn-primary">
-                Send
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div
+                    className="spinner-border spinner-border-sm text-light"
+                    role="status"
+                  >
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                ) : (
+                  "Send"
+                )}
               </button>
             </form>
           </div>
@@ -179,7 +196,9 @@ const Footer: React.FC = () => {
 
         <div className="row footer-bottom">
           <div className="col-md-6 text-center text-md-start">
-            <p className="copyright">© {currentYear} Acts of Sharing. All rights reserved.</p>
+            <p className="copyright">
+              © {currentYear} Acts of Sharing. All rights reserved.
+            </p>
           </div>
           <div className="col-md-6 text-center text-md-end">
             <ul className="footer-legal">
