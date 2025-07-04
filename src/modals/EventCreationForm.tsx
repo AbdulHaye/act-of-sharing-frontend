@@ -3,6 +3,7 @@ import { X, Calendar, Clock, MapPin, Users, DollarSign, FileText, Image } from "
 import { useEvent } from "../context/EventContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 interface EventFormData {
   title: string;
@@ -25,10 +26,12 @@ interface EventCreationFormProps {
 const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
   const { createEvent, loading, error } = useEvent();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isTermsChecked, setIsTermsChecked] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState<string | null>(null);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [showEventCreatedModal, setShowEventCreatedModal] = useState(false);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const totalSteps = 2;
   const mapRef = useRef<HTMLDivElement>(null);
@@ -61,7 +64,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
   const MAX_GUESTS = 1000000;
   const MAX_DONATION = 100000000;
 
-  // Load Google Maps script dynamically
   useEffect(() => {
     const loadGoogleMapsScript = () => {
       if (window.google && window.google.maps) {
@@ -88,7 +90,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     loadGoogleMapsScript();
   }, []);
 
-  // Initialize Google Maps, Autocomplete, and Services
   useEffect(() => {
     if (!isGoogleMapsLoaded || !mapRef.current || !autocompleteRef.current) return;
 
@@ -156,7 +157,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     };
   }, [isGoogleMapsLoaded]);
 
-  // Handle map click to select location
   const handleMapClick = (event: google.maps.MapMouseEvent) => {
     if (!map || !event.latLng) return;
 
@@ -191,7 +191,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     });
   };
 
-  // Fetch location suggestions as user types
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, location: value }));
@@ -213,7 +212,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     }
   };
 
-  // Select a suggestion
   const handleSuggestionSelect = (placeId: string) => {
     if (placesService && map) {
       placesService.getDetails({ placeId, fields: ["formatted_address", "geometry"] }, (place, status) => {
@@ -342,7 +340,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     try {
       await createEvent(eventData);
       toast.success("Event created successfully!");
-      onClose();
+      setShowEventCreatedModal(true); // Show the event created modal
     } catch (err) {
       console.error("Error creating event:", err);
       setErrors((prev) => ({ ...prev, submit: "Failed to create event" }));
@@ -457,7 +455,6 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
     }
   };
 
-  // Custom time handling
   const [hour, setHour] = useState("");
   const [minute, setMinute] = useState("00");
   const [ampm, setAmpm] = useState("AM");
@@ -486,6 +483,19 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
       }));
       setErrors((prev) => ({ ...prev, time: "" }));
     }
+  };
+
+  const handleEventCreatedModalClose = () => {
+    setShowEventCreatedModal(false);
+    onClose();
+    navigate("/dashboard/my-events"); // Navigate to My Events page
+  };
+
+  const handleInviteParticipants = () => {
+    setShowEventCreatedModal(false);
+    onClose();
+    // Assuming an invite page or functionality; adjust the route as needed
+    navigate("/invite-participants"); // Navigate to invite participants page
   };
 
   return (
@@ -767,7 +777,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                                     borderBottom: "1px solid #eee",
                                     background: "white",
                                   }}
-                                  onMouseDown={(e) => e.preventDefault()} // Prevent input blur
+                                  onMouseDown={(e) => e.preventDefault()}
                                 >
                                   {suggestion.description}
                                 </li>
@@ -1170,6 +1180,50 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
         </div>
       )}
 
+      {showEventCreatedModal && (
+        <div className="auth-modal-overlay">
+          <div
+            className="auth-modal-container"
+            style={{ opacity: 1, transform: "translateY(0)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="auth-modal-header">
+              <div className="auth-modal-logo">
+                <Calendar size={24} className="auth-logo-icon" />
+                <h2>Event Created</h2>
+              </div>
+              <button className="auth-close-button" onClick={handleEventCreatedModalClose}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="auth-form">
+              <p>
+                Your event has been created successfully! Go to your events page to manage it or
+                invite participants to donate.
+              </p>
+              <div className="auth-form-group">
+                <button
+                  type="button"
+                  className="auth-submit-button"
+                  onClick={handleEventCreatedModalClose}
+                  disabled={loading}
+                >
+                  Go to My Events
+                </button>
+                {/* <button
+                  type="button"
+                  className="auth-link-button mt-3"
+                  onClick={handleInviteParticipants}
+                  disabled={loading}
+                >
+                  Invite Participants
+                </button> */}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .text-primary { color: #5144A1 !important; }
         .bg-primary { background-color: #5144A1 !important; }
@@ -1216,6 +1270,75 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
         }
         .suggestions-dropdown li:hover {
           background-color: #f8f9fa !important;
+        }
+        .auth-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1080;
+        }
+        .auth-modal-container {
+          background: white;
+          padding: 20px;
+          border-radius: 8px;
+          width: 400px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+          from { transform: translateY(50px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .auth-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+        .auth-modal-logo {
+          display: flex;
+          align-items: center;
+        }
+        .auth-logo-icon {
+          margin-right: 10px;
+          color: #5144A1;
+        }
+        .auth-close-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #6c757d;
+        }
+        .auth-form {
+          text-align: center;
+        }
+        .auth-form-group {
+          margin-top: 20px;
+        }
+        .auth-submit-button {
+          background-color: #5144A1;
+          color: white;
+          padding: 10px 20px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          width: 100%;
+        }
+        .auth-link-button {
+          background: none;
+          border: none;
+          color: #5144A1;
+          cursor: pointer;
+          text-decoration: underline;
+        }
+        .auth-submit-button:hover, .auth-link-button:hover {
+          opacity: 0.9;
         }
       `}</style>
     </>

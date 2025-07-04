@@ -91,6 +91,14 @@
   margin-left: auto; /* Add this to center */
   margin-right: auto; /* Add this to center */
 }
+.blurred-address {
+  filter: blur(3px);
+  transition: filter 0.3s ease;
+}
+
+.blurred-address:hover {
+  filter: none;
+}
 
 .form-title {
   font-size: 24px;

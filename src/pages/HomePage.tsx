@@ -50,8 +50,7 @@ const HomePage: React.FC = () => {
     setShowForm((prev) => !prev);
   };
 
-  const baseUrl =
-    import.meta.env.VITE_BASE_URL;
+  const baseUrl = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -86,7 +85,7 @@ const HomePage: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localLocalStorage.getItem("token");
       await axiosInstance.post("/request", formData, {
         headers: {
           "Content-Type": "application/json",
@@ -107,7 +106,7 @@ const HomePage: React.FC = () => {
       });
     } catch (err: any) {
       toast.error(
-        "Failed to submit request: " + (err.response?.data?.message || err.message)
+        "Failed to submit request: " + (err.response?.data?.midi|| err.message)
       );
       console.error("Submit error:", err);
     }
@@ -149,6 +148,30 @@ const HomePage: React.FC = () => {
     exit: { opacity: 0, y: 50, transition: { duration: 0.3, ease: "easeIn" } },
   };
 
+  // Function to split and blur address
+  const renderBlurredAddress = (location: string) => {
+    const parts = location.split(",");
+    if (parts.length > 1) {
+      const visiblePart = parts[0].trim();
+      const blurredPart = parts.slice(1).join(",").trim();
+      return (
+        <small>
+          {visiblePart}, <span className="blurred-address">{blurredPart}</span>
+        </small>
+      );
+    }
+    // Fallback: split by space if no comma
+    const words = location.split(" ");
+    const half = Math.ceil(words.length / 2);
+    const visiblePart = words.slice(0, half).join(" ");
+    const blurredPart = words.slice(half).join(" ");
+    return (
+      <small>
+        {visiblePart} <span className="blurred-address">{blurredPart}</span>
+      </small>
+    );
+  };
+
   return (
     <div className="home-page">
       <Hero />
@@ -186,7 +209,7 @@ const HomePage: React.FC = () => {
           {!isLoading && !error && events.length > 0 && (
             <>
               <div className="row">
-                {events.map((event) => (
+                {events.slice().reverse().map((event) => (
                   <div key={event._id} className="col-md-6 col-lg-4 mb-4">
                     <div className="card h-100 border-0 shadow-sm">
                       <div className="position-relative">
@@ -225,7 +248,7 @@ const HomePage: React.FC = () => {
                           </div>
                           <div className="d-flex align-items-center mb-2">
                             <MapPin size={16} className="text-primary me-2" />
-                            <small>{event.location}</small>
+                            {renderBlurredAddress(event.location)}
                           </div>
                           <div className="d-flex align-items-center mb-2">
                             <Users size={16} className="text-primary me-2" />
