@@ -389,12 +389,12 @@ const ContributionsPage: React.FC = () => {
                         {user?.role === "admin" && (
                           <td className="table-cell px-4 py-2" style={{ minWidth: "15%" }}>
                             <div className="btn-group" role="group">
-                              <button
+                              {/* <button
                                 className="btn btn-outline-primary btn-sm me-2"
                                 onClick={() => openEditModal(contribution)}
                               >
                                 <Edit size={16} /> Edit
-                              </button>
+                              </button> */}
                               <button
                                 className="btn btn-outline-danger btn-sm"
                                 onClick={() => handleDelete(contribution._id)}
