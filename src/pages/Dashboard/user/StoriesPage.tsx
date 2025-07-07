@@ -384,7 +384,7 @@ const StoriesPage: React.FC = () => {
                           {story.category}
                         </td>
                         <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
-                          ${story.amount}
+                          R {story.amount}
                         </td>
                         <td className="table-cell px-4 py-2" style={{ width: "10%" }}>
                           {story.image && story.image.id ? (

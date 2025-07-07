@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Calendar, Clock, MapPin, Users, DollarSign, FileText, Image } from "lucide-react";
+import { X, Calendar, Clock, MapPin, Users, FileText, Image } from "lucide-react";
+import { FcMoneyTransfer } from "react-icons/fc"; // Added money transfer icon
 import { useEvent } from "../context/EventContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
@@ -823,7 +824,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                           </label>
                           <div className="input-group">
                             <span className="input-group-text">
-                              <DollarSign size={18} />
+                              <FcMoneyTransfer size={18} /> {/* Replaced DollarSign with FcMoneyTransfer */}
                             </span>
                             <input
                               type="number"
@@ -991,7 +992,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({ onClose }) => {
                         </div>
                         <div className="mb-2">
                           <span className="fw-bold">Suggested Donation Amount (Per Person):</span>
-                          <span className="ms-2">{formData.suggestedDonation ? `$${formData.suggestedDonation}` : "Not specified"}</span>
+                          <span className="ms-2">{formData.suggestedDonation ? `${formData.suggestedDonation}` : "Not specified"}</span> {/* Removed $ symbol */}
                         </div>
                         <div className="mb-2">
                           <span className="fw-bold">Visibility:</span>

@@ -378,7 +378,7 @@ const ContributionsPage: React.FC = () => {
                           className="table-cell px-4 py-2 text-success font-semibold"
                           style={{ minWidth: "15%" }}
                         >
-                          ${contribution.amount?.toFixed(2) || "0.00"}
+                          R {contribution.amount?.toFixed(2) || "0.00"}
                         </td>
                         <td className="table-cell px-4 py-2" style={{ minWidth: "15%" }}>
                           {formatDate(contribution.createdAt)}
@@ -546,8 +546,7 @@ const ContributionsPage: React.FC = () => {
                         step="0.01"
                         className="form-control"
                         value={editFormData.amount}
-                        onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
-                        required
+                        readOnly
                       />
                     </div>
                     <div className="mb-3">

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, MapPin, Users, DollarSign } from "lucide-react";
+import { Calendar, MapPin, Users } from "lucide-react";
+import { FcMoneyTransfer } from "react-icons/fc"; // Added money transfer icon
 import { motion, AnimatePresence } from "framer-motion";
 import Hero from "../components/home/Hero";
 import HowItWorks from "../components/home/HowItWorks";
@@ -85,7 +86,7 @@ const HomePage: React.FC = () => {
     }
 
     try {
-      const token = localLocalStorage.getItem("token");
+      const token = localStorage.getItem("token"); // Fixed typo: localLocalStorage to localStorage
       await axiosInstance.post("/request", formData, {
         headers: {
           "Content-Type": "application/json",
@@ -106,7 +107,7 @@ const HomePage: React.FC = () => {
       });
     } catch (err: any) {
       toast.error(
-        "Failed to submit request: " + (err.response?.data?.midi|| err.message)
+        "Failed to submit request: " + (err.response?.data?.midi || err.message)
       );
       console.error("Submit error:", err);
     }
@@ -255,9 +256,11 @@ const HomePage: React.FC = () => {
                             <small>{event.guestCount} Attendees</small>
                           </div>
                           <div className="d-flex align-items-center mb-2">
-                            <DollarSign size={16} className="text-primary me-2" />
+                            {/* Replaced with FcMoneyTransfer icon */}
+                            <FcMoneyTransfer size={16} /> 
+                            
                             <small>
-                              Raised: ${event.currentAmount} of ${event.goalAmount}
+                               Raised: R{event.currentAmount} of R{event.goalAmount}
                             </small>
                           </div>
                           <div className="d-flex align-items-center mb-2">

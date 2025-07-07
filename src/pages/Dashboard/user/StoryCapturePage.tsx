@@ -133,7 +133,7 @@ const StoryCapturePage: React.FC = () => {
 
     setLoading(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000"; // Use env variable or fallback
+      const baseUrl = import.meta.env.VITE_API_URL ; // Use env variable or fallback
       const url = `${baseUrl}/events/stories`;
 
       const payload = {

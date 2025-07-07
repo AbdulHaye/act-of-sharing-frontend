@@ -3,20 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "../../../api/axiosInstance";
-import {
-  Calendar,
-  MapPin,
-  Users,
-  DollarSign,
-  Edit,
-  Trash2,
-  Info,
-  Plus,
-  UserPlus,
-  Eye,
-  Vote,
-  BarChart3,
-} from "lucide-react";
+import { Calendar, MapPin, Users, Edit, Trash2, Info, Plus, UserPlus, Eye, Vote, BarChart3 } from "lucide-react";
+import { FcMoneyTransfer } from "react-icons/fc";
 import { useAuth } from "../../../context/AuthContext";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import EventEditModal from "../modals/EventEditModal";
@@ -89,7 +77,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 
 const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
   const [guestEmail, setGuestEmail] = useState("");
-  const baseUrl = import.meta.env.VITE_BASE_URL; // Ensure this matches your server
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const { user } = useAuth();
 
   const validateEmail = (email: string) => {
@@ -204,9 +192,8 @@ const DraftEventsPage: React.FC = () => {
     limit: 10,
   });
 
-  const baseUrl = import.meta.env.VITE_BASE_URL; // Ensure this matches your server
+  const baseUrl = import.meta.env.VITE_BASE_URL;
 
-  // Debug: Log the base URL and request details
   console.log("Base URL in DraftEventsPage:", baseUrl);
 
   const fetchDraftEvents = async (page: number = 1) => {
@@ -215,7 +202,7 @@ const DraftEventsPage: React.FC = () => {
     try {
       const token = localStorage.getItem("token") || "";
       const params = { hostId: user.id, page, limit: pagination.limit };
-      console.log("Fetching draft events from:", `${baseUrl}/api/events/drafts`, "with params:", params); // Debug log
+      console.log("Fetching draft events from:", `${baseUrl}/api/events/drafts`, "with params:", params);
       const response = await axiosInstance.get(`${baseUrl}/api/events/drafts`, {
         headers: { "x-auth-token": token },
         params,
@@ -293,7 +280,7 @@ const DraftEventsPage: React.FC = () => {
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    console.error("Image failed to load:", e.currentTarget.src); // Debug log
+    console.error("Image failed to load:", e.currentTarget.src);
     e.currentTarget.style.display = "none";
     e.currentTarget.nextElementSibling!.style.display = "flex";
   };
@@ -326,7 +313,6 @@ const DraftEventsPage: React.FC = () => {
             <h1 className="page-title">Draft Events</h1>
             <p className="page-subtitle">Manage your draft events</p>
           </div>
-          
         </div>
 
         {error && <div className="alert alert-danger">{error}</div>}
@@ -349,7 +335,7 @@ const DraftEventsPage: React.FC = () => {
             <div className="events-grid">
               {draftEvents.map((event) => {
                 const imageUrl = event.imageUrl ? `${baseUrl}${event.imageUrl}` : null;
-                console.log("Draft Event Image URL:", imageUrl); // Debug log
+                console.log("Draft Event Image URL:", imageUrl);
                 return (
                   <div key={event._id} className={`event-card ${!isUpcoming(event.date) ? "past-event" : ""}`}>
                     <div className="card-header">
@@ -390,8 +376,8 @@ const DraftEventsPage: React.FC = () => {
                           <span>Max Guests: {event.guestCount || 0}</span>
                         </div>
                         <div className="detail-item">
-                          <DollarSign size={16} />
-                          <span>Suggested: ${event.suggestedDonation || "0"}</span>
+                          <FcMoneyTransfer size={16} />
+                          <span>Suggested: R  {event.suggestedDonation || "0"}</span>
                         </div>
                         <div className="detail-item">
                           <Info size={16} />

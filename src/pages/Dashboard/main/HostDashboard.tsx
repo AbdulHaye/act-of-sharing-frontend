@@ -106,26 +106,26 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-  const fetchTotalSuggestedDonation = async (): Promise<void> => {
-    try {
-      const token: string = localStorage.getItem("token") || "";
-      const response = await axiosInstance.get<TotalGoalResponse>("/events/total-suggested-donation", {
-        headers: { "Content-Type": "application/json", "x-auth-token": token },
-      });
-      const totalSuggested = Number(response.data.totalSuggestedDonation) || 0;
-      setTotalSuggestedDonation(totalSuggested);
-    } catch (error: any) {
-      console.error("Error fetching total suggested donation:", error);
-      setTotalSuggestedDonation(0);
-    }
-  };
+  // const fetchTotalSuggestedDonation = async (): Promise<void> => {
+  //   try {
+  //     const token: string = localStorage.getItem("token") || "";
+  //     const response = await axiosInstance.get<TotalGoalResponse>("/events/total-suggested-donation", {
+  //       headers: { "Content-Type": "application/json", "x-auth-token": token },
+  //     });
+  //     const totalSuggested = Number(response.data.totalSuggestedDonation) || 0;
+  //     setTotalSuggestedDonation(totalSuggested);
+  //   } catch (error: any) {
+  //     console.error("Error fetching total suggested donation:", error);
+  //     setTotalSuggestedDonation(0);
+  //   }
+  // };
 
   useEffect(() => {
     console.log("HostDashboard mounted, user:", user);
     if (user) {
       fetchHostTotalRaised();
       fetchEvents(pagination.currentPage);
-      fetchTotalSuggestedDonation();
+      // fetchTotalSuggestedDonation();
     }
   }, [user, pagination.currentPage]);
 
@@ -183,8 +183,8 @@ const HostDashboard: React.FC = () => {
     return [
       { id: 1, title: "Total Events", value: totalEvents, icon: <Calendar size={24} /> },
       { id: 2, title: "Total Guests", value: totalGuests, icon: <Users size={24} /> },
-      { id: 3, title: "Total Donations", value: `$${totalRaised.toLocaleString()}`, icon: <DollarSign size={24} /> },
-      { id: 4, title: "Total Suggested Donations", value: `$${totalIndividualSuggestedDonations.toLocaleString()}`, icon: <DollarSign size={24} /> },
+      { id: 3, title: "Total Donations", value: `R ${totalRaised.toLocaleString()}`, icon: <DollarSign size={24} /> },
+      { id: 4, title: "Total Suggested Donations", value: `R ${totalIndividualSuggestedDonations.toLocaleString()}`, icon: <DollarSign size={24} /> },
     ];
   }, [events, totalRaised, totalSuggestedDonation]);
 
@@ -235,7 +235,7 @@ const HostDashboard: React.FC = () => {
             <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{event.location}</td>
             <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{event.date}</td>
             <td className="table-cell px-4 py-2" style={{ width: "15%" }}>
-              {event.suggestedDonation !== null ? `$${event.suggestedDonation.toLocaleString()}` : "Not specified"}
+              {event.suggestedDonation !== null ? `R ${event.suggestedDonation.toLocaleString()}` : "Not specified"}
             </td>
             <td className="table-cell px-4 py-2" style={{ width: "15%" }}>{event.guests}</td>
             <td className="table-cell px-4 py-2" style={{ width: "10%" }}>{event.status}</td>
@@ -255,7 +255,7 @@ const HostDashboard: React.FC = () => {
                 <h2 className="mb-2 text-white text-lg font-semibold">Welcome, {userName}!</h2>
                 <p>
                   You have <strong>{upcomingEvents.length}</strong> upcoming events. Your events have raised{" "}
-                  <strong>${totalRaised.toLocaleString()}</strong> from external contributions for charitable causes.
+                  <strong>R {totalRaised.toLocaleString()}</strong> from external contributions for charitable causes.
                 </p>
               </div>
               <div className="text-md-end d-flex flex-column gap-2">

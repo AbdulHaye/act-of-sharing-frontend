@@ -107,7 +107,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ show, onHide, onConfirm }
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
               <div className="mb-3">
-                <label className="form-label">Donation Amount ($)</label>
+                <label className="form-label">Donation Amount (R)</label>
                 <input
                   type="number"
                   className="form-control"
@@ -243,7 +243,7 @@ const RequestsPage: React.FC = () => {
       setRequests(requests.map((r) =>
         r._id === requestId ? { ...r, donatedAmount: updatedRequest.donatedAmount, status: updatedRequest.status } : r
       ));
-      toast.success(`Donation of $${amount} processed successfully`);
+      toast.success(`Donation of R ${amount} processed successfully`);
       fetchRequests(pagination.currentPage);
     } catch (err: any) {
       setError("Failed to process donation: " + (err.response?.data?.message || err.message));
@@ -353,7 +353,7 @@ const RequestsPage: React.FC = () => {
                           {truncateText(request.additionalInfo || "")}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
-                          {request.donatedAmount ? `$${request.donatedAmount.toFixed(2)}` : "-"}
+                          {request.donatedAmount ? `R ${request.donatedAmount.toFixed(2)}` : "-"}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
                           <span

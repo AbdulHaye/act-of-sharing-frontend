@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
-import { Calendar, Clock, MapPin, Users, DollarSign, FileText, Image as ImageIcon } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, FileText, Image as ImageIcon } from "lucide-react"
+import { FcMoneyTransfer } from "react-icons/fc" // Added money transfer icon
 import { useEvent } from "../../../context/EventContext"
 import { useAuth } from "../../../context/AuthContext"
 import { toast } from "react-toastify"
@@ -891,7 +892,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
                           </label>
                           <div className="input-group">
                             <span className="input-group-text">
-                              <DollarSign size={18} />
+                              <FcMoneyTransfer size={18} /> {/* Replaced DollarSign with FcMoneyTransfer */}
                             </span>
                             <input
                               type="number"

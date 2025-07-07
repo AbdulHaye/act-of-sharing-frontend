@@ -4,7 +4,8 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../api/axiosInstance";
-import { Calendar, MapPin, Users, DollarSign, Edit, Trash2, Info, UserPlus, Eye, Vote, BarChart3 } from "lucide-react";
+import { Calendar, MapPin, Users, Edit, Trash2, Info, UserPlus, Eye, Vote, BarChart3 } from "lucide-react";
+import { FcMoneyTransfer } from "react-icons/fc";
 import { useEvent } from "../../../context/EventContext";
 import { useAuth } from "../../../context/AuthContext";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
@@ -74,7 +75,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ show,
 
 const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
   const [guestEmail, setGuestEmail] = useState("");
-  const baseUrl = import.meta.env.VITE_BASE_URL; // Consistent with homepage
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const { user } = useAuth();
 
   const validateEmail = (email: string) => {
@@ -180,7 +181,7 @@ const MyEventsPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const navigate = useNavigate();
-  const baseUrl = import.meta.env.VITE_BASE_URL; // Consistent with homepage
+  const baseUrl = import.meta.env.VITE_BASE_URL;
   const [pagination, setPagination] = useState<Pagination>({
     currentPage: 1,
     totalPages: 1,
@@ -188,7 +189,6 @@ const MyEventsPage: React.FC = () => {
     limit: 10,
   });
 
-  // Debug: Log the base URL
   console.log("Base URL in MyEventsPage:", baseUrl);
 
   const fetchEvents = async (page: number = 1) => {
@@ -317,7 +317,6 @@ const MyEventsPage: React.FC = () => {
             <div className="events-grid">
               {sortedEvents.map((event) => {
                 const imageUrl = event.imageUrl ? `${baseUrl}${event.imageUrl}` : null;
-                // Debug: Log each image URL
                 console.log("Event Image URL:", imageUrl);
 
                 return (
@@ -359,8 +358,8 @@ const MyEventsPage: React.FC = () => {
                           <span>Max Guests: {event.guestCount || 0}</span>
                         </div>
                         <div className="detail-item">
-                          <DollarSign size={16} />
-                          <span>Suggested: ${event.suggestedDonation || "0"}</span>
+                          <FcMoneyTransfer size={16} />
+                          <span>Suggested: R  {event.suggestedDonation || "0"}</span>
                         </div>
                         <div className="detail-item">
                           <Info size={16} />

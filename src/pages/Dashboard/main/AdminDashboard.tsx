@@ -160,7 +160,7 @@ const AdminDashboard: React.FC = () => {
       {
         id: 3,
         title: "Total Donations",
-        value: `$${totalRaised.toLocaleString()}`,
+        value: `R ${totalRaised.toLocaleString()}`,
         icon: <DollarSign size={24} />,
       },
     ];
@@ -221,7 +221,7 @@ const AdminDashboard: React.FC = () => {
           <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{item.name}</td>
           <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{item.location}</td>
           <td className="table-cell px-4 py-2 truncate" style={{ width: "20%" }}>{item.date}</td>
-          <td className="table-cell px-4 py-2" style={{ width: "15%" }}>${item.goalAmount.toLocaleString()}</td>
+          <td className="table-cell px-4 py-2" style={{ width: "15%" }}>R {item.goalAmount.toLocaleString()}</td>
           <td className="table-cell px-4 py-2" style={{ width: "15%" }}>{item.guests}</td>
           <td className="table-cell px-4 py-2" style={{ width: "10%" }}>{item.status}</td>
         </tr>

@@ -9,7 +9,6 @@ import {
   Users,
   Settings,
   PieChart,
-  DollarSign,
   LogOut,
   Menu,
   X,
@@ -17,6 +16,7 @@ import {
   User,
   ChevronDown,
 } from "lucide-react";
+import { FcMoneyTransfer } from "react-icons/fc"; // Added money transfer icon
 import { useAuth } from "../../context/AuthContext";
 import axiosInstance from "../../api/axiosInstance";
 import "../../styles/dashboard.css";
@@ -120,7 +120,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       },
       {
         path: "/dashboard/contributions",
-        icon: <DollarSign size={20} />,
+        icon: <FcMoneyTransfer size={20} />, // Replaced with FcMoneyTransfer icon
         label: "Contributions",
       },
     ].filter(item => userRole !== "participant" || item.label !== "Contributions");
