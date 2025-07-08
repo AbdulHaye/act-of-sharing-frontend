@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Calendar, Clock, MapPin, Users, FileText, Image as ImageIcon } from "lucide-react"
-import { FcMoneyTransfer } from "react-icons/fc" // Added money transfer icon
+import { FcMoneyTransfer } from "react-icons/fc" 
 import { useEvent } from "../../../context/EventContext"
 import { useAuth } from "../../../context/AuthContext"
 import { toast } from "react-toastify"
@@ -1119,17 +1119,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({ show, onHide, event }) 
 
               <div className="modal-footer" style={{ borderTop: "none", justifyContent: "space-between" }}>
                 <div>
-                  {isHost && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary me-2"
-                      onClick={handleSaveAsDraft}
-                      disabled={loading}
-                      style={{ cursor: loading ? "not-allowed" : "pointer", padding: "0.375rem 0.75rem", fontSize: "0.875rem" }}
-                    >
-                      Save as Draft
-                    </button>
-                  )}
+                  
                   <button
                     type="button"
                     className="btn btn-outline-secondary"

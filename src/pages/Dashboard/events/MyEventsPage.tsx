@@ -91,7 +91,7 @@ const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
       }
 
       try {
-        const response = await axiosInstance.post(`${baseUrl}/events/invite-by-email`, {
+        const response = await axiosInstance.post(`${baseUrl}/api/events/invite-by-email`, {
           from: user.email,
           eventId: event._id,
           to: guestEmail,

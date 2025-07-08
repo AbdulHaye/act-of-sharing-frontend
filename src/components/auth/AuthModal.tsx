@@ -26,6 +26,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
     type: "error" | "success";
   } | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [isOpenEmailLoading, setIsOpenEmailLoading] = useState(false);
+  const [isResendEmailLoading, setIsResendEmailLoading] = useState(false);
   const { login, register, resendVerificationEmail } = useAuth();
   const navigate = useNavigate();
 
@@ -86,7 +88,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
           setIsLoading(false);
           return;
         }
-        const res = await register({ firstname, lastname, email, password, role });
+        await register({ firstname, lastname, email, password, role });
         setShowVerificationModal(true);
         toast.success("Registration successful! Please check your email to verify.");
       } else {
@@ -124,36 +126,48 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
   };
 
   const handleResendEmail = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("http://localhost:5000/api/users/resend-verification-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
+    if (!email || !validateEmail(email)) {
+      setMessage({
+        text: "Please provide a valid email address",
+        type: "error",
       });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success("Verification email resent successfully. Please check your email.");
-      } else {
-        throw new Error(data.message || "Failed to resend verification email");
-      }
+      return;
+    }
+
+    setIsResendEmailLoading(true);
+    try {
+      await resendVerificationEmail(email);
+      setMessage({
+        text: "Verification email resent successfully. Please check your email.",
+        type: "success",
+      });
+      toast.success("Verification email resent successfully.");
     } catch (err: any) {
-      const errorMessage = err.message || "Failed to resend verification email";
+      let errorMessage = "Failed to resend verification email";
       if (err.response?.status === 404) {
-        toast.error("No account found with this email. Please sign up.");
+        errorMessage = "No account found with this email. Please sign up.";
       } else if (err.response?.status === 400) {
-        toast.error(errorMessage);
+        errorMessage = err.response.data?.message || "Invalid request.";
       } else {
-        toast.error("An unexpected server error occurred. Please try again later.");
+        errorMessage = "An unexpected server error occurred. Please try again later.";
       }
+      setMessage({ text: errorMessage, type: "error" });
+      toast.error(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsResendEmailLoading(false);
     }
   };
 
   const handleOpenEmail = () => {
+    if (!email || !validateEmail(email)) {
+      setMessage({
+        text: "Please provide a valid email address",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsOpenEmailLoading(true);
     const emailProviders = [
       { domain: "gmail.com", url: "https://mail.google.com" },
       { domain: "outlook.com", url: "https://outlook.live.com" },
@@ -165,9 +179,28 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
     const provider = emailProviders.find((p) => p.domain === emailDomain);
     const emailUrl = provider ? provider.url : "https://mail.google.com";
 
-    window.open(emailUrl, "_blank");
-    setShowVerificationModal(false);
-    onClose();
+    try {
+      const newWindow = window.open(emailUrl, "_blank");
+      if (!newWindow) {
+        setMessage({
+          text: "Unable to open email client. Please check your browser's popup settings or open your email manually.",
+          type: "error",
+        });
+      } else {
+        setMessage({
+          text: "Opening your email client. Please check your inbox or spam folder.",
+          type: "success",
+        });
+      }
+    } catch (err) {
+      setMessage({
+        text: "An error occurred while trying to open your email client.",
+        type: "error",
+      });
+      console.error("Error opening email client:", err);
+    } finally {
+      setIsOpenEmailLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -197,6 +230,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
             </button>
           </div>
           <div className="auth-form">
+            {message && (
+              <div
+                className={`alert ${
+                  message.type === "error" ? "alert-danger" : "alert-success"
+                }`}
+              >
+                {message.text}
+              </div>
+            )}
             <p>
               A verification email has been sent to <strong>{email}</strong>. Please
               check your inbox or spam folder and verify your email to log in.
@@ -206,17 +248,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onToggleMode }) =>
                 type="button"
                 className="auth-submit-button"
                 onClick={handleOpenEmail}
-                disabled={isLoading}
+                disabled={isOpenEmailLoading}
               >
-                Open Email
+                {isOpenEmailLoading ? (
+                  <div
+                    className="spinner-border spinner-border-sm text-light"
+                    role="status"
+                  >
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                ) : (
+                  "Open Email"
+                )}
               </button>
               <button
                 type="button"
                 className="auth-link-button mt-3"
                 onClick={handleResendEmail}
-                disabled={isLoading}
+                disabled={isResendEmailLoading}
               >
-                {isLoading ? (
+                {isResendEmailLoading ? (
                   <div
                     className="spinner-border spinner-border-sm text-primary"
                     role="status"
