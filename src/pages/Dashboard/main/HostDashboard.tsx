@@ -106,19 +106,7 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-  // const fetchTotalSuggestedDonation = async (): Promise<void> => {
-  //   try {
-  //     const token: string = localStorage.getItem("token") || "";
-  //     const response = await axiosInstance.get<TotalGoalResponse>("/events/total-suggested-donation", {
-  //       headers: { "Content-Type": "application/json", "x-auth-token": token },
-  //     });
-  //     const totalSuggested = Number(response.data.totalSuggestedDonation) || 0;
-  //     setTotalSuggestedDonation(totalSuggested);
-  //   } catch (error: any) {
-  //     console.error("Error fetching total suggested donation:", error);
-  //     setTotalSuggestedDonation(0);
-  //   }
-  // };
+
 
   useEffect(() => {
     console.log("HostDashboard mounted, user:", user);

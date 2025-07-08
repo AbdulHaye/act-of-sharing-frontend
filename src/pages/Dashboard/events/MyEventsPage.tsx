@@ -79,7 +79,7 @@ const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
   const { user } = useAuth();
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.(com|org|net|edu|gov)$/i;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.(com|testing|org|net|edu|gov)$/i;
     return emailRegex.test(email);
   };
 
@@ -172,7 +172,7 @@ const InviteModal: React.FC<InviteModalProps> = ({ show, onHide, event }) => {
 };
 
 const MyEventsPage: React.FC = () => {
-  const { events, loading, error, getHostSpecificEvents, deleteEvent } = useEvent();
+  const { events: hostEvents, loading: hostLoading, error: hostError, getHostSpecificEvents, deleteEvent } = useEvent();
   const { user } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -188,10 +188,38 @@ const MyEventsPage: React.FC = () => {
     totalEvents: 0,
     limit: 10,
   });
+  const [participantEvents, setParticipantEvents] = useState<Event[]>([]);
+  const [participantLoading, setParticipantLoading] = useState(false);
+  const [participantError, setParticipantError] = useState<string | null>(null);
 
   console.log("Base URL in MyEventsPage:", baseUrl);
 
-  const fetchEvents = async (page: number = 1) => {
+  const fetchParticipantEvents = async (page: number = 1) => {
+    if (!user?.id) return;
+    setParticipantLoading(true);
+    setParticipantError(null);
+    try {
+      const response = await axiosInstance.get(`/events/participant/events`, {
+        params: { page, limit: pagination.limit },
+      });
+      console.log("Participant events fetched:", response.data.events);
+      setParticipantEvents(response.data.events || []);
+      setPagination({
+        currentPage: response.data.pagination?.currentPage || 1,
+        totalPages: response.data.pagination?.totalPages || 1,
+        totalEvents: response.data.pagination?.totalEvents || 0,
+        limit: response.data.pagination?.limit || 10,
+      });
+    } catch (err) {
+      console.error("Error fetching participant events:", err);
+      setParticipantError("Failed to fetch invited events");
+      toast.error("Failed to fetch invited events");
+    } finally {
+      setParticipantLoading(false);
+    }
+  };
+
+  const fetchHostEvents = async (page: number = 1) => {
     if (!user?.id) return;
     try {
       const response = await getHostSpecificEvents(page, pagination.limit, false);
@@ -210,9 +238,13 @@ const MyEventsPage: React.FC = () => {
 
   useEffect(() => {
     if (user?.id) {
-      fetchEvents(pagination.currentPage);
+      if (user.role?.toLowerCase() === "participant") {
+        fetchParticipantEvents(pagination.currentPage);
+      } else {
+        fetchHostEvents(pagination.currentPage);
+      }
     }
-  }, [user?.id, pagination.currentPage]);
+  }, [user?.id, pagination.currentPage, user?.role]);
 
   const handleEditEvent = (event: Event) => {
     setSelectedEvent(event);
@@ -238,7 +270,7 @@ const MyEventsPage: React.FC = () => {
     try {
       await deleteEvent(eventIdToDelete);
       toast.success("Event deleted successfully");
-      fetchEvents(pagination.currentPage);
+      fetchHostEvents(pagination.currentPage);
     } catch (err) {
       console.error("Failed to delete event:", err);
       toast.error("Failed to delete event");
@@ -281,19 +313,25 @@ const MyEventsPage: React.FC = () => {
   }
 
   const userName = `${user.firstname || "User"} ${user.lastname || ""}`;
-  const userRole = user.role || "host";
+  const userRole = user.role?.toLowerCase() || "host";
+  const isParticipant = userRole === "participant";
+  const eventsToDisplay = isParticipant ? participantEvents : hostEvents;
+  const loading = isParticipant ? participantLoading : hostLoading;
+  const error = isParticipant ? participantError : hostError;
 
-  const sortedEvents = [...events]
+  const sortedEvents = [...eventsToDisplay]
     .filter((event) => !event.isDraft)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
-    <DashboardLayout userRole={userRole as "admin" | "host" | "guest"} userName={userName}>
+    <DashboardLayout userRole={userRole as "admin" | "host" | "participant"} userName={userName}>
       <div className="events-container">
         <div className="page-header">
           <div className="header-content">
-            <h1 className="page-title">My Events</h1>
-            <p className="page-subtitle">Manage all your hosted events</p>
+            <h1 className="page-title">{isParticipant ? "Invited Events" : "My Events"}</h1>
+            <p className="page-subtitle">
+              {isParticipant ? "View events you have been invited to" : "Manage all your hosted events"}
+            </p>
           </div>
         </div>
 
@@ -311,7 +349,11 @@ const MyEventsPage: React.FC = () => {
                 <Calendar size={48} />
               </div>
               <h3>No Events Found</h3>
-              <p>You haven't created any events yet. Start by hosting your first event!</p>
+              <p>
+                {isParticipant
+                  ? "You haven't been invited to any events yet."
+                  : "You haven't created any events yet. Start by hosting your first event!"}
+              </p>
             </div>
           ) : (
             <div className="events-grid">
@@ -359,7 +401,7 @@ const MyEventsPage: React.FC = () => {
                         </div>
                         <div className="detail-item">
                           <FcMoneyTransfer size={16} />
-                          <span>Suggested: R  {event.suggestedDonation || "0"}</span>
+                          <span>Suggested: R {event.suggestedDonation || "0"}</span>
                         </div>
                         <div className="detail-item">
                           <Info size={16} />
@@ -367,7 +409,7 @@ const MyEventsPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {(user.role === "admin" || (user.role === "host" && isUpcoming(event.date))) && (
+                      {(!isParticipant && (user.role === "admin" || (user.role === "host" && isUpcoming(event.date)))) && (
                         <div className="action-buttons">
                           <div className="edit-delete-actions">
                             <button
@@ -457,25 +499,31 @@ const MyEventsPage: React.FC = () => {
           )}
         </div>
 
-        <EventEditModal
-          show={showEditModal}
-          onHide={() => {
-            setShowEditModal(false);
-            setSelectedEvent(null);
-          }}
-          event={selectedEvent}
-        />
+        {!isParticipant && (
+          <EventEditModal
+            show={showEditModal}
+            onHide={() => {
+              setShowEditModal(false);
+              setSelectedEvent(null);
+            }}
+            event={selectedEvent}
+          />
+        )}
 
-        <DeleteConfirmationModal
-          show={showDeleteModal}
-          onHide={() => {
-            setShowDeleteModal(false);
-            setEventIdToDelete(null);
-          }}
-          onConfirm={confirmDeleteEvent}
-        />
+        {!isParticipant && (
+          <DeleteConfirmationModal
+            show={showDeleteModal}
+            onHide={() => {
+              setShowDeleteModal(false);
+              setEventIdToDelete(null);
+            }}
+            onConfirm={confirmDeleteEvent}
+          />
+        )}
 
-        <InviteModal show={showInviteModal} onHide={() => setShowInviteModal(false)} event={selectedEvent} />
+        {!isParticipant && (
+          <InviteModal show={showInviteModal} onHide={() => setShowInviteModal(false)} event={selectedEvent} />
+        )}
       </div>
 
       <style jsx>{`
@@ -498,7 +546,7 @@ const MyEventsPage: React.FC = () => {
           font-size: 2.5rem;
           font-weight: 700;
           color: #1e293b;
-          margin: 0 0 0.5rem 0;
+          margin: 0 0.5rem 0rem;
           letter-spacing: -0.025em;
         }
 
@@ -534,7 +582,7 @@ const MyEventsPage: React.FC = () => {
 
         @keyframes spin {
           0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        to: { transform: rotate(360deg); }
         }
 
         .empty-state {
@@ -552,9 +600,9 @@ const MyEventsPage: React.FC = () => {
         .empty-icon {
           width: 80px;
           height: 80px;
-          background: #f1f5f9;
+          background: none;
           border-radius: 50%;
-          display: flex;
+          display: contents;
           align-items: center;
           justify-content: center;
           margin-bottom: 1.5rem;
@@ -565,7 +613,7 @@ const MyEventsPage: React.FC = () => {
           font-size: 1.5rem;
           font-weight: 600;
           color: #1e293b;
-          margin: 0 0 0.5rem 0;
+          margin: 0 0 0.5rem;
         }
 
         .empty-state p {
@@ -582,7 +630,7 @@ const MyEventsPage: React.FC = () => {
         .event-card {
           background: white;
           border-radius: 16px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
           overflow: hidden;
           transition: all 0.3s ease;
           border: 1px solid #e2e8f0;
@@ -591,7 +639,7 @@ const MyEventsPage: React.FC = () => {
 
         .event-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
 
         .event-card.past-event {
@@ -623,7 +671,7 @@ const MyEventsPage: React.FC = () => {
         .placeholder-image {
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+          background: linear-gradient(135deg, #f1f5f9, 0%, #e2e293);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -634,7 +682,7 @@ const MyEventsPage: React.FC = () => {
           position: absolute;
           top: 12px;
           right: 12px;
-          background: rgba(0, 0, 0, 0.8);
+          background: rgba(0,0,0,0.8);
           color: white;
           padding: 0.25rem 0.75rem;
           border-radius: 20px;
@@ -705,10 +753,10 @@ const MyEventsPage: React.FC = () => {
           padding: 0.75rem 1rem;
           border-radius: 8px;
           font-size: 0.875rem;
-          font-weight: 500;
+          font-weight: bold;
           text-decoration: none;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.25s ease;
           border: none;
           flex: 1;
           min-height: 44px;
@@ -766,7 +814,7 @@ const MyEventsPage: React.FC = () => {
           left: 0;
           width: 100%;
           height: 100%;
-          background: rgba(0, 0, 0, 0.6);
+          background: rgba(0,0,0,0.6);
           display: flex;
           justify-content: center;
           align-items: center;
@@ -781,7 +829,7 @@ const MyEventsPage: React.FC = () => {
           max-width: 90vw;
           max-height: 90vh;
           overflow: hidden;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
         }
 
         .invite-modal {
@@ -798,7 +846,7 @@ const MyEventsPage: React.FC = () => {
           margin: 0;
           font-size: 1.25rem;
           font-weight: 600;
-          color: rgb(151, 153, 156);
+          color: rgb(151,153,156);
         }
 
         .modal-body {
@@ -853,7 +901,7 @@ const MyEventsPage: React.FC = () => {
         .form-control:focus {
           outline: none;
           border-color: #5144A1;
-          box-shadow: 0 0 0 3px rgba(81, 68, 161, 0.1);
+          box-shadow: 0 0 0 3px rgba(81,68,161,0.1);
         }
 
         .modal-footer {
@@ -893,15 +941,15 @@ const MyEventsPage: React.FC = () => {
 
         .pagination {
           display: flex;
-          gap: 0.5rem;
+          gap: -2.0;
           margin: 0;
         }
 
         .page-item {
           display: flex;
-        }
+          }
 
-        .page-item.disabled .page-link {
+        .page-item.disabled .page-item {
           opacity: 0.6;
           cursor: not-allowed;
         }
@@ -914,8 +962,8 @@ const MyEventsPage: React.FC = () => {
 
         .page-link {
           padding: 0.5rem 1rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
+          border: none1px solid #e2e293;
+          border-radius: 0;
           color: #5144A1;
           background: white;
           font-size: 0.875rem;
@@ -927,12 +975,6 @@ const MyEventsPage: React.FC = () => {
           background: #5144A1;
           color: white;
           border-color: #5144A1;
-        }
-
-        @media (max-width: 1200px) {
-          .events-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
         }
 
         @media (max-width: 768px) {
@@ -953,38 +995,43 @@ const MyEventsPage: React.FC = () => {
             margin: 0;
           }
 
-          .card-body {
+          .card-title {
             padding: 1rem;
-          }
+            }
 
-          .edit-delete-actions,
-          .primary-actions,
-          .secondary-actions {
+          .edit-actions {
             flex-direction: column;
-          }
+            .primary-actions,
+            .secondary-actions {
+                flex-direction: column;
+              }
 
-          .btn {
-            flex: none;
-          }
+              .btn {
+                flex: none;
+              }
 
-          .modal-content {
-            width: 95vw;
-            margin: 1rem;
-          }
+              .modal-content {
+                width: 95vw;
+                margin: 1rem;
+            }
 
-          .modal-header,
-          .modal-body,
-          .modal-footer {
-            padding: 1rem;
-          }
+              .modal-header {
+                padding: 1rem;
+            }
+                .modal-body {
+                    padding: 1rem;
+                }
+                .modal-footer {
+                    padding: 1rem;
+                  }
 
-          .pagination-container {
-            flex-direction: column;
-            align-items: center;
-          }
+              .pagination-container {
+                flex-direction: column;
+                align-items: center;
+              }
         }
 
-        @media (max-width: 480px) {
+        @media (min-width: -480px) {
           .event-title-section {
             margin-bottom: 0.75rem;
           }

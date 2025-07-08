@@ -38,7 +38,7 @@ import StartVotingPage from "./pages/Dashboard/user/StartVotingPage";
 import VotingResultsPage from "./pages/Dashboard/user/VotingResultsPage";
 
 const stripePromise = loadStripe(
-  "pk_test_51RKJvKPpyC29nsjCXtgQCJt7s56TWDr/4MHu9X4OsJtu3hg9OidR5FVDy3PkQrr44YvtrHqXEbxEJULtBDuDJ7EMm00fn72c7iI"
+  "pk_test_51RgdQTRwYF0nM5cg4KbRaIvVIj1JBDZP0AigSLLbrJkjF3O1yRHLoC2fDROdAOqI6PWrmLHXGErzzemY2qJ7KVYq00SwJyQuwS"
 );
 
 const DashboardRedirect: React.FC = () => {
