@@ -87,7 +87,7 @@ const Footer: React.FC = () => {
             </p>
             <div className="social-icons">
               <a
-                href="https://www.facebook.com/CommonChange/"
+                href="https://www.facebook.com/actsofsharing"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
