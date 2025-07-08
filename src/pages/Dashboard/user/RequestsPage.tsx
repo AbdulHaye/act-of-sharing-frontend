@@ -7,8 +7,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { toast } from "react-toastify";
 import { HandCoins, Trash2 } from "lucide-react";
 
-// Helper function to truncate text after 15 words
-const truncateText = (text: string, wordLimit: number = 15): string => {
+// Helper function to truncate text after 5 words
+const truncateText = (text: string, wordLimit: number = 5): string => {
   if (!text) return "";
   const words = text.trim().split(/\s+/);
   if (words.length <= wordLimit) return text;
@@ -159,16 +159,16 @@ const RequestsPage: React.FC = () => {
       const response = await axiosInstance.get(`/request?page=${page}&limit=${pagination.limit}`, {
         headers: {
           "Content-Type": "application/json",
-          "x-auth-token": token,
+          "x-auth-token": token || "",
         },
       });
       console.log("Fetched requests data:", response.data);
       setRequests(response.data.requests || []);
       setPagination({
-        currentPage: response.data.pagination.currentPage,
-        totalPages: response.data.pagination.totalPages,
-        totalRequests: response.data.pagination.totalRequests,
-        limit: response.data.pagination.limit,
+        currentPage: response.data.pagination?.currentPage || 1,
+        totalPages: response.data.pagination?.totalPages || 1,
+        totalRequests: response.data.pagination?.totalRequests || 0,
+        limit: response.data.pagination?.limit || 10,
       });
       setError(null);
     } catch (err: any) {
@@ -186,8 +186,8 @@ const RequestsPage: React.FC = () => {
   useEffect(() => {
     if (requests.length > 0) {
       const sorted = [...requests].sort((a, b) => {
-        const dateA = new Date(a.createdAt || a.created_at || '1970-01-01');
-        const dateB = new Date(b.createdAt || b.created_at || '1970-01-01');
+        const dateA = new Date(a.createdAt || '1970-01-01');
+        const dateB = new Date(b.createdAt || '1970-01-01');
         return dateB.getTime() - dateA.getTime();
       });
       console.log("Sorted requests:", sorted);
@@ -211,7 +211,7 @@ const RequestsPage: React.FC = () => {
       await axiosInstance.delete(`/request/${requestIdToDelete}`, {
         headers: {
           "Content-Type": "application/json",
-          "x-auth-token": token,
+          "x-auth-token": token || "",
         },
       });
       setRequests(requests.filter((r) => r._id !== requestIdToDelete));
@@ -234,16 +234,15 @@ const RequestsPage: React.FC = () => {
       }, {
         headers: {
           "Content-Type": "application/json",
-          "x-auth-token": token,
+          "x-auth-token": token || "",
         },
       });
 
-      // Update the local state based on the response
       const updatedRequest = response.data;
       setRequests(requests.map((r) =>
-        r._id === requestId ? { ...r, donatedAmount: updatedRequest.donatedAmount, status: updatedRequest.status } : r
+        r._id === requestId ? { ...r, donatedAmount: updatedRequest.donatedAmount, status: updatedRequest.status || "Pending" } : r
       ));
-      toast.success(`Donation of R ${amount} processed successfully`);
+      toast.success(`Donation of R ${amount.toFixed(2)} processed successfully`);
       fetchRequests(pagination.currentPage);
     } catch (err: any) {
       setError("Failed to process donation: " + (err.response?.data?.message || err.message));
@@ -303,7 +302,7 @@ const RequestsPage: React.FC = () => {
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Immediate Need</th>
                     <th className="table-header px-4 py-2 d-none d-md-table-cell" style={{ width: "10%" }}>Date</th>
                     <th className="table-header px-4 py-2 d-none d-lg-table-cell" style={{ width: "10%" }}>Additional Info</th>
-                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Donated_Amount</th>
+                    <th className="table-header px-4 py-2" style={{ width: "10%" }}>Donated Amount</th>
                     <th className="table-header px-4 py-2" style={{ width: "10%" }}>Status</th>
                     {user?.role === "admin" && (
                       <th className="table-header px-4 py-2" style={{ width: "15%" }}>Actions</th>
@@ -329,22 +328,22 @@ const RequestsPage: React.FC = () => {
                           {(pagination.currentPage - 1) * pagination.limit + index + 1}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
-                          {request.fullName}
+                          {request.fullName || ""}
                         </td>
                         <td className="table-cell px-4 py-2 truncate d-none d-md-table-cell" style={{ width: "10%" }}>
-                          {request.phone}
+                          {request.phone || ""}
                         </td>
                         <td className="table-cell px-4 py-2 truncate d-none d-lg-table-cell" style={{ width: "15%" }}>
-                          {request.email}
+                          {request.email || ""}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
-                          {request.personName}
+                          {request.personName || ""}
                         </td>
                         <td className="table-cell px-4 py-2 truncate d-none d-md-table-cell" style={{ width: "10%" }}>
                           {request.relationshipToRequester || "Self"}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
-                          {request.immediateNeed}
+                          {truncateText(request.immediateNeed || "")}
                         </td>
                         <td className="table-cell px-4 py-2 truncate d-none d-md-table-cell" style={{ width: "10%" }}>
                           {request.preferredDate ? new Date(request.preferredDate).toLocaleDateString() : ""}
@@ -356,9 +355,7 @@ const RequestsPage: React.FC = () => {
                           {request.donatedAmount ? `R ${request.donatedAmount.toFixed(2)}` : "-"}
                         </td>
                         <td className="table-cell px-4 py-2 truncate" style={{ width: "10%" }}>
-                          <span
-                            className={`status-${request.status?.toLowerCase() || "pending"}`}
-                          >
+                          <span className={`status-${(request.status || "Pending").toLowerCase()}`}>
                             {request.status || "Pending"}
                           </span>
                         </td>
@@ -368,7 +365,7 @@ const RequestsPage: React.FC = () => {
                               <button
                                 className="btn btn-outline-primary btn-sm me-2"
                                 onClick={() => openDonationModal(request._id)}
-                                // disabled={request.status === "completed"}
+                                disabled={request.status === "completed"}
                               >
                                 <HandCoins size={16} /> Donate
                               </button>
@@ -519,7 +516,7 @@ const RequestsPage: React.FC = () => {
           color: #6c757d;
         }
         .status-pending {
-          color:rgb(216, 170, 101); /* Orange for Pending */
+          color: rgb(216, 170, 101); /* Orange for Pending */
           font-weight: bold;
         }
         .status-completed {
