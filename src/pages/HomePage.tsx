@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, MapPin, Users } from "lucide-react";
-import { FcMoneyTransfer } from "react-icons/fc"; // Added money transfer icon
+import { FcMoneyTransfer } from "react-icons/fc";
 import { motion, AnimatePresence } from "framer-motion";
 import Hero from "../components/home/Hero";
 import HowItWorks from "../components/home/HowItWorks";
@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
   const { events = [], loading: isLoading, error, getPublicEvents } = useEvent();
   const [showForm, setShowForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const eventsPerPage = 6; // Default limit from API
+  const eventsPerPage = 6;
   const [totalPages, setTotalPages] = useState(1);
 
   const [formData, setFormData] = useState({
@@ -86,7 +86,7 @@ const HomePage: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem("token"); // Fixed typo: localLocalStorage to localStorage
+      const token = localStorage.getItem("token");
       await axiosInstance.post("/request", formData, {
         headers: {
           "Content-Type": "application/json",
@@ -149,15 +149,19 @@ const HomePage: React.FC = () => {
     exit: { opacity: 0, y: 50, transition: { duration: 0.3, ease: "easeIn" } },
   };
 
-  // Function to split and blur address
+  // Updated function to conditionally render address based on authentication
   const renderBlurredAddress = (location: string) => {
+    if (isAuthenticated) {
+      return <small>{location}</small>;
+    }
+
     const parts = location.split(",");
     if (parts.length > 1) {
       const visiblePart = parts[0].trim();
-      const blurredPart = parts.slice(1).join(",").trim();
+      const hiddenPart = parts.slice(1).join(",").trim();
       return (
         <small>
-          {visiblePart}, <span className="blurred-address">{blurredPart}</span>
+          {visiblePart}, <span className="hidden-address">[Hidden - Login or View Details]</span>
         </small>
       );
     }
@@ -165,10 +169,9 @@ const HomePage: React.FC = () => {
     const words = location.split(" ");
     const half = Math.ceil(words.length / 2);
     const visiblePart = words.slice(0, half).join(" ");
-    const blurredPart = words.slice(half).join(" ");
     return (
       <small>
-        {visiblePart} <span className="blurred-address">{blurredPart}</span>
+        {visiblePart} <span className="hidden-address">[Hidden - Login or View Details]</span>
       </small>
     );
   };
@@ -256,11 +259,9 @@ const HomePage: React.FC = () => {
                             <small>{event.guestCount} Attendees</small>
                           </div>
                           <div className="d-flex align-items-center mb-2">
-                            {/* Replaced with FcMoneyTransfer icon */}
-                            <FcMoneyTransfer size={16} /> 
-                            
+                            <FcMoneyTransfer size={16} />
                             <small>
-                               Raised: R{event.currentAmount} of R{event.goalAmount}
+                              Raised: R{event.currentAmount} of R{event.goalAmount}
                             </small>
                           </div>
                           <div className="d-flex align-items-center mb-2">
@@ -287,7 +288,6 @@ const HomePage: React.FC = () => {
                 ))}
               </div>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <nav aria-label="Events pagination" className="mt-4">
                   <ul className="pagination justify-content-center">

@@ -39,7 +39,7 @@ const VotingResultsPage: React.FC = () => {
   });
   const [loadingResults, setLoadingResults] = useState<boolean>(true);
 
-  const categories = ["all", "Infrastructure", "Education", "Healthcare"];
+  const categories = ["all"];
 
   useEffect(() => {
     if (!eventId) {
