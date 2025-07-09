@@ -11,7 +11,7 @@ interface VotingResult {
   id: number;
   title: string;
   description: string;
-  totalVotes: number;
+  votes: number;
   percentage: number;
   status: "winner" | "runner-up" | "participant";
   category: string;
@@ -19,8 +19,8 @@ interface VotingResult {
 
 interface VotingStats {
   totalParticipants: number;
-  totalVotes: number;
-  completionRate: number;
+  totalVotesCast: number;
+  completionRate: string; // Changed to string to match payload
   topCategory: string;
 }
 
@@ -28,20 +28,19 @@ const VotingResultsPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const eventId = location.state?.eventId; // Retrieve eventId from state
+  const eventId = location.state?.eventId;
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [votingResults, setVotingResults] = useState<VotingResult[]>([]);
   const [stats, setStats] = useState<VotingStats>({
     totalParticipants: 0,
-    totalVotes: 0,
-    completionRate: 0,
+    totalVotesCast: 0,
+    completionRate: "0",
     topCategory: "",
   });
   const [loadingResults, setLoadingResults] = useState<boolean>(true);
 
   const categories = ["all", "Infrastructure", "Education", "Healthcare"];
 
-  // Validate eventId on component mount and fetch results
   useEffect(() => {
     if (!eventId) {
       toast.error("No event selected. Please go back and select an event.");
@@ -53,26 +52,26 @@ const VotingResultsPage: React.FC = () => {
       try {
         const baseUrl = import.meta.env.VITE_API_URL;
         const url = `${baseUrl}/events/${eventId}/results`;
-        console.log("Fetching results from:", url); // Debug log
+        console.log("Fetching results from:", url);
         const response = await axiosInstance.get(url);
 
         if (response.status === 200 && response.data) {
           setVotingResults(
             response.data.results.map((result: any) => ({
-              id: result.id || result._id || 1,
+              id: result.storyId || 1, // Using storyId as unique identifier
               title: result.title || "Untitled",
               description: result.description || "No description",
-              totalVotes: result.totalVotes || 0,
-              percentage: result.percentage || 0,
+              votes: result.votes || 0,
+              percentage: parseFloat(result.percentage) || 0,
               status: result.status || "participant",
               category: result.category || "Uncategorized",
             }))
           );
           setStats({
-            totalParticipants: response.data.stats.totalParticipants || 0,
-            totalVotes: response.data.stats.totalVotes || 0,
-            completionRate: response.data.stats.completionRate || 0,
-            topCategory: response.data.stats.topCategory || "",
+            totalParticipants: response.data.totalParticipants || 0,
+            totalVotesCast: response.data.totalVotesCast || 0,
+            completionRate: response.data.completionRate || "0",
+            topCategory: response.data.topCategory || "",
           });
         } else {
           throw new Error("Failed to fetch voting results");
@@ -143,7 +142,7 @@ const VotingResultsPage: React.FC = () => {
   }
 
   if (!user) {
-    return null; // DashboardPage handles redirection
+    return null;
   }
 
   const userName = `${user.firstname || "User"} ${user.lastname || ""}`;
@@ -167,25 +166,18 @@ const VotingResultsPage: React.FC = () => {
               </svg>
               Back to Dashboard
             </button>
-            {/* <button className="btn btn-primary" onClick={() => navigate("/voting/new")}>
-              <svg className="me-2" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Start New Voting
-            </button> */}
           </div>
         </div>
 
         <div className="card border-0 shadow-sm">
           <div className="card-body">
-            {/* Stats Overview */}
             <div className="stats-grid mb-4">
               <div className="stat-card">
                 <div className="stat-number">{stats.totalParticipants.toLocaleString()}</div>
                 <div className="stat-label">Total Participants</div>
               </div>
               <div className="stat-card">
-                <div className="stat-number">{stats.totalVotes.toLocaleString()}</div>
+                <div className="stat-number">{stats.totalVotesCast.toLocaleString()}</div>
                 <div className="stat-label">Total Votes Cast</div>
               </div>
               <div className="stat-card">
@@ -198,7 +190,6 @@ const VotingResultsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Category Filter */}
             <div className="filter-section mb-4">
               <h4 className="mb-3">Filter by Category</h4>
               <div className="category-filters">
@@ -214,7 +205,6 @@ const VotingResultsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Results List with Scrollable Container */}
             <div className="results-section">
               <h4 className="mb-3">
                 {selectedCategory === "all" ? "All Results" : `${selectedCategory} Results`}
@@ -241,18 +231,14 @@ const VotingResultsPage: React.FC = () => {
                               <div className="status-badge" style={{ color: getStatusColor(result.status) }}>
                                 {getStatusIcon(result.status)}
                                 <span className="ms-1">
-                                  {result.status === "winner"
-                                    ? "Winner"
-                                    : result.status === "runner-up"
-                                      ? "Runner-up"
-                                      : "Participant"}
+                                  {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
                                 </span>
                               </div>
                             </div>
                           </div>
                           <div className="result-stats">
                             <div className="text-center">
-                              <div className="fw-bold">{result.totalVotes.toLocaleString()}</div>
+                              <div className="fw-bold">{result.votes.toLocaleString()}</div>
                               <div className="text-muted small">votes</div>
                             </div>
                             <div className="percentage-display ms-3">
@@ -325,9 +311,9 @@ const VotingResultsPage: React.FC = () => {
         }
 
         .results-scroll-container {
-          max-height: 500px; /* Set a fixed height for the scrollable area */
-          overflow-y: auto; /* Enable vertical scrolling */
-          padding-right: 1rem; /* Add padding to prevent content from touching scrollbar */
+          max-height: 500px;
+          overflow-y: auto;
+          padding-right: 1rem;
         }
 
         .results-list {
@@ -371,7 +357,6 @@ const VotingResultsPage: React.FC = () => {
           min-width: 150px;
         }
 
-        /* Custom scrollbar styling for better appearance */
         .results-scroll-container::-webkit-scrollbar {
           width: 8px;
         }
@@ -396,7 +381,7 @@ const VotingResultsPage: React.FC = () => {
           }
 
           .results-scroll-container {
-            max-height: 400px; /* Adjust height for smaller screens */
+            max-height: 400px;
           }
 
           .result-stats {
@@ -420,7 +405,7 @@ const VotingResultsPage: React.FC = () => {
           }
 
           .results-scroll-container {
-            max-height: 300px; /* Further adjust height for very small screens */
+            max-height: 300px;
           }
         }
       `}</style>
