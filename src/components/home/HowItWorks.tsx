@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Calendar, Heart, MessageCircle, DollarSign, Award } from 'lucide-react';
+import { Users, Calendar, Heart, MessageCircle, HandCoins, Award } from 'lucide-react';
 import '../../styles/how-it-works.css';
 
 interface StepProps {
@@ -43,7 +43,7 @@ const HowItWorks: React.FC = () => {
       step: 3
     },
     {
-      icon: <DollarSign size={42} />,
+      icon: <HandCoins size={42} />,
       title: "Collect Contributions",
       description: "Pool your resources during the meal to reach your giving goal together.",
       step: 4
@@ -87,7 +87,6 @@ const HowItWorks: React.FC = () => {
         </div>
 
         {/* <div className="text-center mt-4">
-          
           <button className="btn btn-primary btn-lg">Host Your Meal</button>
         </div> */}
       </div>

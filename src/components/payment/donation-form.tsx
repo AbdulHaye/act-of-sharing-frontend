@@ -86,7 +86,7 @@ const DonationForm: React.FC<DonationFormProps> = ({ eventId, organizationName =
 
           <div className="position-relative mb-2">
             <div className="input-group">
-              <span className="input-group-text bg-light border-end-0" style={{ fontSize: "1.5rem", fontWeight: "600", color: "#333" }}>$</span>
+              <span className="input-group-text bg-light border-end-0" style={{ fontSize: "1.5rem", fontWeight: "600", color: "#333" }}>R</span>
               <input
                 type="text"
                 id="donationAmount"
@@ -109,7 +109,7 @@ const DonationForm: React.FC<DonationFormProps> = ({ eventId, organizationName =
                 className={`btn btn-outline-secondary btn-sm ${Number(amount) === presetAmount ? "btn-primary" : ""}`}
                 onClick={() => setAmount(presetAmount.toFixed(2))}
               >
-                ${presetAmount}
+                R {presetAmount}
               </button>
             ))}
           </div>

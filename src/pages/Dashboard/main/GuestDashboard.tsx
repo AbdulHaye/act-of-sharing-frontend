@@ -1,6 +1,6 @@
-import  React, { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Calendar, DollarSign, Users, Search, MapPin, Clock, ChevronRight, Star } from "lucide-react"
+import { Calendar, HandCoins, Users, Search, MapPin, Clock, ChevronRight, Star } from "lucide-react"
 import DashboardLayout from "../../../components/dashboard/DashboardLayout"
 import axiosInstance from "../../../api/axiosInstance"; // Assuming axiosInstance is imported from a services file
 import { toast } from "react-toastify"; // Assuming toast is used for notifications
@@ -8,7 +8,7 @@ import { toast } from "react-toastify"; // Assuming toast is used for notificati
 // Mock data
 const stats = [
   { id: 1, title: "Events Attended", value: "0", icon: <Calendar size={24} /> },
-  { id: 2, title: "Total Donated", value: "$0", icon: <DollarSign size={24} /> },
+  { id: 2, title: "Total Donated", value: "0", icon: <HandCoins size={24} /> },
   // { id: 3, title: "Impact Made", value: "4 Families", icon: <Users size={24} /> },
 ]
 
@@ -70,7 +70,7 @@ const stats = [
 
 const GuestDashboard: React.FC = () => {
   const [totalEvents, setTotalEvents] = useState("0")
-  const [totalDonated, setTotalDonated] = useState("$0")
+  const [totalDonated, setTotalDonated] = useState("0")
 
   const fetchTotalEvents = async (): Promise<void> => {
     try {
@@ -94,7 +94,7 @@ const GuestDashboard: React.FC = () => {
         headers: { "Content-Type": "application/json", "x-auth-token": token },
       });
       const totalDonatedData = Number(response.data.totalDonated) || 0;
-      setTotalDonated(`$${totalDonatedData}`);
+      setTotalDonated(`R ${totalDonatedData}`);
     } catch (error: any) {
       console.error("Error fetching total donated:", error);
       toast.error(error.response?.data?.message || "Failed to fetch total donated");

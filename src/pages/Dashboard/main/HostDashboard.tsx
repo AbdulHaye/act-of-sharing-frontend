@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Users, DollarSign, Plus } from "lucide-react";
+import { Calendar, Users, HandCoins, Plus } from "lucide-react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import EventCreationForm from "../../../modals/EventCreationForm";
 import { useEvent } from "../../../context/EventContext";
@@ -106,14 +106,11 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-
-
   useEffect(() => {
     console.log("HostDashboard mounted, user:", user);
     if (user) {
       fetchHostTotalRaised();
       fetchEvents(pagination.currentPage);
-      // fetchTotalSuggestedDonation();
     }
   }, [user, pagination.currentPage]);
 
@@ -171,8 +168,8 @@ const HostDashboard: React.FC = () => {
     return [
       { id: 1, title: "Total Events", value: totalEvents, icon: <Calendar size={24} /> },
       { id: 2, title: "Total Guests", value: totalGuests, icon: <Users size={24} /> },
-      { id: 3, title: "Total Donations", value: `R ${totalRaised.toLocaleString()}`, icon: <DollarSign size={24} /> },
-      { id: 4, title: "Total Suggested Donations", value: `R ${totalIndividualSuggestedDonations.toLocaleString()}`, icon: <DollarSign size={24} /> },
+      { id: 3, title: "Total Donations", value: `R ${totalRaised.toLocaleString()}`, icon: <HandCoins size={24} /> },
+      { id: 4, title: "Total Suggested Donations", value: `R ${totalIndividualSuggestedDonations.toLocaleString()}`, icon: <HandCoins size={24} /> },
     ];
   }, [events, totalRaised, totalSuggestedDonation]);
 
@@ -206,10 +203,6 @@ const HostDashboard: React.FC = () => {
             <h5 className="text-muted">No Upcoming Events</h5>
             <p className="text-muted">You don't have any events scheduled.</p>
             <div className="d-flex flex-column gap-2 align-items-center">
-              {/* <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
-                <Plus size={18} className="me-2" />
-                Host New Event
-              </button> */}
             </div>
           </td>
         </tr>
@@ -276,16 +269,14 @@ const HostDashboard: React.FC = () => {
           <div className="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-center">
             <h5 className="card-title mb-0 text-lg font-semibold">Upcoming Events</h5>
             <div className="d-flex gap-2 mt-2 mt-md-0">
-              {/* <button onClick={() => setIsModalOpen(true)} className="btn btn-sm btn-primary">
-                <Plus size={16} className="me-1" />
-                New Event
-              </button> */}
             </div>
           </div>
           <div className="card-body p-0">
             <div className="table-responsive" style={{ maxHeight: "calc(100vh - 360px)" }}>
               <table className="table-custom w-full text-sm">
-                <thead className="sticky top-0 bg-primary text-white">
+                <thead
+
+ className="sticky top-0 bg-primary text-white">
                   <tr>
                     <th className="table-header px-4 py-2" style={{ width: "20%" }}>Event Name</th>
                     <th className="table-header px-4 py-2" style={{ width: "20%" }}>Location</th>

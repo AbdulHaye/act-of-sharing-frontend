@@ -282,10 +282,10 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscripti
           </h2>
           <div className="mb-4 text-end">
             <p className="mb-1" style={{ fontSize: "1rem", color: "var(--text-color)" }}>
-              Subtotal: ${amount}
+              Subtotal: R {amount}
             </p>
             <p className="fw-bold" style={{ fontSize: "1.25rem", color: "var(--text-color)" }}>
-              Order Total: ${amount}
+              Order Total: R {amount}
             </p>
           </div>
           <div className="mb-4 p-4 border rounded" style={{ borderColor: "var(--border-color)" }}>
@@ -385,7 +385,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ eventId, amount, subscripti
             }}
             disabled={!isFormValid() || isProcessing || !stripe}
           >
-            {isProcessing ? "Processing..." : `Donate $${amount} ${subscriptionType}`}
+            {isProcessing ? "Processing..." : `Donate R ${amount} ${subscriptionType}`}
           </button>
           <p className="text-muted text-center mt-3" style={{ fontSize: "0.875rem" }}>
             By clicking Donate, you authorize this donation and agree it is non-refundable and made voluntarily without

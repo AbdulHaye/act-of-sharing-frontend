@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Users, DollarSign, Calendar } from "lucide-react";
+import { Users, HandCoins, Calendar } from "lucide-react";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import { useEvent } from "../../../context/EventContext";
 import { useAuth } from "../../../context/AuthContext";
@@ -161,7 +161,7 @@ const AdminDashboard: React.FC = () => {
         id: 3,
         title: "Total Donations",
         value: `R ${totalRaised.toLocaleString()}`,
-        icon: <DollarSign size={24} />,
+        icon: <HandCoins size={24} />,
       },
     ];
   }, [eventsPagination.totalEvents, usersPagination.totalUsers, totalRaised, users]);
@@ -357,7 +357,6 @@ const AdminDashboard: React.FC = () => {
                           <button className="page-link px-3 py-1 border rounded" onClick={() => handleUsersPageChange(usersPagination.currentPage - 1)}>
                             Previous
                           </button>
-                       ぜひ
                         </li>
                         {Array.from({ length: usersPagination.totalPages }, (_, i) => (
                           <li key={i} className={`page-item ${usersPagination.currentPage === i + 1 ? "bg-primary text-white" : "bg-white"} border rounded`}>
@@ -385,7 +384,7 @@ const AdminDashboard: React.FC = () => {
             border-collapse: collapse;
             width: 100%;
           }
-          .tableCurrent: .table-header {
+          .table-header {
             font-weight: 600;
           }
           .table-cell {
