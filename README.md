@@ -15,7 +15,7 @@ This is the frontend application for the CommonChange platform, built using Reac
 
 ### Installation
 
-1. Clone the repository: `git clone https://github.com/your-username/commonchange-frontend.git`
+1. Clone the repository: `git clone https://github.com/your-username/act-of-sharing-frontend.git`
 2. Install dependencies: `npm install`
 3. Start the development server: `npm run dev`
 
